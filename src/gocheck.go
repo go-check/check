@@ -34,43 +34,47 @@ func SetTestHook(newTestHook func(*T)) {
 }
 
 
-//func (t *T) GetSuite() interface{} {
-//    return t.suite
-//}
-//
-//func (t *T) GetTestName() string {
-//    return t.test.Name
-//}
-
 func (t *T) GetLog() string {
     return t.log
+}
+
+// -----------------------------------------------------------------------
+// Basic succeeding/failing logic.
+
+func (t *T) Failed() bool {
+    return t.failed
 }
 
 func (t *T) Fail() {
     t.failed = true
 }
 
+func (t *T) FailNow() {
+    t.Fail()
+    t.stopNow()
+}
+
 func (t *T) Succeed() {
     t.failed = false
 }
 
-func (t *T) Failed() bool {
-    return t.failed
+func (t *T) SucceedNow() {
+    t.Succeed()
+    t.stopNow()
 }
 
-//func (t *T) FailNow() {
-//    t.Fail()
-//    t.StopNow()
-//}
-//
-//func (t *T) StopNow() {
-//    t.exit <- t
-//    runtime.Goexit()
-//}
+// This doesn't do much at the moment, but all stopping should go through
+// here, so it's a useful control point.
+func (t *T) stopNow() {
+    runtime.Goexit()
+}
 
+
+// -----------------------------------------------------------------------
+// Basic logging.
 
 func (t *T) Log(args ...interface{}) {
-    log := fmt.Sprintln(args)
+    log := fmt.Sprint(args) + "\n"
     t.log += log
 }
 
@@ -80,43 +84,21 @@ func (t *T) Logf(format string, args ...interface{}) {
 }
 
 func (t *T) Error(args ...interface{}) {
-    t.Log(args)
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args)))
     t.Fail()
 }
 
 func (t *T) Errorf(format string, args ...interface{}) {
-    t.Logf(format, args)
+    t.logCaller(1, fmt.Sprintf("Error: " + format, args))
     t.Fail()
 }
 
 
-func (t *T) CheckEqual(expected interface{}, obtained interface{},
-                       issue ...interface{}) bool {
-    if expected != obtained {
-        t.logLine()
-        t.logCallerAndIssue("CheckEqual(A, B): A != B")
-        t.logValue("A:", expected)
-        t.logValue("B:", obtained)
-        if len(issue) != 0 {
-            t.logIssue(issue)
-        }
-        t.logLine()
-        t.Fail()
-        return false
-    }
-    return true
-}
+// -----------------------------------------------------------------------
+// Internal logging helpers.
 
-func (t *T) logLine() {
+func (t *T) logNewLine() {
     t.log += "\n"
-}
-
-func (t *T) logCallerAndIssue(issue ...interface{}) {
-    t.Logf("... %s%s", t.formatCaller(2), fmt.Sprint(issue))
-}
-
-func (t *T) logIssue(issue ...interface{}) {
-    t.Log("...", fmt.Sprint(issue))
 }
 
 func (t *T) logValue(label string, value interface{}) {
@@ -125,6 +107,14 @@ func (t *T) logValue(label string, value interface{}) {
     } else {
         t.Logf("... %s %#v", label, value)
     }
+}
+
+func (t *T) logString(issue string) {
+    t.Log("... ", issue)
+}
+
+func (t *T) logCaller(skip int, issue string) {
+    t.Logf("... %s%s", t.formatCaller(skip+1), issue)
 }
 
 func (t *T) formatCaller(skip int) string {
@@ -151,6 +141,42 @@ func (t *T) formatCaller(skip int) string {
     }
     return ""
 }
+
+
+
+// -----------------------------------------------------------------------
+// Testing helper functions.
+
+func (t *T) CheckEqual(expected interface{}, obtained interface{},
+                       issue ...interface{}) bool {
+    return t.internalCheckEqual(expected, obtained, true,
+                                "CheckEqual(A, B): A != B", issue)
+}
+
+func (t *T) CheckNotEqual(expected interface{}, obtained interface{},
+                          issue ...interface{}) bool {
+    return t.internalCheckEqual(expected, obtained, false,
+                                "CheckNotEqual(A, B): A == B", issue)
+}
+
+func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
+                               summary string, issue ...interface{}) bool {
+    if (a == b) != equal {
+        t.logNewLine()
+        t.logCaller(2, summary)
+        t.logValue("A:", a)
+        t.logValue("B:", b)
+        if len(issue) != 0 {
+            t.logString(fmt.Sprint(issue))
+        }
+        t.logNewLine()
+        t.Fail()
+        return false
+    }
+    return true
+}
+
+
 
 
 type hasSetUpSuite interface {
