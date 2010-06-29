@@ -159,6 +159,23 @@ func (t *T) CheckNotEqual(expected interface{}, obtained interface{},
                                 "CheckNotEqual(A, B): A == B", issue)
 }
 
+func (t *T) AssertEqual(expected interface{}, obtained interface{},
+                        issue ...interface{}) {
+    if !t.internalCheckEqual(expected, obtained, true,
+                             "AssertEqual(A, B): A != B", issue) {
+        t.stopNow()
+    }
+}
+
+func (t *T) AssertNotEqual(expected interface{}, obtained interface{},
+                           issue ...interface{}) {
+    if !t.internalCheckEqual(expected, obtained, false,
+                             "AssertNotEqual(A, B): A == B", issue) {
+        t.stopNow()
+    }
+}
+
+
 func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
     if (a == b) != equal {

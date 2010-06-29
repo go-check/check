@@ -8,9 +8,8 @@
 - Benchmark support
 - Additional helper methods:
   - CheckPanic(func)
-  - CheckArgs(...)(...)
+  - CheckArgs(...)(...) maybe?
   - MakeFileName(), MakeFile(), MakeDir(), MakeDirFile()
-- Check* => Assert* with FailNow().
 - How to skip tests in an entire suite? Pass *T to the SetUpSuite maybe?
 - Implement module-level var s := Suite(&S{}) variables, and do dynamic
   discovery on them via RunAll().
@@ -19,7 +18,7 @@
 - t.UsePlugin("name"), some kind of reusable plugin system
 - Use this logging format (no tabs, PASS only on verbose mode):
 ---------------------------------------------------------------------
-FAIL: filename:line:TestSuite.TestMethod
+FAIL: filename:line:TestMethod
 
 ... CheckEqual: A != B
 ... A: <string below>
@@ -30,8 +29,8 @@ FAIL: filename:line:TestSuite.TestMethod
 ... B
 
 ---------------------------------------------------------------------
-PASS: filename:line:package.TestSuite.TestMethod
-PASS: filename:line:package.TestSuite.TestMethod
-PASS: filename:line:package.TestSuite.TestMethod
-PASS: filename:line:package.TestSuite.TestMethod
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
 ---------------------------------------------------------------------

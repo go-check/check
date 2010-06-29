@@ -96,12 +96,28 @@ func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
     }
 }
 
+func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
+    log := fmt.Sprintf(
+        "\n\\.\\.\\. %d:CheckEqual\\(A, B\\): A != B\n" +
+        "\\.\\.\\. A: 10\n" +
+        "\\.\\.\\. B: 20\n\n",
+        getMyLine()+1)
+    result := t.CheckEqual(10, 20)
+    checkState(t, result,
+               &expectedState{
+                    name: "CheckEqual(10, 20)",
+                    result: false,
+                    failed: true,
+                    log: log,
+               })
+}
+
 func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
     result, line := checkEqualWrapper(t, 10, 20)
     log := fmt.Sprintf(
-        "\n... gocheck_test.go:%d:CheckEqual(A, B): A != B\n" +
-        "... A: 10\n" +
-        "... B: 20\n\n",
+        "\n\\.\\.\\. gocheck_test.go:%d:CheckEqual\\(A, B\\): A != B\n" +
+        "\\.\\.\\. A: 10\n" +
+        "\\.\\.\\. B: 20\n\n",
         line)
     checkState(t, result,
                &expectedState{

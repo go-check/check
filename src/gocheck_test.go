@@ -3,16 +3,18 @@
 //
 // Tests are distributed the following way:
 //
-//  gochecker_test.go: This file.  Just generic helpers.
-//  bootstrap_test.go: Tests breaking the chicken and egg problem of
-//                     testing a testing framework with itself.
-//    helpers_test.go: Tests for helper methods in *gocheck.T.
+//   gochecker_test.go: This file.  Just generic helpers.
+//   bootstrap_test.go: Tests breaking the chicken and egg problem of
+//                      testing a testing framework with itself.
+//  foundation_test.go: Tests ensuring that the basics are working.
+//     helpers_test.go: Tests for helper methods in *gocheck.T.
 
 package gocheck_test
 
 
 import (
     "gocheck"
+    "testing"
     "runtime"
     "os"
 )
@@ -96,8 +98,13 @@ type expectedState struct {
 func checkState(t *gocheck.T, result interface{}, expected *expectedState) {
     failed := t.Failed()
     t.Succeed()
-    if log := t.GetLog(); log != expected.log {
-        t.Errorf("%s logged %#v rather than %#v",
+    log := t.GetLog()
+    matched, matchError := testing.MatchString("^" + expected.log + "$", log)
+    if matchError != "" {
+        t.Errorf("Error in matching expression used in testing %s",
+                 expected.name)
+    } else if !matched {
+        t.Errorf("%s logged %#v which doesn't match %#v",
                  expected.name, log, expected.log)
     }
     if result != expected.result {
