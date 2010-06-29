@@ -1,0 +1,43 @@
+- t.ExpectFailure()
+- Display filename, test name, and line number on errors
+- Log on improper arguments
+- Panic handling on fixture (stop), and on individual tests (just log)
+- Filtering per suite and/or test
+- GoTest prefix support, for running parallel tests
+- Benchmark support
+- Additional helper methods:
+  - CheckEqual
+  - CheckNotEqual
+  - CheckPanic(func)
+  - CheckArgs(...)(...)
+  - MakeFileName(), MakeFile(), MakeDir(), MakeDirFile()
+- Check* => Assert* with FailNow().
+- How to skip tests in an entire suite? Pass *T to the SetUpSuite maybe?
+- Implement module-level var s := Suite(&S{}) variables, and do dynamic
+  discovery on them via RunAll().
+- t.LockResource("database", "config-dir"), acquires exclusive access
+  to these resources and prevents parallel tests from using them.
+- t.UsePlugin("name"), some kind of reusable plugin system
+- Use this logging format (no tabs, PASS only on verbose mode):
+---------------------------------------------------------------------
+FAIL: filename:line:package.TestSuite.TestMethod
+
+... CheckEqual: A != B
+... A: <string below>
+
+<<< A
+... B: <string below>
+
+... B
+
+---------------------------------------------------------------------
+PASS: filename:line:package.TestSuite.TestMethod
+PASS: filename:line:package.TestSuite.TestMethod
+PASS: filename:line:package.TestSuite.TestMethod
+PASS: filename:line:package.TestSuite.TestMethod
+---------------------------------------------------------------------
+
+
+.....................................................................
+FAIL: filename:line:package.TestSuite.TestMethod
+...
