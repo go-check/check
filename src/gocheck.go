@@ -5,14 +5,11 @@ import (
     "runtime"
     "testing"
     "strings"
+    "path"
     "fmt"
     "io"
     "os"
-    //"flag"
 )
-
-
-//var blah *string = flag.String("blah", "Blah", "help for blah")
 
 type T struct {
     suite interface{}
@@ -24,18 +21,6 @@ type T struct {
 
 type Result struct {
     failures int
-}
-
-
-var testHook func(*T)
-
-func SetTestHook(newTestHook func(*T)) {
-    testHook = newTestHook
-}
-
-
-func (t *T) GetLog() string {
-    return t.log
 }
 
 // -----------------------------------------------------------------------
@@ -73,6 +58,10 @@ func (t *T) stopNow() {
 // -----------------------------------------------------------------------
 // Basic logging.
 
+func (t *T) GetLog() string {
+    return t.log
+}
+
 func (t *T) Log(args ...interface{}) {
     log := fmt.Sprint(args) + "\n"
     t.log += log
@@ -91,6 +80,16 @@ func (t *T) Error(args ...interface{}) {
 func (t *T) Errorf(format string, args ...interface{}) {
     t.logCaller(1, fmt.Sprintf("Error: " + format, args))
     t.Fail()
+}
+
+func(t *T) Fatal(args ...interface{}) {
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args)))
+    t.FailNow()
+}
+
+func(t *T) Fatalf(format string, args ...interface{}) {
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args)))
+    t.FailNow()
 }
 
 
@@ -114,34 +113,60 @@ func (t *T) logString(issue string) {
 }
 
 func (t *T) logCaller(skip int, issue string) {
-    t.Logf("... %s%s", t.formatCaller(skip+1), issue)
+    if _, callerFile, callerLine, ok := runtime.Caller(skip+1); ok {
+        t.Logf("%s:%d:\n... %s", nicePath(callerFile), callerLine, issue)
+    }
 }
 
-func (t *T) formatCaller(skip int) string {
-    // That's not very well tested.  How to simulate a situation where
-    // we can't get a caller or a function out of a PC?
-    if _, callerFile, callerLine, ok := runtime.Caller(skip+1); ok {
-        testPC := t.method.Func.Get()
-        testFunc := runtime.FuncForPC(testPC)
-        if testFunc == nil {
-            return fmt.Sprintf("%d:", callerLine)
-        } else {
-            testFile, _ := testFunc.FileLine(testFunc.Entry())
-            if testFile != callerFile {
-                if wd, err := os.Getwd(); err == nil {
-                    if strings.HasPrefix(callerFile, wd) {
-                        callerFile = callerFile[len(wd)+1:]
-                    }
-                }
-                return fmt.Sprintf("%s:%d:", callerFile, callerLine)
-            } else {
-                return fmt.Sprintf("%d:", callerLine)
+func (t *T) logPanic(skip int, value interface{}) {
+    skip += 1 // Our own frame.
+    initialSkip := skip
+    for {
+        if pc, file, line, ok := runtime.Caller(skip); ok {
+            if skip == initialSkip {
+                t.Logf("... Panic: %s (PC=0x%X)\n", value, pc)
             }
+            var name string
+            if f := runtime.FuncForPC(pc); f != nil {
+                name = niceFuncName(f.Name())
+                if name == "reflect.FuncValue.Call" {
+                    break
+                }
+            } else {
+                name = "<unknown function>"
+            }
+            t.Logf("%s:%d\n  in %s", nicePath(file), line, name)
+        } else {
+            break
+        }
+        skip += 1
+    }
+}
+
+var initWD, initWDErr = os.Getwd()
+
+func nicePath(path string) string {
+    if initWDErr == nil {
+        if strings.HasPrefix(path, initWD+"/") {
+            return path[len(initWD)+1:]
         }
     }
-    return ""
+    return path
 }
 
+func niceFuncName(name string) string {
+    name = path.Base(name)
+    if strings.HasPrefix(name, "_xtest_.*") {
+        name = name[9:]
+    }
+    if i := strings.LastIndex(name, ".*"); i != -1 {
+        name = name[0:i] + "." + name[i+2:]
+    }
+    if i := strings.LastIndex(name, "·"); i != -1 {
+        name = name[0:i] + "." + name[i+2:]
+    }
+    return name
+}
 
 
 // -----------------------------------------------------------------------
@@ -179,7 +204,6 @@ func (t *T) AssertNotEqual(expected interface{}, obtained interface{},
 func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
     if (a == b) != equal {
-        t.logNewLine()
         t.logCaller(2, summary)
         t.logValue("A:", a)
         t.logValue("B:", b)
@@ -194,7 +218,33 @@ func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
 }
 
 
+// -----------------------------------------------------------------------
+// Test suite registry.
 
+var allSuites []interface{}
+
+func Suite(suite interface{}) interface{} {
+    return Suites(suite)[0]
+}
+
+func Suites(suites ...interface{}) []interface{} {
+    lenAllSuites := len(allSuites)
+    lenSuites := len(suites)
+    if lenAllSuites + lenSuites > cap(allSuites) {
+        newAllSuites := make([]interface{}, (lenAllSuites+lenSuites)*2)
+        copy(newAllSuites, allSuites)
+        allSuites = newAllSuites
+    }
+    allSuites = allSuites[0:lenAllSuites+lenSuites]
+    for i, suite := range suites {
+        allSuites[lenAllSuites+i] = suite
+    }
+    return suites
+}
+
+
+// -----------------------------------------------------------------------
+// Test running logic.
 
 type hasSetUpSuite interface {
     SetUpSuite()
@@ -218,8 +268,14 @@ type hasTearDownTest interface {
 //    Run(suite)
 //}
 
-func RunTestingT(suite interface{}, testingT *testing.T) {
-    Run(suite)
+func TestingT(testingT *testing.T) {
+    RunAll()
+}
+
+func RunAll() {
+    for _, suite := range allSuites {
+        Run(suite)
+    }
 }
 
 func Run(suite interface{}) {
@@ -276,13 +332,17 @@ func runTest(t *T) {
 }
 
 func handleTestExit(t *T) {
-    // Do nothing with panics for now.
-    recover()
+    value := recover()
+    if value != nil {
+        t.logPanic(1, value)
+        t.Fail()
+    }
     t.exit <- t
 }
 
 func writeFailure(t *T, writer io.Writer) {
     testLocation := ""
+    testFuncName := ""
     testPC := t.method.Func.Get()
     testFunc := runtime.FuncForPC(testPC)
     if testFunc != nil {
@@ -295,11 +355,14 @@ func writeFailure(t *T, writer io.Writer) {
         // XXX How to get the first line where a function was defined?
         //testLocation = fmt.Sprintf("%s:%d:", testFile, testLine)
         testLocation = fmt.Sprintf("%s:", testFile)
+        testFuncName = niceFuncName(testFunc.Name())
+    } else {
+        testFuncName = t.method.Name
     }
     header := fmt.Sprintf(
-        "-----------------------------------" +
+        "\n-----------------------------------" +
         "-----------------------------------\n" +
-        "FAIL: %s%s\n", testLocation, t.method.Name)
+        "FAIL: %s%s\n\n", testLocation, testFuncName)
     io.WriteString(writer, header)
     io.WriteString(writer, t.log)
 }

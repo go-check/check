@@ -15,26 +15,17 @@ package gocheck_test
 
 import (
     "gocheck"
-    "testing"
     "strings"
     "fmt"
-    "os"
 )
 
 
-func TestRun(t *testing.T) {
-    gocheck.RunTestingT(&BootstrapS{}, t)
-}
-
-
-// -----------------------------------------------------------------------
-// The boostrap test suite itself.
-
 type BootstrapS struct{}
 
-func critical(error string) {
-    fmt.Fprintln(os.Stderr, error)
-    os.Exit(1)
+var boostrapS = gocheck.Suite(&BootstrapS{})
+
+func (s *BootstrapS) TestCountSuite(t *gocheck.T) {
+    suitesRun += 1
 }
 
 func (s *BootstrapS) TestFailedAndFail(t *gocheck.T) {

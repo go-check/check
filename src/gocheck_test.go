@@ -7,6 +7,7 @@
 //   bootstrap_test.go: Tests breaking the chicken and egg problem of
 //                      testing a testing framework with itself.
 //  foundation_test.go: Tests ensuring that the basics are working.
+//     fixture_test.go: Tests for the fixture logic (SetUp*/TearDown*).
 //     helpers_test.go: Tests for helper methods in *gocheck.T.
 
 package gocheck_test
@@ -16,12 +17,36 @@ import (
     "gocheck"
     "testing"
     "runtime"
+    "fmt"
     "os"
 )
 
 
+// We count the number of suites run at least to get a vague hint that the
+// test suite is behaving as it should.  Otherwise a bug introduced at the
+// very core of the system could go unperceived.
+const suitesRunExpected = 4
+var suitesRun int = 0
+
+func TestAll(t *testing.T) {
+    gocheck.TestingT(t)
+    if suitesRun != suitesRunExpected {
+        critical(fmt.Sprintf("Expected %d suites to run rather than %d",
+                             suitesRunExpected, suitesRun))
+    }
+}
+
+
 // -----------------------------------------------------------------------
 // Helper functions.
+
+// Break down badly.  This is used in test cases which can't yet assume
+// that the fundamental bits are working.
+func critical(error string) {
+    fmt.Fprintln(os.Stderr, "CRITICAL: " + error)
+    os.Exit(1)
+}
+
 
 // Return the file line where it's called.
 func getMyLine() int {

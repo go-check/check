@@ -9,15 +9,16 @@ import (
 )
 
 
-func TestFixture(t *testing.T) {
-    gocheck.RunTestingT(&FixtureS{}, t)
-}
-
-
 // -----------------------------------------------------------------------
 // Fixture test suite.
 
 type FixtureS struct{}
+
+var fixtureS = gocheck.Suite(&FixtureS{})
+
+func (s *FixtureS) TestCountSuite(t *gocheck.T) {
+    suitesRun += 1
+}
 
 func (s *FixtureS) TestOrder(t *gocheck.T) {
     helper := FixtureHelper{}
@@ -47,7 +48,22 @@ func (s *FixtureS) TestPanicOnTest1(t *gocheck.T) {
     t.CheckEqual(helper.calls[7], "TearDownSuite")
     t.CheckEqual(helper.n, 8)
 
-    // t.CheckContains(output, log)
+    expected := "^\n-+\n" +
+                "FAIL: fixture_test\\.go:FixtureHelper.Test1\n\n" +
+                "\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
+                ".+:[0-9]+\n" +
+                "  in runtime.panic\n" +
+                ".*fixture_test.go:[0-9]+\n" +
+                "  in FixtureHelper.trace\n" +
+                ".*fixture_test.go:[0-9]+\n" +
+                "  in FixtureHelper.Test1\n$"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression:", expected)
+    } else if !matched {
+        t.Error("Panic not logged properly:\n", output.value)
+    }
 }
 
 

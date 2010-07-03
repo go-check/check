@@ -8,15 +8,9 @@ package gocheck_test
 
 import (
     "gocheck"
-    "testing"
     "strings"
     "fmt"
 )
-
-
-func TestFoundation(t *testing.T) {
-    gocheck.RunTestingT(&FoundationS{}, t)
-}
 
 
 // -----------------------------------------------------------------------
@@ -24,10 +18,16 @@ func TestFoundation(t *testing.T) {
 
 type FoundationS struct{}
 
+var foundationS = gocheck.Suite(&FoundationS{})
+
+func (s *FoundationS) TestCountSuite(t *gocheck.T) {
+    suitesRun += 1
+}
 
 func (s *FoundationS) TestErrorf(t *gocheck.T) {
     // Do not use checkState() here.  It depends on Errorf() working.
-    expectedLog := fmt.Sprintf("... %d:Error: Error message!\n", getMyLine()+1)
+    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n" +
+                               "... Error: Error message!\n", getMyLine()+1)
     t.Errorf("Error %v!", "message")
     failed := t.Failed()
     t.Succeed()
@@ -42,7 +42,8 @@ func (s *FoundationS) TestErrorf(t *gocheck.T) {
 }
 
 func (s *FoundationS) TestError(t *gocheck.T) {
-    expectedLog := fmt.Sprintf("... %d:Error: Error message!\n", getMyLine()+1)
+    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n" +
+                               "... Error: Error message!\n", getMyLine()+1)
     t.Error("Error ", "message!")
     checkState(t, nil,
                &expectedState{
@@ -63,7 +64,7 @@ func (s *FoundationS) TestFailNow(t *gocheck.T) {
     })()
 
     t.FailNow()
-    t.Log("This shouldn't be logged!")
+    t.Log("FailNow() didn't stop the test")
 }
 
 func (s *FoundationS) TestSucceedNow(t *gocheck.T) {
@@ -76,7 +77,7 @@ func (s *FoundationS) TestSucceedNow(t *gocheck.T) {
 
     t.Fail()
     t.SucceedNow()
-    t.Log("This shouldn't be logged!")
+    t.Log("SucceedNow() didn't stop the test")
 }
 
 func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
@@ -84,9 +85,9 @@ func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
     failHelper := FailHelper{}
     gocheck.RunWithWriter(&failHelper, &output)
     header := fmt.Sprintf(
-        "-----------------------------------" +
+        "\n-----------------------------------" +
         "-----------------------------------\n" +
-        "FAIL: gocheck_test.go:TestLogAndFail\n")
+        "FAIL: gocheck_test.go:FailHelper.TestLogAndFail\n")
         //"FAIL: gocheck_test.go:%d:TestLogAndFail\n", failHelper.testLine)
         // How to find the first line of a function?
     if strings.Index(output.value, header) == -1 {
@@ -96,9 +97,47 @@ func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
     }
 }
 
+func (s *FoundationS) TestFatal(t *gocheck.T) {
+    var line int
+    defer (func() {
+        if !t.Failed() {
+            t.Error("Fatal() didn't fail the test")
+        } else {
+            t.Succeed()
+            t.CheckEqual(t.GetLog(),
+                         fmt.Sprintf("foundation_test.go:%d:\n" +
+                                     "... Error: Die now!\n", line))
+        }
+    })()
+
+    line = getMyLine()+1
+    t.Fatal("Die ", "now!")
+    t.Log("Fatal() didn't stop the test")
+}
+
+func (s *FoundationS) TestFatalf(t *gocheck.T) {
+    var line int
+    defer (func() {
+        if !t.Failed() {
+            t.Error("Fatalf() didn't fail the test")
+        } else {
+            t.Succeed()
+            t.CheckEqual(t.GetLog(),
+                         fmt.Sprintf("foundation_test.go:%d:\n" +
+                                     "... Error: Die now!\n", line))
+        }
+    })()
+
+    line = getMyLine()+1
+    t.Fatalf("Die %s!", "now")
+    t.Log("Fatalf() didn't stop the test")
+}
+
+
 func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
     log := fmt.Sprintf(
-        "\n\\.\\.\\. %d:CheckEqual\\(A, B\\): A != B\n" +
+        "foundation_test.go:%d:\n" +
+        "\\.\\.\\. CheckEqual\\(A, B\\): A != B\n" +
         "\\.\\.\\. A: 10\n" +
         "\\.\\.\\. B: 20\n\n",
         getMyLine()+1)
@@ -115,7 +154,8 @@ func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
 func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
     result, line := checkEqualWrapper(t, 10, 20)
     log := fmt.Sprintf(
-        "\n\\.\\.\\. gocheck_test.go:%d:CheckEqual\\(A, B\\): A != B\n" +
+        "gocheck_test.go:%d:\n" +
+        "\\.\\.\\. CheckEqual\\(A, B\\): A != B\n" +
         "\\.\\.\\. A: 10\n" +
         "\\.\\.\\. B: 20\n\n",
         line)

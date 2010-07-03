@@ -5,19 +5,16 @@ package gocheck_test
 
 import (
     "gocheck"
-    "testing"
 )
 
 
-func TestHelpers(t *testing.T) {
-    gocheck.RunTestingT(&HelpersS{}, t)
-}
-
-
-// -----------------------------------------------------------------------
-// Helpers test suite.
+var helpersS = gocheck.Suite(&HelpersS{})
 
 type HelpersS struct{}
+
+func (s *HelpersS) TestCountSuite(t *gocheck.T) {
+    suitesRun += 1
+}
 
 func (s *HelpersS) TestCheckEqualSucceeding(t *gocheck.T) {
     testHelperSuccess(t, "CheckEqual(10, 10)", true, func() interface{} {
@@ -26,7 +23,8 @@ func (s *HelpersS) TestCheckEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualFailing(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:CheckEqual\\(A, B\\): A != B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckEqual\\(A, B\\): A != B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 20\n\n"
     testHelperFailure(t, "CheckEqual(10, 20)", false, false, log,
@@ -36,7 +34,8 @@ func (s *HelpersS) TestCheckEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualWithMessage(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:CheckEqual\\(A, B\\): A != B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckEqual\\(A, B\\): A != B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 20\n" +
            "\\.+ That's clearly WRONG!\n\n"
@@ -53,7 +52,8 @@ func (s *HelpersS) TestCheckNotEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckNotEqualFailing(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:CheckNotEqual\\(A, B\\): A == B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckNotEqual\\(A, B\\): A == B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 10\n\n"
     testHelperFailure(t, "CheckNotEqual(10, 10)", false, false, log,
@@ -63,7 +63,8 @@ func (s *HelpersS) TestCheckNotEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckNotEqualWithMessage(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:CheckNotEqual\\(A, B\\): A == B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckNotEqual\\(A, B\\): A == B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 10\n" +
            "\\.+ That's clearly WRONG!\n\n"
@@ -81,7 +82,8 @@ func (s *HelpersS) TestAssertEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertEqualFailing(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:AssertEqual\\(A, B\\): A != B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertEqual\\(A, B\\): A != B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 20\n\n"
     testHelperFailure(t, "AssertEqual(10, 20)", nil, true, log,
@@ -92,7 +94,8 @@ func (s *HelpersS) TestAssertEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertEqualWithMessage(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:AssertEqual\\(A, B\\): A != B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertEqual\\(A, B\\): A != B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 20\n" +
            "\\.+ That's clearly WRONG!\n\n"
@@ -111,7 +114,8 @@ func (s *HelpersS) TestAssertNotEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertNotEqualFailing(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:AssertNotEqual\\(A, B\\): A == B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertNotEqual\\(A, B\\): A == B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 10\n\n"
     testHelperFailure(t, "AssertNotEqual(10, 10)", nil, true, log,
@@ -122,7 +126,8 @@ func (s *HelpersS) TestAssertNotEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertNotEqualWithMessage(t *gocheck.T) {
-    log := "\n\\.+ [0-9]+:AssertNotEqual\\(A, B\\): A == B\n" +
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertNotEqual\\(A, B\\): A == B\n" +
            "\\.+ A: 10\n" +
            "\\.+ B: 10\n" +
            "\\.+ That's clearly WRONG!\n\n"
