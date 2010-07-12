@@ -15,6 +15,7 @@
 - t.UsePlugin("name"), some kind of reusable plugin system
 - Benchmark support, with *T
 - Use this logging format (no tabs, PASS only on verbose mode):
+- t.Run(suite) with result aggregation
 
 ---------------------------------------------------------------------
 FAIL: filename:line:TestMethod

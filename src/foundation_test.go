@@ -167,3 +167,33 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
                     log: log,
                })
 }
+
+
+// -----------------------------------------------------------------------
+// Ensure that suites with embedded types are working fine, including the
+// the workaround for issue 906.
+
+type EmbeddedInternalS struct {
+    called bool
+}
+
+type EmbeddedS struct {
+    EmbeddedInternalS
+}
+
+var embeddedS = gocheck.Suite(&EmbeddedS{})
+
+func (s *EmbeddedS) TestCountSuite(t *gocheck.T) {
+    suitesRun += 1
+}
+
+func (s *EmbeddedInternalS) TestMethod(t *gocheck.T) {
+    t.Error("TestMethod() of the embedded type was called!?")
+}
+
+func (s *EmbeddedS) TestMethod(t *gocheck.T) {
+    // http://code.google.com/p/go/issues/detail?id=906
+    t.CheckEqual(s.called, false,
+                 "The bug described in issue 906 is affecting the runner")
+    s.called = true
+}

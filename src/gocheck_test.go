@@ -25,7 +25,7 @@ import (
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
-const suitesRunExpected = 4
+const suitesRunExpected = 5
 var suitesRun int = 0
 
 func TestAll(t *testing.T) {
@@ -84,7 +84,7 @@ func checkEqualWrapper(t *gocheck.T,
 // -----------------------------------------------------------------------
 // Helper suite for testing basic fail behavior.
 
-type FailHelper struct{
+type FailHelper struct {
     testLine int
 }
 

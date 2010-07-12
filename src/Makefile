@@ -1,9 +1,16 @@
+include $(GOROOT)/src/Make.$(GOARCH)
 
-all:
-	cd src && $(MAKE)
+TARG=gocheck
+GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
 
-test:
-	cd src && gotest
+GOFILES=\
+	gocheck.go\
+	gocheckrun.go\
+	gochecktest.go\
 
-%:
-	cd src && $(MAKE) $@
+include $(GOROOT)/src/Make.pkg
+
+format:
+	${GOFMT} -w gocheck.go
+	${GOFMT} -w gocheckrun.go
+	${GOFMT} -w gochecktest.go
