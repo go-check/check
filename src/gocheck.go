@@ -107,9 +107,13 @@ func (c *call) logPanic(skip int, value interface{}) {
     }
 }
 
+func (c *call) logSoftPanic(issue string) {
+    c.log("... Panic: ", issue)
+}
+
 func (c *call) logArgPanic(funcValue *reflect.FuncValue, expectedType string) {
-    c.logString(fmt.Sprintf("Panic: %s argument should be %s",
-                            niceFuncName(funcValue.Get()), expectedType))
+    c.logf("... Panic: %s argument should be %s",
+           niceFuncName(funcValue.Get()), expectedType)
 }
 
 
@@ -203,6 +207,8 @@ func (tracker *resultTracker) _loopRoutine() {
                         case failedSt:
                             tracker._reportProblem("FAIL", c)
                         case panickedSt:
+                            tracker._reportProblem("PANIC", c)
+                        case fixturePanickedSt:
                             tracker._reportProblem("PANIC", c)
                     }
             }
@@ -303,6 +309,8 @@ func (runner *suiteRunner) run() {
             }
         }
         runner.runFixture(runner.tearDownSuite)
+    } else {
+        // XXX Should mark tests as skipped here.
     }
     runner.tracker.waitAndStop()
 }
@@ -336,6 +344,7 @@ func (runner *suiteRunner) callDone(c *call) {
     if value != nil {
         switch v := value.(type) {
             case *fixturePanic:
+                c.logSoftPanic("Fixture has panicked (see related PANIC)")
                 c.status = fixturePanickedSt
             default:
                 c.logPanic(1, value)
@@ -380,12 +389,12 @@ func (runner *suiteRunner) forkTest(method *reflect.FuncValue) *call {
         defer runner.runFixtureWithPanic(runner.tearDownTest)
         runner.runFixtureWithPanic(runner.setUpTest)
         t := &T{c}
-        if t.method.Type().(*reflect.FuncType).In(1) == reflect.Typeof(t) {
+        tt := t.method.Type().(*reflect.FuncType)
+        if tt.In(1) == reflect.Typeof(t) && tt.NumIn() == 2 {
             t.method.Call([]reflect.Value{reflect.NewValue(t)})
         } else {
             // Rather than a plain panic, provide a more helpful message when
             // the argument type is incorrect.
-            // XXX Should check the number of args as well.
             t.status = panickedSt
             t.logArgPanic(t.method, "*gocheck.T")
         }
@@ -408,12 +417,15 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
                                             runner.tearDownSuite,
                                             runner.setUpTest,
                                             runner.tearDownTest} {
-        if fv != nil && fv.Type().(*reflect.FuncType).In(1) != argType {
-            succeeded = false
-            runner.runCall(fv, func(c *call) {
-                c.logArgPanic(fv, "*gocheck.F")
-                c.status = panickedSt
-            })
+        if fv != nil {
+            fvt := fv.Type().(*reflect.FuncType)
+            if fvt.In(1) != argType || fvt.NumIn() != 2 {
+                succeeded = false
+                runner.runCall(fv, func(c *call) {
+                    c.logArgPanic(fv, "*gocheck.F")
+                    c.status = panickedSt
+                })
+            }
         }
     }
     return succeeded

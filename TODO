@@ -8,7 +8,6 @@
   - CheckPanic(func)
   - CheckArgs(...)(...) maybe?
   - MakeFileName(), MakeFile(), MakeDir(), MakeDirFile()
-- How to skip tests in an entire suite? Pass *T to the SetUpSuite maybe?
 - Display source code of calling site
 - t.LockResource("database", "config-dir"), acquires exclusive access
   to these resources and prevents parallel tests from using them.

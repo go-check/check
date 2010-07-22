@@ -20,6 +20,10 @@ func (s *FixtureS) TestCountSuite(t *gocheck.T) {
     suitesRun += 1
 }
 
+
+// -----------------------------------------------------------------------
+// Basic fixture ordering verification.
+
 func (s *FixtureS) TestOrder(t *gocheck.T) {
     helper := FixtureHelper{}
     gocheck.Run(&helper)
@@ -33,6 +37,10 @@ func (s *FixtureS) TestOrder(t *gocheck.T) {
     t.CheckEqual(helper.calls[7], "TearDownSuite")
     t.CheckEqual(helper.n, 8)
 }
+
+
+// -----------------------------------------------------------------------
+// Check the behavior when panics occur within tests and fixtures.
 
 func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "Test1"}
@@ -77,14 +85,18 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 4)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper.SetUpTest\n\n" +
+                "PANIC: fixture_test\\.go:FixtureHelper\\.SetUpTest\n\n" +
                 "\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
                 ".*fixture_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
                 ".*fixture_test.go:[0-9]+\n" +
-                "  in FixtureHelper.SetUpTest\n"
+                "  in FixtureHelper.SetUpTest\n" +
+                "\n-+\n" +
+                "PANIC: fixture_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "\\.\\.\\. Panic: Fixture has panicked " +
+                "\\(see related PANIC\\)\n$"
 
     matched, err := testing.MatchString(expected, output.value)
     if err != "" {
@@ -113,7 +125,11 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
                 ".*fixture_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
                 ".*fixture_test.go:[0-9]+\n" +
-                "  in FixtureHelper.TearDownTest\n"
+                "  in FixtureHelper.TearDownTest\n" +
+                "\n-+\n" +
+                "PANIC: fixture_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "\\.\\.\\. Panic: Fixture has panicked " +
+                "\\(see related PANIC\\)\n$"
 
     matched, err := testing.MatchString(expected, output.value)
     if err != "" {
@@ -131,7 +147,6 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
     t.CheckEqual(helper.calls[1], "TearDownSuite")
     t.CheckEqual(helper.n, 2)
 
-    // XXX Changing the expression below to not match breaks Go.
     expected := "^\n-+\n" +
                 "PANIC: fixture_test\\.go:FixtureHelper.SetUpSuite\n\n" +
                 "\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
@@ -141,6 +156,8 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
                 "  in FixtureHelper.trace\n" +
                 ".*fixture_test.go:[0-9]+\n" +
                 "  in FixtureHelper.SetUpSuite\n$"
+
+    // XXX Changing the expression above to not match breaks Go. WTF?
 
     matched, err := testing.MatchString(expected, output.value)
     if err != "" {
@@ -182,6 +199,10 @@ func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
     }
 }
 
+
+// -----------------------------------------------------------------------
+// A wrong argument on a test or fixture will produce a nice error.
+
 func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
     helper := WrongTestArgHelper{}
     output := String{}
@@ -219,6 +240,98 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
         "PANIC: fixture_test\\.go:WrongSetUpTestArgHelper\\.SetUpTest\n\n" +
         "\\.\\.\\. Panic: WrongSetUpTestArgHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.F\n"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression: ", expected)
+    } else if !matched {
+        t.Error("Panic not logged properly:\n", output.value)
+    }
+}
+
+func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
+    helper := WrongSetUpSuiteArgHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+    t.CheckEqual(helper.n, 0)
+
+    expected :=
+        "^\n-+\n" +
+        "PANIC: fixture_test\\.go:WrongSetUpSuiteArgHelper\\.SetUpSuite\n\n" +
+        "\\.\\.\\. Panic: WrongSetUpSuiteArgHelper\\.SetUpSuite argument " +
+        "should be \\*gocheck\\.F\n"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression: ", expected)
+    } else if !matched {
+        t.Error("Panic not logged properly:\n", output.value)
+    }
+}
+
+
+// -----------------------------------------------------------------------
+// Nice errors also when tests or fixture have wrong arg count.
+
+func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
+    helper := WrongTestArgCountHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+    t.CheckEqual(helper.calls[0], "SetUpSuite")
+    t.CheckEqual(helper.calls[1], "SetUpTest")
+    t.CheckEqual(helper.calls[2], "TearDownTest")
+    t.CheckEqual(helper.calls[3], "SetUpTest")
+    t.CheckEqual(helper.calls[4], "Test2")
+    t.CheckEqual(helper.calls[5], "TearDownTest")
+    t.CheckEqual(helper.calls[6], "TearDownSuite")
+    t.CheckEqual(helper.n, 7)
+
+    expected := "^\n-+\n" +
+                "PANIC: fixture_test\\.go:WrongTestArgCountHelper\\.Test1\n\n" +
+                "\\.\\.\\. Panic: WrongTestArgCountHelper\\.Test1 argument " +
+                "should be \\*gocheck\\.T\n"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression: ", expected)
+    } else if !matched {
+        t.Error("Panic not logged properly:\n", output.value)
+    }
+}
+
+func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
+    helper := WrongSetUpTestArgCountHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+    t.CheckEqual(helper.n, 0)
+
+    expected :=
+        "^\n-+\n" +
+        "PANIC: fixture_test\\.go:WrongSetUpTestArgCountHelper" +
+        "\\.SetUpTest\n\n" +
+        "\\.\\.\\. Panic: WrongSetUpTestArgCountHelper\\.SetUpTest argument " +
+        "should be \\*gocheck\\.F\n"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression: ", expected)
+    } else if !matched {
+        t.Error("Panic not logged properly:\n", output.value)
+    }
+}
+
+func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
+    helper := WrongSetUpSuiteArgCountHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+    t.CheckEqual(helper.n, 0)
+
+    expected :=
+        "^\n-+\n" +
+        "PANIC: fixture_test\\.go:WrongSetUpSuiteArgCountHelper" +
+        "\\.SetUpSuite\n\n" +
+        "\\.\\.\\. Panic: WrongSetUpSuiteArgCountHelper" +
+        "\\.SetUpSuite argument should be \\*gocheck\\.F\n"
 
     matched, err := testing.MatchString(expected, output.value)
     if err != "" {
@@ -275,7 +388,7 @@ func (s *FixtureHelper) Test2(t *gocheck.T) {
 // Helper test suites with wrong function arguments.
 
 type WrongTestArgHelper struct {
-    FixtureHelper
+    FixtureHelper // XXX Using this will explode due to issue 906 in Go.
 }
 
 func (s *WrongTestArgHelper) Test1(t int) {
@@ -286,4 +399,32 @@ type WrongSetUpTestArgHelper struct {
 }
 
 func (s *WrongSetUpTestArgHelper) SetUpTest(t int) {
+}
+
+type WrongSetUpSuiteArgHelper struct {
+    FixtureHelper
+}
+
+func (s *WrongSetUpSuiteArgHelper) SetUpSuite(t int) {
+}
+
+type WrongTestArgCountHelper struct {
+    FixtureHelper
+}
+
+func (s *WrongTestArgCountHelper) Test1(t *gocheck.T, i int) {
+}
+
+type WrongSetUpTestArgCountHelper struct {
+    FixtureHelper
+}
+
+func (s *WrongSetUpTestArgCountHelper) SetUpTest(f *gocheck.F, i int) {
+}
+
+type WrongSetUpSuiteArgCountHelper struct {
+    FixtureHelper
+}
+
+func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(f *gocheck.F, i int) {
 }
