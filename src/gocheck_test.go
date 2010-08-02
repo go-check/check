@@ -25,7 +25,7 @@ import (
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
-const suitesRunExpected = 5
+const suitesRunExpected = 6
 var suitesRun int = 0
 
 func TestAll(t *testing.T) {
@@ -102,6 +102,48 @@ type SuccessHelper struct{}
 
 func (s *SuccessHelper) TestLogAndSucceed(t *gocheck.T) {
     t.Log("Expected success!")
+}
+
+
+// -----------------------------------------------------------------------
+// Helper suite for testing ordering and behavior of fixture.
+
+type FixtureHelper struct {
+    calls [64]string
+    n int
+    panicOn string
+}
+
+func (s *FixtureHelper) trace(name string) {
+    s.calls[s.n] = name
+    s.n += 1
+    if name == s.panicOn {
+        panic(name)
+    }
+}
+
+func (s *FixtureHelper) SetUpSuite(f *gocheck.F) {
+    s.trace("SetUpSuite")
+}
+
+func (s *FixtureHelper) TearDownSuite(f *gocheck.F) {
+    s.trace("TearDownSuite")
+}
+
+func (s *FixtureHelper) SetUpTest(f *gocheck.F) {
+    s.trace("SetUpTest")
+}
+
+func (s *FixtureHelper) TearDownTest(f *gocheck.F) {
+    s.trace("TearDownTest")
+}
+
+func (s *FixtureHelper) Test1(t *gocheck.T) {
+    s.trace("Test1")
+}
+
+func (s *FixtureHelper) Test2(t *gocheck.T) {
+    s.trace("Test2")
 }
 
 

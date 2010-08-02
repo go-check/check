@@ -20,24 +20,30 @@ const (
     benchmarkKd
 )
 
+type callKind int
+
 const (
     succeededSt = iota
     failedSt
     skippedSt
     panickedSt
     fixturePanickedSt
+    missedSt
 )
+
+type callStatus int
 
 type call struct {
     method *reflect.FuncValue
-    kind int
-    status int
+    kind callKind
+    status callStatus
     logv string
     done chan *call
+    expectedFailure *string
 }
 
-func newCall(method *reflect.FuncValue) *call {
-    return &call{method:method, done:make(chan *call, 1)}
+func newCall(method *reflect.FuncValue, kind callKind) *call {
+    return &call{method:method, kind:kind, done:make(chan *call, 1)}
 }
 
 func (c *call) stopNow() {
@@ -162,9 +168,20 @@ func niceFuncName(pc uintptr) string {
 // -----------------------------------------------------------------------
 // Result tracker to aggregate call results.
 
+type Result struct {
+    Succeeded int
+    Failed int
+    Skipped int
+    Panicked int
+    FixturePanicked int
+    Missed int // Not even tried to run, related to a panic in fixture.
+}
+
 type resultTracker struct {
     writer io.Writer
+    result Result
     _waiting int
+    _missed int
     _waitChan chan *call
     _doneChan chan *call
     _stopChan chan bool
@@ -203,13 +220,33 @@ func (tracker *resultTracker) _loopRoutine() {
                     tracker._waiting += 1
                 case c = <-tracker._doneChan:
                     tracker._waiting -= 1
+                    handleExpectedFailure(c)
                     switch c.status {
+                        case succeededSt:
+                            if c.kind == testKd {
+                                tracker.result.Succeeded++
+                            }
                         case failedSt:
+                            tracker.result.Failed++
                             tracker._reportProblem("FAIL", c)
                         case panickedSt:
+                            if c.kind == fixtureKd {
+                                tracker.result.FixturePanicked++
+                            } else {
+                                tracker.result.Panicked++
+                            }
                             tracker._reportProblem("PANIC", c)
                         case fixturePanickedSt:
+                            // That's a testKd call reporting that its fixture
+                            // has panicked. The fixture call which caused the
+                            // panic itself was tracked above. We'll report to
+                            // aid debugging.
                             tracker._reportProblem("PANIC", c)
+                            // And will track it as missed, since the panic
+                            // was on the fixture, not on the test.
+                            tracker.result.Missed++
+                        case missedSt:
+                            tracker.result.Missed++
                     }
             }
         } else {
@@ -222,6 +259,19 @@ func (tracker *resultTracker) _loopRoutine() {
                 case c = <-tracker._doneChan:
                     panic("Tracker got an unexpected done call.")
             }
+        }
+    }
+}
+
+func handleExpectedFailure(c *call) {
+    if c.expectedFailure != nil {
+        switch c.status {
+            case failedSt:
+                c.status = succeededSt
+            case succeededSt:
+                c.status = failedSt
+                c.logString("Error: Test succeeded, but was expected to fail")
+                c.logString("Reason: " + *c.expectedFailure)
         }
     }
 }
@@ -296,31 +346,35 @@ func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
 }
 
 // Run all methods in the given suite.
-func (runner *suiteRunner) run() {
+func (runner *suiteRunner) run() Result {
     runner.tracker.start()
     if runner.checkFixtureArgs() {
         if runner.runFixture(runner.setUpSuite) {
             for i := 0; i != len(runner.tests); i++ {
                 c := runner.runTest(runner.tests[i])
                 if c.status == fixturePanickedSt {
-                    // XXX Should count the tests not run as skipped.
+                    runner.missTests(runner.tests[i+1:])
                     break
                 }
             }
+        } else {
+            runner.missTests(runner.tests)
         }
         runner.runFixture(runner.tearDownSuite)
     } else {
-        // XXX Should mark tests as skipped here.
+        runner.missTests(runner.tests)
     }
     runner.tracker.waitAndStop()
+
+    return runner.tracker.result
 }
 
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *reflect.FuncValue,
+func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind callKind,
                                     dispatcher func(c *call)) *call {
-    c := newCall(method)
+    c := newCall(method, kind)
     runner.tracker.waitForCall(c)
     go (func() {
         defer runner.callDone(c)
@@ -330,9 +384,9 @@ func (runner *suiteRunner) forkCall(method *reflect.FuncValue,
 }
 
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runCall(method *reflect.FuncValue,
+func (runner *suiteRunner) runCall(method *reflect.FuncValue, kind callKind,
                                    dispatcher func(c *call)) *call {
-    c := runner.forkCall(method, dispatcher)
+    c := runner.forkCall(method, kind, dispatcher)
     <-c.done
     return c
 }
@@ -361,7 +415,7 @@ func (runner *suiteRunner) callDone(c *call) {
 // run in a desired order.
 func (runner *suiteRunner) runFixture(method *reflect.FuncValue) bool {
     if method != nil {
-        c := runner.runCall(method, func(c *call) {
+        c := runner.runCall(method, fixtureKd, func(c *call) {
             c.method.Call([]reflect.Value{reflect.NewValue(&F{c})})
         })
         return (c.status == succeededSt)
@@ -385,7 +439,7 @@ type fixturePanic struct {
 // Run the suite test method, together with the test-specific fixture,
 // asynchronously.
 func (runner *suiteRunner) forkTest(method *reflect.FuncValue) *call {
-    return runner.forkCall(method, func(c *call) {
+    return runner.forkCall(method, testKd, func(c *call) {
         defer runner.runFixtureWithPanic(runner.tearDownTest)
         runner.runFixtureWithPanic(runner.setUpTest)
         t := &T{c}
@@ -408,6 +462,16 @@ func (runner *suiteRunner) runTest(method *reflect.FuncValue) *call {
     return c
 }
 
+// Helper to mark tests as missed.  A bit heavy for what it does, but it
+// enables homogeneous handling of tracking, including nice verbose output.
+func (runner *suiteRunner) missTests(methods []*reflect.FuncValue) {
+    for _, method := range methods {
+        runner.runCall(method, testKd, func(c *call) {
+            c.status = missedSt
+        })
+    }
+}
+
 // Verify if the fixture arguments are *gocheck.F.  In case of errors,
 // log the error as a panic in the fixture method call, and return false.
 func (runner *suiteRunner) checkFixtureArgs() bool {
@@ -421,7 +485,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
             fvt := fv.Type().(*reflect.FuncType)
             if fvt.In(1) != argType || fvt.NumIn() != 2 {
                 succeeded = false
-                runner.runCall(fv, func(c *call) {
+                runner.runCall(fv, fixtureKd, func(c *call) {
                     c.logArgPanic(fv, "*gocheck.F")
                     c.status = panickedSt
                 })

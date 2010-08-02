@@ -1,7 +1,4 @@
-- t.ExpectFailure()
 - t.Skip() in tests and in SetUpTest and SetUpSuite
-- Log on improper arguments in the test function definition
-- Panic handling on fixture (stop on suite-level errors), and on tests
 - Filtering per suite and/or test
 - GoTest prefix support, for running parallel tests
 - Additional helper methods:
@@ -12,9 +9,9 @@
 - t.LockResource("database", "config-dir"), acquires exclusive access
   to these resources and prevents parallel tests from using them.
 - t.UsePlugin("name"), some kind of reusable plugin system
-- Benchmark support, with *T
-- Use this logging format (no tabs, PASS only on verbose mode):
+- Benchmark support
 - t.Run(suite) with result aggregation
+- Use this logging format (no tabs, PASS only on verbose mode):
 
 ---------------------------------------------------------------------
 FAIL: filename:line:TestMethod

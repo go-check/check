@@ -36,6 +36,10 @@ func (t *T) SucceedNow() {
     t.stopNow()
 }
 
+func (t *T) ExpectFailure(reason string) {
+    t.expectedFailure = &reason
+}
+
 
 // -----------------------------------------------------------------------
 // Basic logging.

@@ -7,6 +7,7 @@
 package gocheck_test
 
 import (
+    "testing"
     "gocheck"
     "strings"
     "fmt"
@@ -166,6 +167,39 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
                     failed: true,
                     log: log,
                })
+}
+
+// -----------------------------------------------------------------------
+// ExpectFailure() inverts the logic of failure.
+
+type ExpectFailureHelper struct{}
+
+func (s *ExpectFailureHelper) TestFail(t *gocheck.T) {
+    t.ExpectFailure("It booms!")
+    t.Error("Boom!")
+}
+
+func (s *ExpectFailureHelper) TestSucceed(t *gocheck.T) {
+    t.ExpectFailure("Bug #XYZ")
+}
+
+func (s *FoundationS) TestExpectFailure(t *gocheck.T) {
+    helper := ExpectFailureHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+
+    expected :=
+        "^\n-+\n" +
+        "FAIL: foundation_test\\.go:ExpectFailureHelper\\.TestSucceed\n\n" +
+        "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
+        "\\.\\.\\. Reason: Bug #XYZ\n$"
+
+    matched, err := testing.MatchString(expected, output.value)
+    if err != "" {
+        t.Error("Bad expression: ", expected)
+    } else if !matched {
+        t.Error("ExpectFailure() didn't log properly:\n", output.value)
+    }
 }
 
 

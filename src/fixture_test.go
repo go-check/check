@@ -57,13 +57,13 @@ func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 8)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper.Test1\n\n" +
                 "\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.Test1\n$"
 
     matched, err := testing.MatchString(expected, output.value)
@@ -85,16 +85,16 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 4)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper\\.SetUpTest\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper\\.SetUpTest\n\n" +
                 "\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.SetUpTest\n" +
                 "\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
@@ -118,16 +118,16 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 5)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper.TearDownTest\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper.TearDownTest\n\n" +
                 "\\.\\.\\. Panic: TearDownTest \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.TearDownTest\n" +
                 "\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
@@ -148,13 +148,13 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
     t.CheckEqual(helper.n, 2)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper.SetUpSuite\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper.SetUpSuite\n\n" +
                 "\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.SetUpSuite\n$"
 
     // XXX Changing the expression above to not match breaks Go. WTF?
@@ -182,13 +182,13 @@ func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
     t.CheckEqual(helper.n, 8)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:FixtureHelper.TearDownSuite\n\n" +
+                "PANIC: gocheck_test\\.go:FixtureHelper.TearDownSuite\n\n" +
                 "\\.\\.\\. Panic: TearDownSuite \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.trace\n" +
-                ".*fixture_test.go:[0-9]+\n" +
+                ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.TearDownSuite\n$"
 
     matched, err := testing.MatchString(expected, output.value)
@@ -339,48 +339,6 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
     }
-}
-
-
-// -----------------------------------------------------------------------
-// Helper test suite for the fixture tests.
-
-type FixtureHelper struct {
-    calls [64]string
-    n int
-    panicOn string
-}
-
-func (s *FixtureHelper) trace(name string) {
-    s.calls[s.n] = name
-    s.n += 1
-    if name == s.panicOn {
-        panic(name)
-    }
-}
-
-func (s *FixtureHelper) SetUpSuite(f *gocheck.F) {
-    s.trace("SetUpSuite")
-}
-
-func (s *FixtureHelper) TearDownSuite(f *gocheck.F) {
-    s.trace("TearDownSuite")
-}
-
-func (s *FixtureHelper) SetUpTest(f *gocheck.F) {
-    s.trace("SetUpTest")
-}
-
-func (s *FixtureHelper) TearDownTest(f *gocheck.F) {
-    s.trace("TearDownTest")
-}
-
-func (s *FixtureHelper) Test1(t *gocheck.T) {
-    s.trace("Test1")
-}
-
-func (s *FixtureHelper) Test2(t *gocheck.T) {
-    s.trace("Test2")
 }
 
 

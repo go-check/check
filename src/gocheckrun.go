@@ -2,6 +2,7 @@ package gocheck
 
 import (
     "testing"
+    "fmt"
     "os"
     "io"
 )
@@ -44,11 +45,51 @@ func RunAll() {
     }
 }
 
-func Run(suite interface{}) {
-    RunWithWriter(suite, os.Stdout)
+func Run(suite interface{}) Result {
+    return RunWithWriter(suite, os.Stdout)
 }
 
-func RunWithWriter(suite interface{}, writer io.Writer) {
+func RunWithWriter(suite interface{}, writer io.Writer) Result {
     runner := newSuiteRunner(suite, writer)
-    runner.run()
+    return runner.run()
+}
+
+
+// -----------------------------------------------------------------------
+// Result methods.
+
+func (r *Result) Add(other *Result) {
+    r.Succeeded += other.Succeeded
+    r.Skipped += other.Skipped
+    r.Failed += other.Failed
+    r.Panicked += other.Panicked
+    r.FixturePanicked += other.FixturePanicked
+    r.Missed += other.Missed
+}
+
+func (r *Result) String() string {
+    var value string
+    if r.Failed == 0 && r.Panicked == 0 && r.FixturePanicked == 0 &&
+       r.Missed == 0 {
+        value = "OK: "
+    } else {
+        value = "OOPS: "
+    }
+    value += fmt.Sprintf("%d passed", r.Succeeded)
+    if r.Skipped != 0 {
+        value += fmt.Sprintf(", %d skipped", r.Skipped)
+    }
+    if r.Failed != 0 {
+        value += fmt.Sprintf(", %d FAILED", r.Failed)
+    }
+    if r.Panicked != 0 {
+        value += fmt.Sprintf(", %d PANICKED", r.Panicked)
+    }
+    if r.FixturePanicked != 0 {
+        value += fmt.Sprintf(", %d FIXTURE PANICKED", r.FixturePanicked)
+    }
+    if r.Missed != 0 {
+        value += fmt.Sprintf(", %d MISSED", r.Missed)
+    }
+    return value
 }
