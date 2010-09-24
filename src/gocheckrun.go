@@ -40,16 +40,18 @@ func TestingT(testingT *testing.T) {
 }
 
 func RunAll() {
+    result := Result{}
     for _, suite := range allSuites {
-        Run(suite)
+        result.Add(Run(suite))
     }
+    println(result.String())
 }
 
-func Run(suite interface{}) Result {
+func Run(suite interface{}) *Result {
     return RunWithWriter(suite, os.Stdout)
 }
 
-func RunWithWriter(suite interface{}, writer io.Writer) Result {
+func RunWithWriter(suite interface{}, writer io.Writer) *Result {
     runner := newSuiteRunner(suite, writer)
     return runner.run()
 }

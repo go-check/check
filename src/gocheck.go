@@ -346,7 +346,7 @@ func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
 }
 
 // Run all methods in the given suite.
-func (runner *suiteRunner) run() Result {
+func (runner *suiteRunner) run() *Result {
     runner.tracker.start()
     if runner.checkFixtureArgs() {
         if runner.runFixture(runner.setUpSuite) {
@@ -366,7 +366,7 @@ func (runner *suiteRunner) run() Result {
     }
     runner.tracker.waitAndStop()
 
-    return runner.tracker.result
+    return &runner.tracker.result
 }
 
 

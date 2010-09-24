@@ -207,14 +207,14 @@ func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
     helper := WrongTestArgHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.calls[0], "SetUpSuite")
-    t.CheckEqual(helper.calls[1], "SetUpTest")
-    t.CheckEqual(helper.calls[2], "TearDownTest")
-    t.CheckEqual(helper.calls[3], "SetUpTest")
-    t.CheckEqual(helper.calls[4], "Test2")
-    t.CheckEqual(helper.calls[5], "TearDownTest")
-    t.CheckEqual(helper.calls[6], "TearDownSuite")
-    t.CheckEqual(helper.n, 7)
+    t.CheckEqual(helper.fh.calls[0], "SetUpSuite")
+    t.CheckEqual(helper.fh.calls[1], "SetUpTest")
+    t.CheckEqual(helper.fh.calls[2], "TearDownTest")
+    t.CheckEqual(helper.fh.calls[3], "SetUpTest")
+    t.CheckEqual(helper.fh.calls[4], "Test2")
+    t.CheckEqual(helper.fh.calls[5], "TearDownTest")
+    t.CheckEqual(helper.fh.calls[6], "TearDownSuite")
+    t.CheckEqual(helper.fh.n, 7)
 
     expected := "^\n-+\n" +
                 "PANIC: fixture_test\\.go:WrongTestArgHelper\\.Test1\n\n" +
@@ -233,7 +233,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
     helper := WrongSetUpTestArgHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.n, 0)
+    t.CheckEqual(helper.fh.n, 0)
 
     expected :=
         "^\n-+\n" +
@@ -253,7 +253,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
     helper := WrongSetUpSuiteArgHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.n, 0)
+    t.CheckEqual(helper.fh.n, 0)
 
     expected :=
         "^\n-+\n" +
@@ -277,14 +277,14 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
     helper := WrongTestArgCountHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.calls[0], "SetUpSuite")
-    t.CheckEqual(helper.calls[1], "SetUpTest")
-    t.CheckEqual(helper.calls[2], "TearDownTest")
-    t.CheckEqual(helper.calls[3], "SetUpTest")
-    t.CheckEqual(helper.calls[4], "Test2")
-    t.CheckEqual(helper.calls[5], "TearDownTest")
-    t.CheckEqual(helper.calls[6], "TearDownSuite")
-    t.CheckEqual(helper.n, 7)
+    t.CheckEqual(helper.fh.calls[0], "SetUpSuite")
+    t.CheckEqual(helper.fh.calls[1], "SetUpTest")
+    t.CheckEqual(helper.fh.calls[2], "TearDownTest")
+    t.CheckEqual(helper.fh.calls[3], "SetUpTest")
+    t.CheckEqual(helper.fh.calls[4], "Test2")
+    t.CheckEqual(helper.fh.calls[5], "TearDownTest")
+    t.CheckEqual(helper.fh.calls[6], "TearDownSuite")
+    t.CheckEqual(helper.fh.n, 7)
 
     expected := "^\n-+\n" +
                 "PANIC: fixture_test\\.go:WrongTestArgCountHelper\\.Test1\n\n" +
@@ -303,7 +303,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
     helper := WrongSetUpTestArgCountHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.n, 0)
+    t.CheckEqual(helper.fh.n, 0)
 
     expected :=
         "^\n-+\n" +
@@ -324,7 +324,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
     helper := WrongSetUpSuiteArgCountHelper{}
     output := String{}
     gocheck.RunWithWriter(&helper, &output)
-    t.CheckEqual(helper.n, 0)
+    t.CheckEqual(helper.fh.n, 0)
 
     expected :=
         "^\n-+\n" +
@@ -345,44 +345,215 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
 // -----------------------------------------------------------------------
 // Helper test suites with wrong function arguments.
 
+// Wasn't for issue 906 in Go, we could embed FixtureHelper here
+// rather than redefining all functions. :-(
 type WrongTestArgHelper struct {
-    FixtureHelper // XXX Using this will explode due to issue 906 in Go.
+    fh FixtureHelper
 }
 
 func (s *WrongTestArgHelper) Test1(t int) {
 }
 
+func (s *WrongTestArgHelper) SetUpSuite(f *gocheck.F) {
+    s.fh.SetUpSuite(f)
+}
+
+func (s *WrongTestArgHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongTestArgHelper) SetUpTest(f *gocheck.F) {
+    s.fh.SetUpTest(f)
+}
+
+func (s *WrongTestArgHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongTestArgHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+// ----
+
 type WrongSetUpTestArgHelper struct {
-    FixtureHelper
+    fh FixtureHelper
 }
 
 func (s *WrongSetUpTestArgHelper) SetUpTest(t int) {
 }
 
+func (s *WrongSetUpTestArgHelper) SetUpSuite(f *gocheck.F) {
+    s.fh.SetUpSuite(f)
+}
+
+func (s *WrongSetUpTestArgHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongSetUpTestArgHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongSetUpTestArgHelper) Test1(t *gocheck.T) {
+    s.fh.Test1(t)
+}
+
+func (s *WrongSetUpTestArgHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+// ----
+
 type WrongSetUpSuiteArgHelper struct {
-    FixtureHelper
+    fh FixtureHelper
 }
 
 func (s *WrongSetUpSuiteArgHelper) SetUpSuite(t int) {
 }
 
+func (s *WrongSetUpSuiteArgHelper) SetUpTest(f *gocheck.F) {
+    s.fh.SetUpTest(f)
+}
+
+func (s *WrongSetUpSuiteArgHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongSetUpSuiteArgHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongSetUpSuiteArgHelper) Test1(t *gocheck.T) {
+    s.fh.Test1(t)
+}
+
+func (s *WrongSetUpSuiteArgHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+// ----
+
 type WrongTestArgCountHelper struct {
-    FixtureHelper
+    fh FixtureHelper
 }
 
 func (s *WrongTestArgCountHelper) Test1(t *gocheck.T, i int) {
+    s.fh.Test1(t)
 }
 
+func (s *WrongTestArgCountHelper) SetUpSuite(f *gocheck.F) {
+    s.fh.SetUpSuite(f)
+}
+
+func (s *WrongTestArgCountHelper) SetUpTest(f *gocheck.F) {
+    s.fh.SetUpTest(f)
+}
+
+func (s *WrongTestArgCountHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongTestArgCountHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongTestArgCountHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+// ----
+
 type WrongSetUpTestArgCountHelper struct {
-    FixtureHelper
+    fh FixtureHelper
 }
 
 func (s *WrongSetUpTestArgCountHelper) SetUpTest(f *gocheck.F, i int) {
+    s.fh.SetUpTest(f)
 }
 
+func (s *WrongSetUpTestArgCountHelper) SetUpSuite(f *gocheck.F) {
+    s.fh.SetUpSuite(f)
+}
+
+func (s *WrongSetUpTestArgCountHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongSetUpTestArgCountHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongSetUpTestArgCountHelper) Test1(t *gocheck.T) {
+    s.fh.Test1(t)
+}
+
+func (s *WrongSetUpTestArgCountHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+// ----
+
 type WrongSetUpSuiteArgCountHelper struct {
-    FixtureHelper
+    fh FixtureHelper
 }
 
 func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(f *gocheck.F, i int) {
+    s.fh.SetUpSuite(f)
 }
+
+func (s *WrongSetUpSuiteArgCountHelper) SetUpTest(f *gocheck.F) {
+    s.fh.SetUpTest(f)
+}
+
+func (s *WrongSetUpSuiteArgCountHelper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *WrongSetUpSuiteArgCountHelper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *WrongSetUpSuiteArgCountHelper) Test1(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+func (s *WrongSetUpSuiteArgCountHelper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+
+
+/*
+type Helper struct {
+    fh FixtureHelper
+}
+
+func (s *Helper) SetUpSuite(f *gocheck.F) {
+    s.fh.SetUpSuite(f)
+}
+
+func (s *Helper) SetUpTest(f *gocheck.F) {
+    s.fh.SetUpTest(f)
+}
+
+func (s *Helper) TearDownSuite(f *gocheck.F) {
+    s.fh.TearDownSuite(f)
+}
+
+func (s *Helper) TearDownTest(f *gocheck.F) {
+    s.fh.TearDownTest(f)
+}
+
+func (s *Helper) Test1(t *gocheck.T) {
+    s.fh.Test1(t)
+}
+
+func (s *Helper) Test2(t *gocheck.T) {
+    s.fh.Test2(t)
+}
+*/
