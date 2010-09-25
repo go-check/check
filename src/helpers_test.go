@@ -139,6 +139,83 @@ func (s *HelpersS) TestAssertNotEqualWithMessage(t *gocheck.T) {
 }
 
 
+func (s *HelpersS) TestCheckEqualArraySucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "CheckEqual([]byte, []byte)", true, func() interface{} {
+        return t.CheckEqual([]byte{1,2}, []byte{1,2})
+    })
+}
+
+func (s *HelpersS) TestCheckEqualArrayFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckEqual\\(A, B\\): A != B\n" +
+           "\\.+ A: \\[\\]byte{0x1, 0x2}\n" +
+           "\\.+ B: \\[\\]byte{0x1, 0x3}\n\n"
+    testHelperFailure(t, "CheckEqual([]byte{2}, []byte{3})", false, false, log,
+                      func() interface{} {
+        return t.CheckEqual([]byte{1,2}, []byte{1,3})
+    })
+}
+
+func (s *HelpersS) TestCheckNotEqualArraySucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "CheckNotEqual([]byte, []byte)", true,
+                      func() interface{} {
+        return t.CheckNotEqual([]byte{1,2}, []byte{1,3})
+    })
+}
+
+func (s *HelpersS) TestCheckNotEqualArrayFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckNotEqual\\(A, B\\): A == B\n" +
+           "\\.+ A: \\[\\]byte{0x1, 0x2}\n" +
+           "\\.+ B: \\[\\]byte{0x1, 0x2}\n\n"
+    testHelperFailure(t, "CheckNotEqual([]byte{2}, []byte{3})", false, false,
+                      log, func() interface{} {
+        return t.CheckNotEqual([]byte{1,2}, []byte{1,2})
+    })
+}
+
+
+func (s *HelpersS) TestAssertEqualArraySucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "AssertEqual([]byte, []byte)", nil,
+                      func() interface{} {
+        t.AssertEqual([]byte{1,2}, []byte{1,2})
+        return nil
+    })
+}
+
+func (s *HelpersS) TestAssertEqualArrayFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertEqual\\(A, B\\): A != B\n" +
+           "\\.+ A: \\[\\]byte{0x1, 0x2}\n" +
+           "\\.+ B: \\[\\]byte{0x1, 0x3}\n\n"
+    testHelperFailure(t, "AssertEqual([]byte{2}, []byte{3})", nil, true, log,
+                      func() interface{} {
+        t.AssertEqual([]byte{1,2}, []byte{1,3})
+        return nil
+    })
+}
+
+func (s *HelpersS) TestAssertNotEqualArraySucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "AssertNotEqual([]byte, []byte)", nil,
+                      func() interface{} {
+        t.AssertNotEqual([]byte{1,2}, []byte{1,3})
+        return nil
+    })
+}
+
+func (s *HelpersS) TestAssertNotEqualArrayFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertNotEqual\\(A, B\\): A == B\n" +
+           "\\.+ A: \\[\\]byte{0x1, 0x2}\n" +
+           "\\.+ B: \\[\\]byte{0x1, 0x2}\n\n"
+    testHelperFailure(t, "AssertNotEqual([]byte{2}, []byte{3})", nil, true,
+                      log, func() interface{} {
+        t.AssertNotEqual([]byte{1,2}, []byte{1,2})
+        return nil
+    })
+}
+
+
 // -----------------------------------------------------------------------
 // A couple of helper functions to test helper functions. :-)
 

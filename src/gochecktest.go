@@ -3,6 +3,7 @@ package gocheck
 
 import (
     "fmt"
+    "reflect"
 )
 
 
@@ -80,29 +81,29 @@ func(t *T) Fatalf(format string, args ...interface{}) {
 // -----------------------------------------------------------------------
 // Testing helper functions.
 
-func (t *T) CheckEqual(expected interface{}, obtained interface{},
+func (t *T) CheckEqual(obtained interface{}, expected interface{},
                        issue ...interface{}) bool {
-    return t.internalCheckEqual(expected, obtained, true,
+    return t.internalCheckEqual(obtained, expected, true,
                                 "CheckEqual(A, B): A != B", issue)
 }
 
-func (t *T) CheckNotEqual(expected interface{}, obtained interface{},
+func (t *T) CheckNotEqual(obtained interface{}, expected interface{},
                           issue ...interface{}) bool {
-    return t.internalCheckEqual(expected, obtained, false,
+    return t.internalCheckEqual(obtained, expected, false,
                                 "CheckNotEqual(A, B): A == B", issue)
 }
 
-func (t *T) AssertEqual(expected interface{}, obtained interface{},
+func (t *T) AssertEqual(obtained interface{}, expected interface{},
                         issue ...interface{}) {
-    if !t.internalCheckEqual(expected, obtained, true,
+    if !t.internalCheckEqual(obtained, expected, true,
                              "AssertEqual(A, B): A != B", issue) {
         t.stopNow()
     }
 }
 
-func (t *T) AssertNotEqual(expected interface{}, obtained interface{},
+func (t *T) AssertNotEqual(obtained interface{}, expected interface{},
                            issue ...interface{}) {
-    if !t.internalCheckEqual(expected, obtained, false,
+    if !t.internalCheckEqual(obtained, expected, false,
                              "AssertNotEqual(A, B): A == B", issue) {
         t.stopNow()
     }
@@ -111,7 +112,7 @@ func (t *T) AssertNotEqual(expected interface{}, obtained interface{},
 
 func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
-    if (a == b) != equal {
+    if checkEqual(a, b) != equal {
         t.logCaller(2, summary)
         t.logValue("A:", a)
         t.logValue("B:", b)
@@ -123,4 +124,15 @@ func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
         return false
     }
     return true
+}
+
+// This will use a fast path to check for equality of normal types,
+// and then fallback to reflect.DeepEqual if things go wrong.
+func checkEqual(a interface{}, b interface{}) (result bool) {
+    defer func() {
+        if recover() != nil {
+            result = reflect.DeepEqual(a, b)
+        }
+    }()
+    return (a == b)
 }
