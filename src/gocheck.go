@@ -63,11 +63,11 @@ type F struct {
 // Low-level logging functions.
 
 func (c *call) log(args ...interface{}) {
-    c.logv += fmt.Sprint(args) + "\n"
+    c.logv += fmt.Sprint(args...) + "\n"
 }
 
 func (c *call) logf(format string, args ...interface{}) {
-    c.logv += fmt.Sprintf(format, args) + "\n"
+    c.logv += fmt.Sprintf(format, args...) + "\n"
 }
 
 func (c *call) logNewLine() {

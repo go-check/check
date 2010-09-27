@@ -50,30 +50,30 @@ func (t *T) GetLog() string {
 }
 
 func (t *T) Log(args ...interface{}) {
-    t.log(args)
+    t.log(args...)
 }
 
 func (t *T) Logf(format string, args ...interface{}) {
-    t.logf(format, args)
+    t.logf(format, args...)
 }
 
 func (t *T) Error(args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args)))
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
     t.Fail()
 }
 
 func (t *T) Errorf(format string, args ...interface{}) {
-    t.logCaller(1, fmt.Sprintf("Error: " + format, args))
+    t.logCaller(1, fmt.Sprintf("Error: " + format, args...))
     t.Fail()
 }
 
 func(t *T) Fatal(args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args)))
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
     t.FailNow()
 }
 
 func(t *T) Fatalf(format string, args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args)))
+    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
     t.FailNow()
 }
 
@@ -84,19 +84,19 @@ func(t *T) Fatalf(format string, args ...interface{}) {
 func (t *T) CheckEqual(obtained interface{}, expected interface{},
                        issue ...interface{}) bool {
     return t.internalCheckEqual(obtained, expected, true,
-                                "CheckEqual(A, B): A != B", issue)
+                                "CheckEqual(A, B): A != B", issue...)
 }
 
 func (t *T) CheckNotEqual(obtained interface{}, expected interface{},
                           issue ...interface{}) bool {
     return t.internalCheckEqual(obtained, expected, false,
-                                "CheckNotEqual(A, B): A == B", issue)
+                                "CheckNotEqual(A, B): A == B", issue...)
 }
 
 func (t *T) AssertEqual(obtained interface{}, expected interface{},
                         issue ...interface{}) {
     if !t.internalCheckEqual(obtained, expected, true,
-                             "AssertEqual(A, B): A != B", issue) {
+                             "AssertEqual(A, B): A != B", issue...) {
         t.stopNow()
     }
 }
@@ -104,7 +104,7 @@ func (t *T) AssertEqual(obtained interface{}, expected interface{},
 func (t *T) AssertNotEqual(obtained interface{}, expected interface{},
                            issue ...interface{}) {
     if !t.internalCheckEqual(obtained, expected, false,
-                             "AssertNotEqual(A, B): A == B", issue) {
+                             "AssertNotEqual(A, B): A == B", issue...) {
         t.stopNow()
     }
 }
@@ -117,7 +117,7 @@ func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
         t.logValue("A:", a)
         t.logValue("B:", b)
         if len(issue) != 0 {
-            t.logString(fmt.Sprint(issue))
+            t.logString(fmt.Sprint(issue...))
         }
         t.logNewLine()
         t.Fail()
