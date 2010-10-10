@@ -82,6 +82,7 @@ func (td *tempDir) newPath() string {
             path := fmt.Sprintf("%s/gocheck-%d", os.TempDir(), rand.Int())
             if err = os.Mkdir(path, 0700); err == nil {
                 td._path = path
+                break
             }
         }
         if td._path == "" {
