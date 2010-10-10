@@ -4,7 +4,10 @@ import (
     "reflect"
     "runtime"
     "strings"
+    "strconv"
     "path"
+    "sync"
+    "rand"
     "fmt"
     "io"
     "os"
@@ -40,10 +43,12 @@ type call struct {
     logv string
     done chan *call
     expectedFailure *string
+    tempDir *tempDir
 }
 
-func newCall(method *reflect.FuncValue, kind callKind) *call {
-    return &call{method:method, kind:kind, done:make(chan *call, 1)}
+func newCall(method *reflect.FuncValue, kind callKind, tempDir *tempDir) *call {
+    return &call{method:method, kind:kind, tempDir:tempDir,
+                 done:make(chan *call, 1)}
 }
 
 func (c *call) stopNow() {
@@ -56,6 +61,56 @@ func (c *call) stopNow() {
 
 type F struct {
     *call
+}
+
+
+// -----------------------------------------------------------------------
+// Handling of temporary files and directories.
+
+type tempDir struct {
+    sync.Mutex
+    _path string
+    _counter int
+}
+
+func (td *tempDir) newPath() string {
+    td.Lock()
+    defer td.Unlock()
+    if td._path == "" {
+        var err os.Error
+        for i := 0; i != 100; i++ {
+            path := fmt.Sprintf("%s/gocheck-%d", os.TempDir(), rand.Int())
+            if err = os.Mkdir(path, 0700); err == nil {
+                td._path = path
+            }
+        }
+        if td._path == "" {
+            panic("Couldn't create temporary directory: " + err.String())
+        }
+    }
+    result := path.Join(td._path, strconv.Itoa(td._counter))
+    td._counter += 1
+    return result
+}
+
+func (td *tempDir) removeAll() {
+    td.Lock()
+    defer td.Unlock()
+    if td._path != "" {
+        err := os.RemoveAll(td._path)
+        if err != nil {
+            println("WARNING: Error cleaning up temporaries: " + err.String())
+        }
+    }
+}
+
+func (c *call) MkDir() string {
+    path := c.tempDir.newPath()
+    if err := os.Mkdir(path, 0700); err != nil {
+        panic(fmt.Sprintf("Couldn't create temporary directory %s: %s",
+                          path, err.String()))
+    }
+    return path
 }
 
 
@@ -299,6 +354,7 @@ type suiteRunner struct {
     setUpTest, tearDownTest *reflect.FuncValue
     tests []*reflect.FuncValue
     tracker *resultTracker
+    tempDir *tempDir
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -309,6 +365,7 @@ func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
 
     runner := suiteRunner{suite:suite, tracker:newResultTracker(writer)}
     runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
+    runner.tempDir = new(tempDir)
     testsLen := 0
 
     // This map will be used to filter out duplicated methods.  This
@@ -365,7 +422,7 @@ func (runner *suiteRunner) run() *Result {
         runner.missTests(runner.tests)
     }
     runner.tracker.waitAndStop()
-
+    runner.tempDir.removeAll()
     return &runner.tracker.result
 }
 
@@ -374,7 +431,7 @@ func (runner *suiteRunner) run() *Result {
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind callKind,
                                     dispatcher func(c *call)) *call {
-    c := newCall(method, kind)
+    c := newCall(method, kind, runner.tempDir)
     runner.tracker.waitForCall(c)
     go (func() {
         defer runner.callDone(c)

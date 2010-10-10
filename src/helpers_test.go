@@ -5,6 +5,7 @@ package gocheck_test
 
 import (
     "gocheck"
+    "os"
 )
 
 
@@ -213,6 +214,56 @@ func (s *HelpersS) TestAssertNotEqualArrayFailing(t *gocheck.T) {
         t.AssertNotEqual([]byte{1,2}, []byte{1,2})
         return nil
     })
+}
+
+
+// -----------------------------------------------------------------------
+// MakeDir() tests.
+
+type MkDirHelper struct {
+    path1 string
+    path2 string
+    isDir1 bool
+    isDir2 bool
+    isDir3 bool
+    isDir4 bool
+}
+
+func (s *MkDirHelper) SetUpSuite(f *gocheck.F) {
+    s.path1 = f.MkDir()
+    s.isDir1 = isDir(s.path1)
+}
+
+func (s *MkDirHelper) Test(t *gocheck.T) {
+    s.path2 = t.MkDir()
+    s.isDir2 = isDir(s.path2)
+}
+
+func (s *MkDirHelper) TearDownSuite(f *gocheck.F) {
+    s.isDir3 = isDir(s.path1)
+    s.isDir4 = isDir(s.path2)
+}
+
+
+func (s *HelpersS) TestMkDir(t *gocheck.T) {
+    helper := MkDirHelper{}
+    output := String{}
+    gocheck.RunWithWriter(&helper, &output)
+    t.AssertEqual(output.value, "")
+    t.CheckEqual(helper.isDir1, true)
+    t.CheckEqual(helper.isDir2, true)
+    t.CheckEqual(helper.isDir3, true)
+    t.CheckEqual(helper.isDir4, true)
+    t.CheckNotEqual(helper.path1, helper.path2)
+    t.CheckEqual(isDir(helper.path1), false)
+    t.CheckEqual(isDir(helper.path2), false)
+}
+
+func isDir(path string) bool {
+    if stat, err := os.Stat(path); err == nil {
+        return stat.IsDirectory()
+    }
+    return false
 }
 
 

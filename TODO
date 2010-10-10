@@ -4,14 +4,22 @@
 - Additional helper methods:
   - CheckPanic(func)
   - CheckArgs(...)(...) maybe?
-  - MakeFileName(), MakeFile(), MakeDir(), MakeDirFile()
 - Display source code of calling site
 - t.LockResource("database", "config-dir"), acquires exclusive access
   to these resources and prevents parallel tests from using them.
 - t.UsePlugin("name"), some kind of reusable plugin system
 - Benchmark support
 - t.Run(suite) with result aggregation
-- Use this logging format (no tabs, PASS only on verbose mode):
+- Implement PASS logging in verbose mode:
+
+---------------------------------------------------------------------
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
+PASS: filename:line:TestMethod
+---------------------------------------------------------------------
+
+- Improved logging of multiline strings:
 
 ---------------------------------------------------------------------
 FAIL: filename:line:TestMethod
@@ -24,9 +32,3 @@ FAIL: filename:line:TestMethod
 
 ... B
 
----------------------------------------------------------------------
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
----------------------------------------------------------------------
