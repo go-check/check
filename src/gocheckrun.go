@@ -36,15 +36,19 @@ func Suites(suites ...interface{}) []interface{} {
 // Test running logic.
 
 func TestingT(testingT *testing.T) {
-    RunAll()
+    result := RunAll()
+    if !result.Passed() {
+        testingT.Fail()
+    }
 }
 
-func RunAll() {
+func RunAll() *Result {
     result := Result{}
     for _, suite := range allSuites {
         result.Add(Run(suite))
     }
     println(result.String())
+    return &result
 }
 
 func Run(suite interface{}) *Result {
@@ -67,6 +71,11 @@ func (r *Result) Add(other *Result) {
     r.Panicked += other.Panicked
     r.FixturePanicked += other.FixturePanicked
     r.Missed += other.Missed
+}
+
+func (r *Result) Passed() bool {
+    return (r.Failed == 0 && r.Panicked == 0 &&
+            r.FixturePanicked == 0 && r.Missed == 0)
 }
 
 func (r *Result) String() string {

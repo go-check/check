@@ -107,6 +107,19 @@ func (s *ResultS) TestAdd(t *gocheck.T) {
 
 
 // -----------------------------------------------------------------------
+// Check the Passed() method.
+
+func (s *ResultS) TestPassed(t *gocheck.T) {
+    t.AssertEqual((&gocheck.Result{}).Passed(), true)
+    t.AssertEqual((&gocheck.Result{Succeeded:1}).Passed(), true)
+    t.AssertEqual((&gocheck.Result{Skipped:1}).Passed(), true)
+    t.AssertEqual((&gocheck.Result{Failed:1}).Passed(), false)
+    t.AssertEqual((&gocheck.Result{Panicked:1}).Passed(), false)
+    t.AssertEqual((&gocheck.Result{FixturePanicked:1}).Passed(), false)
+    t.AssertEqual((&gocheck.Result{Missed:1}).Passed(), true)
+}
+
+// -----------------------------------------------------------------------
 // Check that result printing is working correctly.
 
 func (s *ResultS) TestPrintSuccess(t *gocheck.T) {

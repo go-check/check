@@ -28,7 +28,7 @@ import (
 const suitesRunExpected = 6
 var suitesRun int = 0
 
-func TestAll(t *testing.T) {
+func Test(t *testing.T) {
     gocheck.TestingT(t)
     if suitesRun != suitesRunExpected {
         critical(fmt.Sprintf("Expected %d suites to run rather than %d",
