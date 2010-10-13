@@ -2,8 +2,9 @@ package gocheck
 
 
 import (
-    "fmt"
+    "testing"
     "reflect"
+    "fmt"
 )
 
 
@@ -79,32 +80,32 @@ func(t *T) Fatalf(format string, args ...interface{}) {
 
 
 // -----------------------------------------------------------------------
-// Testing helper functions.
+// Equality testing.
 
 func (t *T) CheckEqual(obtained interface{}, expected interface{},
                        issue ...interface{}) bool {
-    return t.internalCheckEqual(obtained, expected, true,
-                                "CheckEqual(A, B): A != B", issue...)
+    summary := "CheckEqual(obtained, expected):"
+    return t.internalCheckEqual(obtained, expected, true, summary, issue...)
 }
 
 func (t *T) CheckNotEqual(obtained interface{}, expected interface{},
                           issue ...interface{}) bool {
-    return t.internalCheckEqual(obtained, expected, false,
-                                "CheckNotEqual(A, B): A == B", issue...)
+    summary := "CheckNotEqual(obtained, unexpected):"
+    return t.internalCheckEqual(obtained, expected, false, summary, issue...)
 }
 
 func (t *T) AssertEqual(obtained interface{}, expected interface{},
                         issue ...interface{}) {
-    if !t.internalCheckEqual(obtained, expected, true,
-                             "AssertEqual(A, B): A != B", issue...) {
+    summary := "AssertEqual(obtained, expected):"
+    if !t.internalCheckEqual(obtained, expected, true, summary, issue...) {
         t.stopNow()
     }
 }
 
 func (t *T) AssertNotEqual(obtained interface{}, expected interface{},
                            issue ...interface{}) {
-    if !t.internalCheckEqual(obtained, expected, false,
-                             "AssertNotEqual(A, B): A == B", issue...) {
+    summary := "AssertNotEqual(obtained, unexpected):"
+    if !t.internalCheckEqual(obtained, expected, false, summary, issue...) {
         t.stopNow()
     }
 }
@@ -112,10 +113,16 @@ func (t *T) AssertNotEqual(obtained interface{}, expected interface{},
 
 func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
-    if checkEqual(a, b) != equal {
+    typeA := reflect.Typeof(a)
+    typeB := reflect.Typeof(b)
+    if (typeA == typeB && checkEqual(a, b)) != equal {
         t.logCaller(2, summary)
-        t.logValue("A:", a)
-        t.logValue("B:", b)
+        if equal {
+            t.logValue("Obtained", a)
+            t.logValue("Expected", b)
+        } else {
+            t.logValue("Both", a)
+        }
         if len(issue) != 0 {
             t.logString(fmt.Sprint(issue...))
         }
@@ -136,3 +143,80 @@ func checkEqual(a interface{}, b interface{}) (result bool) {
     }()
     return (a == b)
 }
+
+
+// -----------------------------------------------------------------------
+// Error testing.
+
+func (t *T) AssertErr(obtained interface{}, expected interface{},
+                      issue ...interface{}) {
+    var summary string
+    if expected == nil {
+        summary = "AssertErr(error, nil):"
+    } else {
+        summary = "AssertErr(error, expected):"
+    }
+    if !t.internalCheckErr(obtained, expected, true, summary, issue...) {
+        t.stopNow()
+    }
+}
+
+func (t *T) CheckErr(obtained interface{}, expected interface{},
+                     issue ...interface{}) bool {
+    var summary string
+    if expected == nil {
+        summary = "CheckErr(error, nil):"
+    } else {
+        summary = "CheckErr(error, expected):"
+    }
+    return t.internalCheckErr(obtained, expected, true, summary, issue...)
+}
+
+func (t *T) internalCheckErr(a interface{}, b interface{},
+                             equal bool, summary string,
+                             issue ...interface{}) bool {
+    typeA := reflect.Typeof(a)
+    typeB := reflect.Typeof(b)
+    _, aHasStr := a.(hasString)
+    _, aIsStr := a.(string)
+    _, bIsStr := b.(string)
+    if bIsStr && (aIsStr || aHasStr) {
+        var strA string
+        if aIsStr {
+            strA = a.(string)
+        } else {
+            strA = a.(hasString).String()
+        }
+        matches, err := testing.MatchString("^" + b.(string) + "$", strA)
+        if err != "" || !matches {
+            t.logCaller(2, summary)
+            var msg string
+            if !matches {
+                t.logValue("Error", a)
+                msg = fmt.Sprintf("Expected to match expression: %#v", b)
+            } else {
+                msg = fmt.Sprintf("Can't compile match expression: %#v", b)
+            }
+            t.logString(msg)
+            t.logNewLine()
+            t.Fail()
+            return false
+        }
+    } else if (typeA == typeB && checkEqual(a, b)) != equal {
+        t.logCaller(2, summary)
+        if b == nil {
+            t.logValue("Error", a)
+        } else {
+            t.logValue("Error", a)
+            t.logValue("Expected", b)
+        }
+        if len(issue) != 0 {
+            t.logString(fmt.Sprint(issue...))
+        }
+        t.logNewLine()
+        t.Fail()
+        return false
+    }
+    return true
+}
+

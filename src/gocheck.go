@@ -130,11 +130,27 @@ func (c *call) logNewLine() {
     c.logv += "\n"
 }
 
+type hasString interface {
+    String() string
+}
+
 func (c *call) logValue(label string, value interface{}) {
     if label == "" {
-        c.logf("... %#v", value)
+        if _, ok := value.(hasString); ok {
+            c.logf("... %#v (%v)", value, value)
+        } else {
+            c.logf("... %#v", value)
+        }
+    } else if (value == nil) {
+        c.logf("... %s (nil): nil", label)
     } else {
-        c.logf("... %s %#v", label, value)
+        if _, ok := value.(hasString); ok {
+            c.logf("... %s (%s): %#v (%v)",
+                   label, reflect.Typeof(value).String(), value, value)
+        } else {
+            c.logf("... %s (%s): %#v",
+                   label, reflect.Typeof(value).String(), value)
+        }
     }
 }
 

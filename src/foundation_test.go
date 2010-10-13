@@ -138,9 +138,9 @@ func (s *FoundationS) TestFatalf(t *gocheck.T) {
 func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
     log := fmt.Sprintf(
         "foundation_test.go:%d:\n" +
-        "\\.\\.\\. CheckEqual\\(A, B\\): A != B\n" +
-        "\\.\\.\\. A: 10\n" +
-        "\\.\\.\\. B: 20\n\n",
+        "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
+        "\\.\\.\\. Obtained \\(int\\): 10\n" +
+        "\\.\\.\\. Expected \\(int\\): 20\n\n",
         getMyLine()+1)
     result := t.CheckEqual(10, 20)
     checkState(t, result,
@@ -156,9 +156,9 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
     result, line := checkEqualWrapper(t, 10, 20)
     log := fmt.Sprintf(
         "gocheck_test.go:%d:\n" +
-        "\\.\\.\\. CheckEqual\\(A, B\\): A != B\n" +
-        "\\.\\.\\. A: 10\n" +
-        "\\.\\.\\. B: 20\n\n",
+        "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
+        "\\.\\.\\. Obtained \\(int\\): 10\n" +
+        "\\.\\.\\. Expected \\(int\\): 20\n\n",
         line)
     checkState(t, result,
                &expectedState{
