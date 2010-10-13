@@ -116,7 +116,7 @@ func (s *ResultS) TestPassed(t *gocheck.T) {
     t.AssertEqual((&gocheck.Result{Failed:1}).Passed(), false)
     t.AssertEqual((&gocheck.Result{Panicked:1}).Passed(), false)
     t.AssertEqual((&gocheck.Result{FixturePanicked:1}).Passed(), false)
-    t.AssertEqual((&gocheck.Result{Missed:1}).Passed(), true)
+    t.AssertEqual((&gocheck.Result{Missed:1}).Passed(), false)
 }
 
 // -----------------------------------------------------------------------
