@@ -177,18 +177,20 @@ func (t *T) internalCheckErr(a interface{}, b interface{},
                              issue ...interface{}) bool {
     typeA := reflect.Typeof(a)
     typeB := reflect.Typeof(b)
-    _, aHasStr := a.(hasString)
-    _, aIsStr := a.(string)
-    _, bIsStr := b.(string)
-    if bIsStr && (aIsStr || aHasStr) {
-        var strA string
-        if aIsStr {
-            strA = a.(string)
-        } else {
-            strA = a.(hasString).String()
+    // If b is string, handle it as a match expression.
+    if bStr, ok := b.(string); ok {
+        var err string
+        var matches bool
+        aStr, aIsStr := a.(string)
+        if !aIsStr {
+            if aWithStr, aHasStr := a.(hasString); aHasStr {
+                aStr, aIsStr = aWithStr.String(), true
+            }
         }
-        matches, err := testing.MatchString("^" + b.(string) + "$", strA)
-        if err != "" || !matches {
+        if aIsStr {
+            matches, err = testing.MatchString("^" + bStr + "$", aStr)
+        }
+        if !matches || err != "" {
             t.logCaller(2, summary)
             var msg string
             if !matches {
