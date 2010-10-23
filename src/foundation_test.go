@@ -84,7 +84,7 @@ func (s *FoundationS) TestSucceedNow(t *gocheck.T) {
 func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
     output := String{}
     failHelper := FailHelper{}
-    gocheck.RunWithWriter(&failHelper, &output)
+    gocheck.Run(&failHelper, &gocheck.RunConf{Output: &output})
     header := fmt.Sprintf(
         "\n-----------------------------------" +
         "-----------------------------------\n" +
@@ -186,7 +186,7 @@ func (s *ExpectFailureHelper) TestSucceed(t *gocheck.T) {
 func (s *FoundationS) TestExpectFailure(t *gocheck.T) {
     helper := ExpectFailureHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
 
     expected :=
         "^\n-+\n" +

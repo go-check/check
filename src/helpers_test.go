@@ -351,7 +351,7 @@ func (s *MkDirHelper) TearDownSuite(f *gocheck.F) {
 func (s *HelpersS) TestMkDir(t *gocheck.T) {
     helper := MkDirHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.AssertEqual(output.value, "")
     t.CheckEqual(helper.isDir1, true)
     t.CheckEqual(helper.isDir2, true)

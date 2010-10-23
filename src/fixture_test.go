@@ -26,7 +26,7 @@ func (s *FixtureS) TestCountSuite(t *gocheck.T) {
 
 func (s *FixtureS) TestOrder(t *gocheck.T) {
     helper := FixtureHelper{}
-    gocheck.Run(&helper)
+    gocheck.Run(&helper, nil)
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "Test1")
@@ -45,7 +45,7 @@ func (s *FixtureS) TestOrder(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "Test1"}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "Test1")
@@ -77,7 +77,7 @@ func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "SetUpTest"}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "TearDownTest")
@@ -111,7 +111,7 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "TearDownTest"}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "Test1")
@@ -146,7 +146,7 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "SetUpSuite"}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "TearDownSuite")
     t.CheckEqual(helper.n, 2)
@@ -175,7 +175,7 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
     helper := FixtureHelper{panicOn: "TearDownSuite"}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "Test1")
@@ -212,7 +212,7 @@ func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
     helper := WrongTestArgHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "TearDownTest")
@@ -239,7 +239,7 @@ func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
     helper := WrongSetUpTestArgHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.n, 0)
 
     expected :=
@@ -260,7 +260,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
     helper := WrongSetUpSuiteArgHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.n, 0)
 
     expected :=
@@ -285,7 +285,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
     helper := WrongTestArgCountHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.calls[0], "SetUpSuite")
     t.CheckEqual(helper.calls[1], "SetUpTest")
     t.CheckEqual(helper.calls[2], "TearDownTest")
@@ -312,7 +312,7 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
     helper := WrongSetUpTestArgCountHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.n, 0)
 
     expected :=
@@ -333,7 +333,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
 func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
     helper := WrongSetUpSuiteArgCountHelper{}
     output := String{}
-    gocheck.RunWithWriter(&helper, &output)
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
     t.CheckEqual(helper.n, 0)
 
     expected :=
@@ -397,4 +397,27 @@ type WrongSetUpSuiteArgCountHelper struct {
 }
 
 func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(f *gocheck.F, i int) {
+}
+
+
+// -----------------------------------------------------------------------
+// Ensure fixture doesn't without tests.
+
+type NoTestsHelper struct{
+    hasRun bool
+}
+
+func (s *NoTestsHelper) SetUpSuite(f *gocheck.F) {
+    s.hasRun = true
+}
+
+func (s *NoTestsHelper) TearDownSuite(f *gocheck.F) {
+    s.hasRun = true
+}
+
+func (s *FixtureS) TestFixtureDoesntRunWithoutTests(t *gocheck.T) {
+    helper := NoTestsHelper{}
+    output := String{}
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    t.CheckEqual(helper.hasRun, false)
 }

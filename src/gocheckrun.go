@@ -2,9 +2,8 @@ package gocheck
 
 import (
     "testing"
+    "flag"
     "fmt"
-    "os"
-    "io"
 )
 
 // -----------------------------------------------------------------------
@@ -33,30 +32,30 @@ func Suites(suites ...interface{}) []interface{} {
 
 
 // -----------------------------------------------------------------------
-// Test running logic.
+// Public running interface.
+
+var filterFlag = flag.String("f", "",
+                             "Regular expression to select " +
+                             "what to run (gocheck)")
 
 func TestingT(testingT *testing.T) {
-    result := RunAll()
+    result := RunAll(&RunConf{Filter: *filterFlag})
+    println(result.String())
     if !result.Passed() {
         testingT.Fail()
     }
 }
 
-func RunAll() *Result {
+func RunAll(runConf *RunConf) *Result {
     result := Result{}
     for _, suite := range allSuites {
-        result.Add(Run(suite))
+        result.Add(Run(suite, runConf))
     }
-    println(result.String())
     return &result
 }
 
-func Run(suite interface{}) *Result {
-    return RunWithWriter(suite, os.Stdout)
-}
-
-func RunWithWriter(suite interface{}, writer io.Writer) *Result {
-    runner := newSuiteRunner(suite, writer)
+func Run(suite interface{}, runConf *RunConf) *Result {
+    runner := newSuiteRunner(suite, runConf)
     return runner.run()
 }
 
@@ -75,10 +74,15 @@ func (r *Result) Add(other *Result) {
 
 func (r *Result) Passed() bool {
     return (r.Failed == 0 && r.Panicked == 0 &&
-            r.FixturePanicked == 0 && r.Missed == 0)
+            r.FixturePanicked == 0 && r.Missed == 0 &&
+            r.RunError == nil)
 }
 
 func (r *Result) String() string {
+    if r.RunError != nil {
+        return "ERROR: " + r.RunError.String()
+    }
+
     var value string
     if r.Failed == 0 && r.Panicked == 0 && r.FixturePanicked == 0 &&
        r.Missed == 0 {

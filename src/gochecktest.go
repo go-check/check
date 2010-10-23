@@ -195,4 +195,3 @@ func (t *T) internalCheckMatch(value interface{}, expression string,
     }
     return true
 }
-

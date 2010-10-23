@@ -5,6 +5,7 @@ import (
     "runtime"
     "strings"
     "strconv"
+    "testing"
     "path"
     "sync"
     "rand"
@@ -274,6 +275,7 @@ type Result struct {
     Panicked int
     FixturePanicked int
     Missed int // Not even tried to run, related to a panic in fixture.
+    RunError os.Error // Houston, we've got a problem.
 }
 
 type resultTracker struct {
@@ -400,21 +402,58 @@ type suiteRunner struct {
     tempDir *tempDir
 }
 
+type RunConf struct {
+    Output io.Writer
+    Filter string
+}
+
 // Create a new suiteRunner able to run all methods in the given suite.
-func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
+func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
+    var output io.Writer
+    var filter string
+
+    output = os.Stdout
+
+    if runConf != nil {
+        if runConf.Output != nil {
+            output = runConf.Output
+        }
+        if runConf.Filter != "" {
+            filter = "^" + runConf.Filter + "$"
+        }
+    }
+
     suiteType := reflect.Typeof(suite)
     suiteNumMethods := suiteType.NumMethod()
     suiteValue := reflect.NewValue(suite)
 
-    runner := suiteRunner{suite:suite, tracker:newResultTracker(writer)}
+    runner := suiteRunner{suite:suite,
+                          tracker:newResultTracker(output)}
     runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
     runner.tempDir = new(tempDir)
     testsLen := 0
+
+    var filterRegexp *testing.Regexp
+    if filter != "" {
+        if regexp, err := testing.CompileRegexp(filter); err != "" {
+            err = "Bad filter expression: " + err
+            runner.tracker.result.RunError = os.NewError(err)
+            return &runner
+        } else {
+            filterRegexp = regexp
+        }
+    }
 
     // This map will be used to filter out duplicated methods.  This
     // looks like a bug in Go, described on issue 906:
     // http://code.google.com/p/go/issues/detail?id=906
     seen := make(map[uintptr]bool, suiteNumMethods)
+
+    // XXX Shouldn't Name() work here? Why does it return an empty string?
+    suiteName := suiteType.String()
+    if index := strings.LastIndex(suiteName, "."); index != -1 {
+        suiteName = suiteName[index+1:]
+    }
 
     for i := 0; i != suiteNumMethods; i++ {
         funcValue := suiteValue.Method(i)
@@ -434,7 +473,7 @@ func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
             case "TearDownTest":
                 runner.tearDownTest = funcValue
             default:
-                if strings.HasPrefix(method.Name, "Test") {
+                if isWantedTest(suiteName, method.Name, filterRegexp) {
                     runner.tests[testsLen] = funcValue
                     testsLen += 1
                 }
@@ -445,27 +484,43 @@ func newSuiteRunner(suite interface{}, writer io.Writer) *suiteRunner {
     return &runner
 }
 
+// Return true if the given suite name and method name should be
+// considered as a test to be run.
+func isWantedTest(suiteName, testName string, filterRegexp *testing.Regexp) bool {
+    if !strings.HasPrefix(testName, "Test") {
+        return false
+    } else if filterRegexp == nil {
+        return true
+    }
+    return (filterRegexp.MatchString(testName) ||
+            filterRegexp.MatchString(suiteName) ||
+            filterRegexp.MatchString(suiteName + "." + testName))
+}
+
+
 // Run all methods in the given suite.
 func (runner *suiteRunner) run() *Result {
-    runner.tracker.start()
-    if runner.checkFixtureArgs() {
-        if runner.runFixture(runner.setUpSuite) {
-            for i := 0; i != len(runner.tests); i++ {
-                c := runner.runTest(runner.tests[i])
-                if c.status == fixturePanickedSt {
-                    runner.missTests(runner.tests[i+1:])
-                    break
+    if runner.tracker.result.RunError == nil && len(runner.tests) > 0 {
+        runner.tracker.start()
+        if runner.checkFixtureArgs() {
+            if runner.runFixture(runner.setUpSuite) {
+                for i := 0; i != len(runner.tests); i++ {
+                    c := runner.runTest(runner.tests[i])
+                    if c.status == fixturePanickedSt {
+                        runner.missTests(runner.tests[i+1:])
+                        break
+                    }
                 }
+            } else {
+                runner.missTests(runner.tests)
             }
+            runner.runFixture(runner.tearDownSuite)
         } else {
             runner.missTests(runner.tests)
         }
-        runner.runFixture(runner.tearDownSuite)
-    } else {
-        runner.missTests(runner.tests)
+        runner.tracker.waitAndStop()
+        runner.tempDir.removeAll()
     }
-    runner.tracker.waitAndStop()
-    runner.tempDir.removeAll()
     return &runner.tracker.result
 }
 

@@ -65,7 +65,7 @@ func (s *BootstrapS) TestLogfAndGetLog(t *gocheck.T) {
 
 func (s *BootstrapS) TestRunShowsErrors(t *gocheck.T) {
     output := String{}
-    gocheck.RunWithWriter(&FailHelper{}, &output)
+    gocheck.Run(&FailHelper{}, &gocheck.RunConf{Output: &output})
     if strings.Index(output.value, "Expected failure!") == -1 {
         critical(fmt.Sprintf("RunWithWriter() output did not contain the " +
                              "expected failure! Got: %#v", output.value))
@@ -74,7 +74,7 @@ func (s *BootstrapS) TestRunShowsErrors(t *gocheck.T) {
 
 func (s *BootstrapS) TestRunDoesntShowSuccesses(t *gocheck.T) {
     output := String{}
-    gocheck.RunWithWriter(&SuccessHelper{}, &output)
+    gocheck.Run(&SuccessHelper{}, &gocheck.RunConf{Output: &output})
     if strings.Index(output.value, "Expected success!") != -1 {
         critical(fmt.Sprintf("RunWithWriter() output contained a successful " +
                              "test! Got: %#v", output.value))

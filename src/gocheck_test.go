@@ -17,6 +17,7 @@ import (
     "gocheck"
     "testing"
     "runtime"
+    "flag"
     "fmt"
     "os"
 )
@@ -30,7 +31,8 @@ var suitesRun int = 0
 
 func Test(t *testing.T) {
     gocheck.TestingT(t)
-    if suitesRun != suitesRunExpected {
+    if suitesRun != suitesRunExpected &&
+       flag.Lookup("f").Value.String() == "" {
         critical(fmt.Sprintf("Expected %d suites to run rather than %d",
                              suitesRunExpected, suitesRun))
     }

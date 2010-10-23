@@ -1,15 +1,9 @@
 - t.Skip() in tests and in SetUpTest and SetUpSuite
-- Filtering per suite and/or test
 - GoTest prefix support, for running parallel tests
-- Additional helper methods:
-  - CheckPanic(func)
-  - CheckArgs(...)(...) maybe?
 - Display source code of calling site
 - t.LockResource("database", "config-dir"), acquires exclusive access
   to these resources and prevents parallel tests from using them.
-- t.UsePlugin("name"), some kind of reusable plugin system
 - Benchmark support
-- t.Run(suite) with result aggregation
 - Implement PASS logging in verbose mode:
 
 ---------------------------------------------------------------------
