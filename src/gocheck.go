@@ -159,8 +159,35 @@ func (c *call) logString(issue string) {
 }
 
 func (c *call) logCaller(skip int, issue string) {
-    if _, callerFile, callerLine, ok := runtime.Caller(skip+1); ok {
-        c.logf("%s:%d:\n... %s", nicePath(callerFile), callerLine, issue)
+    // This is a bit heavier than it ought to be.
+    skip += 1 // Our own frame.
+    if pc, callerFile, callerLine, ok := runtime.Caller(skip); ok {
+        var testFile string
+        var testLine int
+        testFunc := runtime.FuncForPC(c.method.Get())
+        if runtime.FuncForPC(pc) != testFunc {
+            for {
+                skip += 1
+                if pc, file, line, ok := runtime.Caller(skip); ok {
+                    // Note that the test line may be different on
+                    // distinct calls for the same test.  Showing
+                    // the "internal" line is helpful when debugging.
+                    if runtime.FuncForPC(pc) == testFunc {
+                        testFile, testLine = file, line
+                        break
+                    }
+                } else {
+                    break
+                }
+            }
+        }
+        if testFile != "" && (testFile != callerFile ||
+                              testLine != callerLine) {
+            c.logf("%s:%d > %s:%d:\n... %s", nicePath(testFile), testLine,
+                  nicePath(callerFile), callerLine, issue)
+        } else {
+            c.logf("%s:%d:\n... %s", nicePath(callerFile), callerLine, issue)
+        }
     }
 }
 
@@ -212,8 +239,8 @@ func nicePath(path string) string {
 func niceFuncPath(pc uintptr) string {
     function := runtime.FuncForPC(pc)
     if function != nil {
-        filename, _ := function.FileLine(pc)
-        return nicePath(filename)
+        filename, line := function.FileLine(pc)
+        return fmt.Sprintf("%s:%d", nicePath(filename), line)
     }
     return "<unknown path>"
 }
@@ -349,12 +376,11 @@ func handleExpectedFailure(c *call) {
 }
 
 func (tracker *resultTracker) _reportProblem(label string, c *call) {
-    // XXX How to get the first line where a function was defined?
     pc := c.method.Get()
     header := fmt.Sprintf(
         "\n-----------------------------------" +
         "-----------------------------------\n" +
-        "%s: %s:%s\n\n",
+        "%s: %s: %s\n\n",
         label, niceFuncPath(pc), niceFuncName(pc))
     io.WriteString(tracker.writer, header)
     io.WriteString(tracker.writer, c.logv)

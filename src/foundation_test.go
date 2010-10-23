@@ -88,9 +88,8 @@ func (s *FoundationS) TestFailureHeader(t *gocheck.T) {
     header := fmt.Sprintf(
         "\n-----------------------------------" +
         "-----------------------------------\n" +
-        "FAIL: gocheck_test.go:FailHelper.TestLogAndFail\n")
-        //"FAIL: gocheck_test.go:%d:TestLogAndFail\n", failHelper.testLine)
-        // How to find the first line of a function?
+        "FAIL: gocheck_test.go:%d: FailHelper.TestLogAndFail\n",
+        failHelper.testLine)
     if strings.Index(output.value, header) == -1 {
         t.Errorf("Failure didn't print a proper header.\n" +
                  "... Got:\n%s... Expected something with:\n%s",
@@ -135,7 +134,7 @@ func (s *FoundationS) TestFatalf(t *gocheck.T) {
 }
 
 
-func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
+func (s *FoundationS) TestCallerLoggingInsideTest(t *gocheck.T) {
     log := fmt.Sprintf(
         "foundation_test.go:%d:\n" +
         "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
@@ -154,12 +153,13 @@ func (s *FoundationS) TestCallerLoggingInSameFile(t *gocheck.T) {
 
 func (s *FoundationS) TestCallerLoggingInDifferentFile(t *gocheck.T) {
     result, line := checkEqualWrapper(t, 10, 20)
+    testLine := getMyLine()-1
     log := fmt.Sprintf(
-        "gocheck_test.go:%d:\n" +
+        "foundation_test.go:%d > gocheck_test.go:%d:\n" +
         "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
         "\\.\\.\\. Obtained \\(int\\): 10\n" +
         "\\.\\.\\. Expected \\(int\\): 20\n\n",
-        line)
+        testLine, line)
     checkState(t, result,
                &expectedState{
                     name: "CheckEqual(10, 20)",
@@ -190,7 +190,8 @@ func (s *FoundationS) TestExpectFailure(t *gocheck.T) {
 
     expected :=
         "^\n-+\n" +
-        "FAIL: foundation_test\\.go:ExpectFailureHelper\\.TestSucceed\n\n" +
+        "FAIL: foundation_test\\.go:[0-9]+:" +
+        " ExpectFailureHelper\\.TestSucceed\n\n" +
         "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
         "\\.\\.\\. Reason: Bug #XYZ\n$"
 

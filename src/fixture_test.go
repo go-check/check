@@ -57,7 +57,7 @@ func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 8)
 
     expected := "^\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
                 "\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
@@ -85,7 +85,8 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 4)
 
     expected := "^\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper\\.SetUpTest\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper\\.SetUpTest\n\n" +
                 "\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
@@ -94,7 +95,8 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.SetUpTest\n" +
                 "\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
@@ -118,7 +120,8 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
     t.CheckEqual(helper.n, 5)
 
     expected := "^\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper.TearDownTest\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper.TearDownTest\n\n" +
                 "\\.\\.\\. Panic: TearDownTest \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
@@ -127,7 +130,8 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.TearDownTest\n" +
                 "\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper\\.Test1\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
@@ -148,7 +152,8 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
     t.CheckEqual(helper.n, 2)
 
     expected := "^\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper.SetUpSuite\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper.SetUpSuite\n\n" +
                 "\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
@@ -182,7 +187,8 @@ func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
     t.CheckEqual(helper.n, 8)
 
     expected := "^\n-+\n" +
-                "PANIC: gocheck_test\\.go:FixtureHelper.TearDownSuite\n\n" +
+                "PANIC: gocheck_test\\.go:[0-9]+: " +
+                "FixtureHelper.TearDownSuite\n\n" +
                 "\\.\\.\\. Panic: TearDownSuite \\(PC=[xA-F0-9]+\\)\n\n" +
                 ".+:[0-9]+\n" +
                 "  in runtime.panic\n" +
@@ -217,7 +223,8 @@ func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
     t.CheckEqual(helper.n, 7)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:WrongTestArgHelper\\.Test1\n\n" +
+                "PANIC: fixture_test\\.go:[0-9]+: " +
+                "WrongTestArgHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: WrongTestArgHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.T\n"
 
@@ -237,7 +244,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
 
     expected :=
         "^\n-+\n" +
-        "PANIC: fixture_test\\.go:WrongSetUpTestArgHelper\\.SetUpTest\n\n" +
+        "PANIC: fixture_test\\.go:[0-9]+: " +
+        "WrongSetUpTestArgHelper\\.SetUpTest\n\n" +
         "\\.\\.\\. Panic: WrongSetUpTestArgHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.F\n"
 
@@ -257,7 +265,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
 
     expected :=
         "^\n-+\n" +
-        "PANIC: fixture_test\\.go:WrongSetUpSuiteArgHelper\\.SetUpSuite\n\n" +
+        "PANIC: fixture_test\\.go:[0-9]+: " +
+        "WrongSetUpSuiteArgHelper\\.SetUpSuite\n\n" +
         "\\.\\.\\. Panic: WrongSetUpSuiteArgHelper\\.SetUpSuite argument " +
         "should be \\*gocheck\\.F\n"
 
@@ -287,7 +296,8 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
     t.CheckEqual(helper.n, 7)
 
     expected := "^\n-+\n" +
-                "PANIC: fixture_test\\.go:WrongTestArgCountHelper\\.Test1\n\n" +
+                "PANIC: fixture_test\\.go:[0-9]+: " +
+                "WrongTestArgCountHelper\\.Test1\n\n" +
                 "\\.\\.\\. Panic: WrongTestArgCountHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.T\n"
 
@@ -307,8 +317,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
 
     expected :=
         "^\n-+\n" +
-        "PANIC: fixture_test\\.go:WrongSetUpTestArgCountHelper" +
-        "\\.SetUpTest\n\n" +
+        "PANIC: fixture_test\\.go:[0-9]+: " +
+        "WrongSetUpTestArgCountHelper\\.SetUpTest\n\n" +
         "\\.\\.\\. Panic: WrongSetUpTestArgCountHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.F\n"
 
@@ -328,8 +338,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
 
     expected :=
         "^\n-+\n" +
-        "PANIC: fixture_test\\.go:WrongSetUpSuiteArgCountHelper" +
-        "\\.SetUpSuite\n\n" +
+        "PANIC: fixture_test\\.go:[0-9]+: " +
+        "WrongSetUpSuiteArgCountHelper\\.SetUpSuite\n\n" +
         "\\.\\.\\. Panic: WrongSetUpSuiteArgCountHelper" +
         "\\.SetUpSuite argument should be \\*gocheck\\.F\n"
 

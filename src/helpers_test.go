@@ -24,7 +24,7 @@ func (s *HelpersS) TestCheckEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(int\\): 20\n\n"
@@ -35,7 +35,7 @@ func (s *HelpersS) TestCheckEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualFailingWithDiffTypes(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(uint\\): 0xa\n\n"
@@ -46,7 +46,7 @@ func (s *HelpersS) TestCheckEqualFailingWithDiffTypes(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualFailingWithNil(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(nil\\): nil\n\n"
@@ -57,7 +57,7 @@ func (s *HelpersS) TestCheckEqualFailingWithNil(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualWithMessage(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(int\\): 20\n" +
@@ -81,7 +81,7 @@ func (s *HelpersS) TestCheckNotEqualSucceedingWithNil(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckNotEqualFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(int\\): 10\n\n"
     testHelperFailure(t, "CheckNotEqual(10, 10)", false, false, log,
@@ -91,7 +91,7 @@ func (s *HelpersS) TestCheckNotEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckNotEqualWithMessage(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(int\\): 10\n" +
            "\\.+ That's clearly WRONG!\n\n"
@@ -109,7 +109,7 @@ func (s *HelpersS) TestAssertEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertEqualFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(int\\): 20\n\n"
@@ -121,7 +121,7 @@ func (s *HelpersS) TestAssertEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertEqualWithMessage(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(int\\): 10\n" +
            "\\.+ Expected \\(int\\): 20\n" +
@@ -141,7 +141,7 @@ func (s *HelpersS) TestAssertNotEqualSucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertNotEqualFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(int\\): 10\n\n"
     testHelperFailure(t, "AssertNotEqual(10, 10)", nil, true, log,
@@ -152,7 +152,7 @@ func (s *HelpersS) TestAssertNotEqualFailing(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertNotEqualWithMessage(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(int\\): 10\n" +
            "\\.+ That's clearly WRONG!\n\n"
@@ -171,7 +171,7 @@ func (s *HelpersS) TestCheckEqualArraySucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckEqualArrayFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n" +
            "\\.+ Expected \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x3}\n\n"
@@ -189,7 +189,7 @@ func (s *HelpersS) TestCheckNotEqualArraySucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestCheckNotEqualArrayFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ CheckNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n\n"
     testHelperFailure(t, "CheckNotEqual([]byte{2}, []byte{3})", false, false,
@@ -208,7 +208,7 @@ func (s *HelpersS) TestAssertEqualArraySucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertEqualArrayFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertEqual\\(obtained, expected\\):\n" +
            "\\.+ Obtained \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n" +
            "\\.+ Expected \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x3}\n\n"
@@ -228,7 +228,7 @@ func (s *HelpersS) TestAssertNotEqualArraySucceeding(t *gocheck.T) {
 }
 
 func (s *HelpersS) TestAssertNotEqualArrayFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
            "\\.+ AssertNotEqual\\(obtained, unexpected\\):\n" +
            "\\.+ Both \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n\n"
     testHelperFailure(t, "AssertNotEqual([]byte{2}, []byte{3})", nil, true,
@@ -238,105 +238,83 @@ func (s *HelpersS) TestAssertNotEqualArrayFailing(t *gocheck.T) {
     })
 }
 
-func (s *HelpersS) TestCheckErrSucceeding(t *gocheck.T) {
-    testHelperSuccess(t, "CheckErr(nil, nil)", true, func() interface{} {
-        return t.CheckErr(nil, nil)
+func (s *HelpersS) TestCheckMatchSucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "CheckErr('foo', 'fo*')", true, func() interface{} {
+        return t.CheckMatch("foo", "fo*")
     })
 }
 
-func (s *HelpersS) TestCheckErrFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ CheckErr\\(error, nil\\):\n" +
-           "\\.+ Error \\(os\\.Errno\\): 13 \\(permission denied\\)\n\n"
-    testHelperFailure(t, "CheckErr(error, nil)", false, false, log,
+func (s *HelpersS) TestCheckMatchFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckMatch\\(value, expression\\):\n" +
+           "\\.+ Value \\(string\\): \"foo\"\n" +
+           "\\.+ Expected to match expression: \"bar\"\n\n"
+    testHelperFailure(t, "CheckMatch('foo', 'bar')", false, false, log,
                       func() interface{} {
-        return t.CheckErr(os.Errno(13), nil)
+        return t.CheckMatch("foo", "bar")
     })
 }
 
-func (s *HelpersS) TestAssertErrSucceeding(t *gocheck.T) {
-    testHelperSuccess(t, "AssertErr(nil, nil)", nil, func() interface{} {
-        t.AssertErr(nil, nil)
-        return nil
-    })
-}
-
-func (s *HelpersS) TestAssertErrSucceedingWithValue(t *gocheck.T) {
-    testHelperSuccess(t, "AssertErr(nil, nil)", nil, func() interface{} {
-        t.AssertErr(os.Errno(13), os.Errno(13))
-        return nil
-    })
-}
-
-func (s *HelpersS) TestAssertErrSucceedingWithStrMatch(t *gocheck.T) {
-    testHelperSuccess(t, "AssertErr(nil, nil)", nil, func() interface{} {
-        t.AssertErr(os.Errno(13), "perm.*denied")
-        return nil
-    })
-}
-
-func (s *HelpersS) TestAssertErrSucceedingWithPureStrMatch(t *gocheck.T) {
-    testHelperSuccess(t, "AssertErr(nil, nil)", nil, func() interface{} {
-        t.AssertErr("str error", "str.*")
-        return nil
-    })
-}
-
-func (s *HelpersS) TestAssertErrFailing(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ AssertErr\\(error, nil\\):\n" +
-           "\\.+ Error \\(os\\.Errno\\): 13 \\(permission denied\\)\n\n"
-    testHelperFailure(t, "AssertErr(error, nil)", nil, true, log,
+func (s *HelpersS) TestCheckMatchFailingWithMessage(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ CheckMatch\\(value, expression\\):\n" +
+           "\\.+ Value \\(string\\): \"foo\"\n" +
+           "\\.+ Expected to match expression: \"bar\"\n" +
+           "\\.+ Foo bar!\n\n"
+    testHelperFailure(t, "CheckMatch('foo', 'bar')", false, false, log,
                       func() interface{} {
-        t.AssertErr(os.Errno(13), nil)
+        return t.CheckMatch("foo", "bar", "Foo", " bar!")
+    })
+}
+
+
+func (s *HelpersS) TestAssertMatchSucceeding(t *gocheck.T) {
+    testHelperSuccess(t, "AssertMatch(s, exp)", nil, func() interface{} {
+        t.AssertMatch("str error", "str.*r")
         return nil
     })
 }
 
-func (s *HelpersS) TestAssertErrFailingWithValue(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ AssertErr\\(error, expected\\):\n" +
-           "\\.+ Error \\(os\\.Errno\\): 13 \\(permission denied\\)\n" +
-           "\\.+ Expected \\(os\\.Errno\\): 12 \\(cannot allocate.+\\)\n\n"
-    testHelperFailure(t, "AssertErr(error, nil)", nil, true, log,
+func (s *HelpersS) TestAssertMatchSucceedingWithError(t *gocheck.T) {
+    testHelperSuccess(t, "AssertMatch(os.Error, exp)", nil, func() interface{} {
+        t.AssertMatch(os.Errno(13), "perm.*denied")
+        return nil
+    })
+}
+
+func (s *HelpersS) TestAssertMatchFailing(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertMatch\\(value, expression\\):\n" +
+           "\\.+ Value \\(os\\.Errno\\): 13 \\(permission denied\\)\n" +
+           "\\.+ Expected to match expression: \"foo\"\n\n"
+    testHelperFailure(t, "AssertMatch(error, foo)", nil, true, log,
                       func() interface{} {
-        t.AssertErr(os.Errno(13), os.Errno(12))
+        t.AssertMatch(os.Errno(13), "foo")
         return nil
     })
 }
 
-func (s *HelpersS) TestAssertErrFailingWithStrMatch(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ AssertErr\\(error, expected\\):\n" +
-           "\\.+ Error \\(os\\.Errno\\): 13 \\(permission denied\\)\n" +
-           "\\.+ Expected to match expression: \"foobar\"\n\n"
-    testHelperFailure(t, "AssertErr(error, nil)", nil, true, log,
-                      func() interface{} {
-        t.AssertErr(os.Errno(13), "foobar")
-        return nil
-    })
-}
-
-func (s *HelpersS) TestAssertErrFailingWithPureStrMatch(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ AssertErr\\(error, expected\\):\n" +
-           "\\.+ Error \\(string\\): \"foobar\"\n" +
+func (s *HelpersS) TestAssertMatchFailingWithPureStrMatch(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertMatch\\(value, expression\\):\n" +
+           "\\.+ Value \\(string\\): \"foobar\"\n" +
            "\\.+ Expected to match expression: \"foobaz\"\n\n"
-    testHelperFailure(t, "AssertErr(error, nil)", nil, true, log,
+    testHelperFailure(t, "AssertMatch('foobar', 'foobaz')", nil, true, log,
                       func() interface{} {
-        t.AssertErr("foobar", "foobaz")
+        t.AssertMatch("foobar", "foobaz")
         return nil
     })
 }
 
-func (s *HelpersS) TestAssertErrWithMessage(t *gocheck.T) {
-    log := "helpers_test.go:[0-9]+:\n" +
-           "\\.+ AssertErr\\(error, nil\\):\n" +
-           "\\.+ Error \\(os\\.Errno\\): 13 \\(permission denied\\)\n" +
+func (s *HelpersS) TestAssertMatchFailingWithMessage(t *gocheck.T) {
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ AssertMatch\\(value, expression\\):\n" +
+           "\\.+ Value \\(string\\): \"foobar\"\n" +
+           "\\.+ Expected to match expression: \"foobaz\"\n" +
            "\\.+ That's clearly WRONG!\n\n"
-    testHelperFailure(t, "AssertErr(error, nil)", nil, true, log,
+    testHelperFailure(t, "AssertMatch('foobar', 'foobaz')", nil, true, log,
                       func() interface{} {
-        t.AssertErr(os.Errno(13), nil, "That's clearly ", "WRONG!")
+        t.AssertMatch("foobar", "foobaz", "That's clearly ", "WRONG!")
         return nil
     })
 }

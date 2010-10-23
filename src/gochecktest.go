@@ -146,72 +146,46 @@ func checkEqual(a interface{}, b interface{}) (result bool) {
 
 
 // -----------------------------------------------------------------------
-// Error testing.
+// String matching testing.
 
-func (t *T) AssertErr(obtained interface{}, expected interface{},
-                      issue ...interface{}) {
-    var summary string
-    if expected == nil {
-        summary = "AssertErr(error, nil):"
-    } else {
-        summary = "AssertErr(error, expected):"
-    }
-    if !t.internalCheckErr(obtained, expected, true, summary, issue...) {
+func (t *T) AssertMatch(value interface{}, expression string,
+                        issue ...interface{}) {
+    summary := "AssertMatch(value, expression):"
+    if !t.internalCheckMatch(value, expression, true, summary, issue...) {
         t.stopNow()
     }
 }
 
-func (t *T) CheckErr(obtained interface{}, expected interface{},
-                     issue ...interface{}) bool {
-    var summary string
-    if expected == nil {
-        summary = "CheckErr(error, nil):"
-    } else {
-        summary = "CheckErr(error, expected):"
-    }
-    return t.internalCheckErr(obtained, expected, true, summary, issue...)
+func (t *T) CheckMatch(value interface{}, expression string,
+                       issue ...interface{}) bool {
+    summary := "CheckMatch(value, expression):"
+    return t.internalCheckMatch(value, expression, true, summary, issue...)
 }
 
-func (t *T) internalCheckErr(a interface{}, b interface{},
-                             equal bool, summary string,
-                             issue ...interface{}) bool {
-    typeA := reflect.Typeof(a)
-    typeB := reflect.Typeof(b)
-    // If b is string, handle it as a match expression.
-    if bStr, ok := b.(string); ok {
-        var err string
-        var matches bool
-        aStr, aIsStr := a.(string)
-        if !aIsStr {
-            if aWithStr, aHasStr := a.(hasString); aHasStr {
-                aStr, aIsStr = aWithStr.String(), true
-            }
+func (t *T) internalCheckMatch(value interface{}, expression string,
+                               equal bool, summary string,
+                               issue ...interface{}) bool {
+    valueStr, valueIsStr := value.(string)
+    if !valueIsStr {
+        if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
+            valueStr, valueIsStr = valueWithStr.String(), true
         }
-        if aIsStr {
-            matches, err = testing.MatchString("^" + bStr + "$", aStr)
-        }
-        if !matches || err != "" {
-            t.logCaller(2, summary)
-            var msg string
-            if !matches {
-                t.logValue("Error", a)
-                msg = fmt.Sprintf("Expected to match expression: %#v", b)
-            } else {
-                msg = fmt.Sprintf("Can't compile match expression: %#v", b)
-            }
-            t.logString(msg)
-            t.logNewLine()
-            t.Fail()
-            return false
-        }
-    } else if (typeA == typeB && checkEqual(a, b)) != equal {
+    }
+    var err string
+    var matches bool
+    if valueIsStr {
+        matches, err = testing.MatchString("^" + expression + "$", valueStr)
+    }
+    if !matches || err != "" {
         t.logCaller(2, summary)
-        if b == nil {
-            t.logValue("Error", a)
+        var msg string
+        if !matches {
+            t.logValue("Value", value)
+            msg = fmt.Sprintf("Expected to match expression: %#v", expression)
         } else {
-            t.logValue("Error", a)
-            t.logValue("Expected", b)
+            msg = fmt.Sprintf("Can't compile match expression: %#v", expression)
         }
+        t.logString(msg)
         if len(issue) != 0 {
             t.logString(fmt.Sprint(issue...))
         }
