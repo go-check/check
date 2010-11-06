@@ -11,10 +11,16 @@ import (
 
 var allSuites []interface{}
 
+// Register the given value as a test suite to be run.  Any methods starting
+// with the Test prefix in the given value will be considered as a test to
+// be run.
 func Suite(suite interface{}) interface{} {
     return Suites(suite)[0]
 }
 
+// Register all of the provided values as test suites to be run.  Any methods
+// starting with the Test prefix in the given values will be considered as a
+// test to be run.
 func Suites(suites ...interface{}) []interface{} {
     lenAllSuites := len(allSuites)
     lenSuites := len(suites)
@@ -38,6 +44,9 @@ var filterFlag = flag.String("f", "",
                              "Regular expression to select " +
                              "what to run (gocheck)")
 
+// Run all test suites registered with the Suite() function, printing
+// results to stdout, and reporting any failures back to the 'testing'
+// module.
 func TestingT(testingT *testing.T) {
     result := RunAll(&RunConf{Filter: *filterFlag})
     println(result.String())
@@ -46,6 +55,8 @@ func TestingT(testingT *testing.T) {
     }
 }
 
+// Run all test suites registered with the Suite() function, using the
+// given run configuration.
 func RunAll(runConf *RunConf) *Result {
     result := Result{}
     for _, suite := range allSuites {
@@ -54,6 +65,7 @@ func RunAll(runConf *RunConf) *Result {
     return &result
 }
 
+// Run the given test suite using the provided run configuration.
 func Run(suite interface{}, runConf *RunConf) *Result {
     runner := newSuiteRunner(suite, runConf)
     return runner.run()

@@ -7,9 +7,9 @@
 package gocheck_test
 
 import (
-    "testing"
     "gocheck"
     "strings"
+    "regexp"
     "fmt"
 )
 
@@ -32,7 +32,7 @@ func (s *FoundationS) TestErrorf(t *gocheck.T) {
     t.Errorf("Error %v!", "message")
     failed := t.Failed()
     t.Succeed()
-    if log := t.GetLog(); log != expectedLog {
+    if log := t.GetTestLog(); log != expectedLog {
         t.Logf("Errorf() logged %#v rather than %#v", log, expectedLog)
         t.Fail()
     }
@@ -60,7 +60,7 @@ func (s *FoundationS) TestFailNow(t *gocheck.T) {
             t.Error("FailNow() didn't fail the test")
         } else {
             t.Succeed()
-            t.CheckEqual(t.GetLog(), "")
+            t.CheckEqual(t.GetTestLog(), "")
         }
     })()
 
@@ -73,7 +73,7 @@ func (s *FoundationS) TestSucceedNow(t *gocheck.T) {
         if t.Failed() {
             t.Error("SucceedNow() didn't succeed the test")
         }
-        t.CheckEqual(t.GetLog(), "")
+        t.CheckEqual(t.GetTestLog(), "")
     })()
 
     t.Fail()
@@ -104,7 +104,7 @@ func (s *FoundationS) TestFatal(t *gocheck.T) {
             t.Error("Fatal() didn't fail the test")
         } else {
             t.Succeed()
-            t.CheckEqual(t.GetLog(),
+            t.CheckEqual(t.GetTestLog(),
                          fmt.Sprintf("foundation_test.go:%d:\n" +
                                      "... Error: Die now!\n", line))
         }
@@ -122,7 +122,7 @@ func (s *FoundationS) TestFatalf(t *gocheck.T) {
             t.Error("Fatalf() didn't fail the test")
         } else {
             t.Succeed()
-            t.CheckEqual(t.GetLog(),
+            t.CheckEqual(t.GetTestLog(),
                          fmt.Sprintf("foundation_test.go:%d:\n" +
                                      "... Error: Die now!\n", line))
         }
@@ -195,8 +195,8 @@ func (s *FoundationS) TestExpectFailure(t *gocheck.T) {
         "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
         "\\.\\.\\. Reason: Bug #XYZ\n$"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("ExpectFailure() didn't log properly:\n", output.value)

@@ -17,6 +17,7 @@ import (
     "gocheck"
     "testing"
     "runtime"
+    "regexp"
     "flag"
     "fmt"
     "os"
@@ -167,9 +168,9 @@ type expectedState struct {
 func checkState(t *gocheck.T, result interface{}, expected *expectedState) {
     failed := t.Failed()
     t.Succeed()
-    log := t.GetLog()
-    matched, matchError := testing.MatchString("^" + expected.log + "$", log)
-    if matchError != "" {
+    log := t.GetTestLog()
+    matched, matchError := regexp.MatchString("^" + expected.log + "$", log)
+    if matchError != nil {
         t.Errorf("Error in matching expression used in testing %s",
                  expected.name)
     } else if !matched {

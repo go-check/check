@@ -5,7 +5,7 @@ import (
     "runtime"
     "strings"
     "strconv"
-    "testing"
+    "regexp"
     "path"
     "sync"
     "rand"
@@ -60,6 +60,7 @@ func (c *call) stopNow() {
 // -----------------------------------------------------------------------
 // XXX Where to put these?
 
+// Type passed as an argument to fixture methods.
 type F struct {
     *call
 }
@@ -113,6 +114,21 @@ func (c *call) MkDir() string {
                           path, err.String()))
     }
     return path
+}
+
+// The methods below are not strictly necessary, but godoc doesn't yet
+// understand the method above is public due to the embedded type.
+
+// Create a new temporary directory which is automatically removed after
+// the suite finishes running.
+func (t *T) MkDir() string {
+    return t.call.MkDir()
+}
+
+// Create a new temporary directory which is automatically removed after
+// the suite finishes running.
+func (f *F) MkDir() string {
+    return f.call.MkDir()
 }
 
 
@@ -433,11 +449,11 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     runner.tempDir = new(tempDir)
     testsLen := 0
 
-    var filterRegexp *testing.Regexp
+    var filterRegexp *regexp.Regexp
     if filter != "" {
-        if regexp, err := testing.CompileRegexp(filter); err != "" {
-            err = "Bad filter expression: " + err
-            runner.tracker.result.RunError = os.NewError(err)
+        if regexp, err := regexp.Compile(filter); err != nil {
+            msg := "Bad filter expression: " + err.String()
+            runner.tracker.result.RunError = os.NewError(msg)
             return &runner
         } else {
             filterRegexp = regexp
@@ -486,7 +502,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 // Return true if the given suite name and method name should be
 // considered as a test to be run.
-func isWantedTest(suiteName, testName string, filterRegexp *testing.Regexp) bool {
+func isWantedTest(suiteName, testName string, filterRegexp *regexp.Regexp) bool {
     if !strings.HasPrefix(testName, "Test") {
         return false
     } else if filterRegexp == nil {

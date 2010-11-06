@@ -47,19 +47,19 @@ func (s *BootstrapS) TestFailedAndSucceed(t *gocheck.T) {
     }
 }
 
-func (s *BootstrapS) TestLogAndGetLog(t *gocheck.T) {
+func (s *BootstrapS) TestLogAndGetTestLog(t *gocheck.T) {
     t.Log("Hello there!")
-    log := t.GetLog()
+    log := t.GetTestLog()
     if log != "Hello there!\n" {
-        critical(fmt.Sprintf("Log() or GetLog() is not working! Got: %#v", log))
+        critical(fmt.Sprintf("Log() or GetTestLog() is not working! Got: %#v", log))
     }
 }
 
-func (s *BootstrapS) TestLogfAndGetLog(t *gocheck.T) {
+func (s *BootstrapS) TestLogfAndGetTestLog(t *gocheck.T) {
     t.Logf("Hello %v", "there!")
-    log := t.GetLog()
+    log := t.GetTestLog()
     if log != "Hello there!\n" {
-        critical(fmt.Sprintf("Logf() or GetLog() is not working! Got: %#v", log))
+        critical(fmt.Sprintf("Logf() or GetTestLog() is not working! Got: %#v", log))
     }
 }
 

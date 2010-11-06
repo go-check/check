@@ -5,7 +5,7 @@ package gocheck_test
 
 import (
     "gocheck"
-    "testing"
+    "regexp"
 )
 
 
@@ -66,8 +66,8 @@ func (s *FixtureS) TestPanicOnTest(t *gocheck.T) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.Test1\n$"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression:", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -100,8 +100,8 @@ func (s *FixtureS) TestPanicOnSetUpTest(t *gocheck.T) {
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression:", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -135,8 +135,8 @@ func (s *FixtureS) TestPanicOnTearDownTest(t *gocheck.T) {
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression:", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -164,8 +164,8 @@ func (s *FixtureS) TestPanicOnSetUpSuite(t *gocheck.T) {
 
     // XXX Changing the expression above to not match breaks Go. WTF?
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression:", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -197,8 +197,8 @@ func (s *FixtureS) TestPanicOnTearDownSuite(t *gocheck.T) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.TearDownSuite\n$"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression:", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -228,8 +228,8 @@ func (s *FixtureS) TestPanicOnWrongTestArg(t *gocheck.T) {
                 "\\.\\.\\. Panic: WrongTestArgHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.T\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -249,8 +249,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(t *gocheck.T) {
         "\\.\\.\\. Panic: WrongSetUpTestArgHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.F\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -270,8 +270,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(t *gocheck.T) {
         "\\.\\.\\. Panic: WrongSetUpSuiteArgHelper\\.SetUpSuite argument " +
         "should be \\*gocheck\\.F\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -301,8 +301,8 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(t *gocheck.T) {
                 "\\.\\.\\. Panic: WrongTestArgCountHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.T\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -322,8 +322,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(t *gocheck.T) {
         "\\.\\.\\. Panic: WrongSetUpTestArgCountHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.F\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
@@ -343,8 +343,8 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(t *gocheck.T) {
         "\\.\\.\\. Panic: WrongSetUpSuiteArgCountHelper" +
         "\\.SetUpSuite argument should be \\*gocheck\\.F\n"
 
-    matched, err := testing.MatchString(expected, output.value)
-    if err != "" {
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
         t.Error("Bad expression: ", expected)
     } else if !matched {
         t.Error("Panic not logged properly:\n", output.value)
