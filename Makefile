@@ -5,8 +5,8 @@ GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
 
 GOFILES=\
 	gocheck.go\
-	gocheckrun.go\
-	gochecktest.go\
+	helpers.go\
+	run.go\
 
 include $(GOROOT)/src/Make.pkg
 
