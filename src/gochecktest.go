@@ -9,47 +9,41 @@ import (
 )
 
 
-// Type passed as an argument to test methods.
-type T struct {
-    *call
-}
-
-
 // -----------------------------------------------------------------------
 // Basic succeeding/failing logic.
 
 // Return true if the currently running test has already failed.
-func (t *T) Failed() bool {
-    return t.call.status == failedSt
+func (c *C) Failed() bool {
+    return c.status == failedSt
 }
 
 // Mark the currently running test as failed. Something ought to have been
 // previously logged so that the developer knows what went wrong. The higher
 // level helper functions will fail the test and do the logging properly.
-func (t *T) Fail() {
-    t.call.status = failedSt
+func (c *C) Fail() {
+    c.status = failedSt
 }
 
 // Mark the currently running test as failed, and stop running the test.
 // Something ought to have been previously logged so that the developer
 // knows what went wrong. The higher level helper functions will fail the
 // test and do the logging properly.
-func (t *T) FailNow() {
-    t.Fail()
-    t.stopNow()
+func (c *C) FailNow() {
+    c.Fail()
+    c.stopNow()
 }
 
 // Mark the currently running test as succeeded, undoing any previous
 // failures.
-func (t *T) Succeed() {
-    t.call.status = succeededSt
+func (c *C) Succeed() {
+    c.status = succeededSt
 }
 
 // Mark the currently running test as succeeded, undoing any previous
 // failures, and stop running the test.
-func (t *T) SucceedNow() {
-    t.Succeed()
-    t.stopNow()
+func (c *C) SucceedNow() {
+    c.Succeed()
+    c.stopNow()
 }
 
 // Expect the currently running test to fail, for the given reason.  If the
@@ -58,8 +52,8 @@ func (t *T) SucceedNow() {
 // supposed to fail.  This method is useful to temporarily disable tests
 // which cover well known problems until a better time to fix the problem
 // is found, without forgetting about the fact that a failure still exists.
-func (t *T) ExpectFailure(reason string) {
-    t.expectedFailure = &reason
+func (c *C) ExpectFailure(reason string) {
+    c.expectedFailure = &reason
 }
 
 
@@ -67,52 +61,52 @@ func (t *T) ExpectFailure(reason string) {
 // Basic logging.
 
 // Return the current test error output.
-func (t *T) GetTestLog() string {
-    return t.call.logv
+func (c *C) GetTestLog() string {
+    return c.logv
 }
 
 // Log some information into the test error output.  The provided arguments
 // will be assembled together into a string using fmt.Sprint().
-func (t *T) Log(args ...interface{}) {
-    t.log(args...)
+func (c *C) Log(args ...interface{}) {
+    c.log(args...)
 }
 
 // Log some information into the test error output.  The provided arguments
 // will be assembled together into a string using fmt.Sprintf().
-func (t *T) Logf(format string, args ...interface{}) {
-    t.logf(format, args...)
+func (c *C) Logf(format string, args ...interface{}) {
+    c.logf(format, args...)
 }
 
 // Log an error into the test error output, and mark the test as failed.
 // The provided arguments will be assembled together into a string using
 // fmt.Sprint().
-func (t *T) Error(args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
-    t.Fail()
+func (c *C) Error(args ...interface{}) {
+    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.Fail()
 }
 
 // Log an error into the test error output, and mark the test as failed.
 // The provided arguments will be assembled together into a string using
 // fmt.Sprintf().
-func (t *T) Errorf(format string, args ...interface{}) {
-    t.logCaller(1, fmt.Sprintf("Error: " + format, args...))
-    t.Fail()
+func (c *C) Errorf(format string, args ...interface{}) {
+    c.logCaller(1, fmt.Sprintf("Error: " + format, args...))
+    c.Fail()
 }
 
 // Log an error into the test error output, mark the test as failed, and
 // stop the test execution. The provided arguments will be assembled
 // together into a string using fmt.Sprint().
-func(t *T) Fatal(args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
-    t.FailNow()
+func (c *C) Fatal(args ...interface{}) {
+    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.FailNow()
 }
 
 // Log an error into the test error output, mark the test as failed, and
 // stop the test execution. The provided arguments will be assembled
 // together into a string using fmt.Sprintf().
-func(t *T) Fatalf(format string, args ...interface{}) {
-    t.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
-    t.FailNow()
+func (c *C) Fatalf(format string, args ...interface{}) {
+    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
+    c.FailNow()
 }
 
 
@@ -125,10 +119,10 @@ func(t *T) Fatalf(format string, args ...interface{}) {
 // optional and, if provided, will be assembled together with fmt.Sprint()
 // and printed next to the reported problem in case of errors. The returned
 // value will be false in case the verification fails.
-func (t *T) CheckEqual(obtained interface{}, expected interface{},
+func (c *C) CheckEqual(obtained interface{}, expected interface{},
                        issue ...interface{}) bool {
     summary := "CheckEqual(obtained, expected):"
-    return t.internalCheckEqual(obtained, expected, true, summary, issue...)
+    return c.internalCheckEqual(obtained, expected, true, summary, issue...)
 }
 
 // Verify if the first value is not equal to the second value.  In case
@@ -137,10 +131,10 @@ func (t *T) CheckEqual(obtained interface{}, expected interface{},
 // optional and, if provided, will be assembled together with fmt.Sprint()
 // and printed next to the reported problem in case of errors. The returned
 // value will be false in case the verification fails.
-func (t *T) CheckNotEqual(obtained interface{}, expected interface{},
+func (c *C) CheckNotEqual(obtained interface{}, expected interface{},
                           issue ...interface{}) bool {
     summary := "CheckNotEqual(obtained, unexpected):"
-    return t.internalCheckEqual(obtained, expected, false, summary, issue...)
+    return c.internalCheckEqual(obtained, expected, false, summary, issue...)
 }
 
 // Ensure that the first value is equal to the second value.  In case
@@ -148,11 +142,11 @@ func (t *T) CheckNotEqual(obtained interface{}, expected interface{},
 // failed, and the test execution will stop.  The extra arguments are
 // optional and, if provided, will be assembled together with fmt.Sprint()
 // and printed next to the reported problem in case of errors.
-func (t *T) AssertEqual(obtained interface{}, expected interface{},
+func (c *C) AssertEqual(obtained interface{}, expected interface{},
                         issue ...interface{}) {
     summary := "AssertEqual(obtained, expected):"
-    if !t.internalCheckEqual(obtained, expected, true, summary, issue...) {
-        t.stopNow()
+    if !c.internalCheckEqual(obtained, expected, true, summary, issue...) {
+        c.stopNow()
     }
 }
 
@@ -161,32 +155,32 @@ func (t *T) AssertEqual(obtained interface{}, expected interface{},
 // failed, and the test execution will stop.  The extra arguments are
 // optional and, if provided, will be assembled together with fmt.Sprint()
 // and printed next to the reported problem in case of errors.
-func (t *T) AssertNotEqual(obtained interface{}, expected interface{},
+func (c *C) AssertNotEqual(obtained interface{}, expected interface{},
                            issue ...interface{}) {
     summary := "AssertNotEqual(obtained, unexpected):"
-    if !t.internalCheckEqual(obtained, expected, false, summary, issue...) {
-        t.stopNow()
+    if !c.internalCheckEqual(obtained, expected, false, summary, issue...) {
+        c.stopNow()
     }
 }
 
 
-func (t *T) internalCheckEqual(a interface{}, b interface{}, equal bool,
+func (c *C) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
     typeA := reflect.Typeof(a)
     typeB := reflect.Typeof(b)
     if (typeA == typeB && checkEqual(a, b)) != equal {
-        t.logCaller(2, summary)
+        c.logCaller(2, summary)
         if equal {
-            t.logValue("Obtained", a)
-            t.logValue("Expected", b)
+            c.logValue("Obtained", a)
+            c.logValue("Expected", b)
         } else {
-            t.logValue("Both", a)
+            c.logValue("Both", a)
         }
         if len(issue) != 0 {
-            t.logString(fmt.Sprint(issue...))
+            c.logString(fmt.Sprint(issue...))
         }
-        t.logNewLine()
-        t.Fail()
+        c.logNewLine()
+        c.Fail()
         return false
     }
     return true
@@ -213,10 +207,10 @@ func checkEqual(a interface{}, b interface{}) (result bool) {
 // be marked as failed, and the test execution will continue. The extra
 // arguments are optional and, if provided, will be assembled together with
 // fmt.Sprint() and printed next to the reported problem in case of errors.
-func (t *T) CheckMatch(value interface{}, expression string,
+func (c *C) CheckMatch(value interface{}, expression string,
                        issue ...interface{}) bool {
     summary := "CheckMatch(value, expression):"
-    return t.internalCheckMatch(value, expression, true, summary, issue...)
+    return c.internalCheckMatch(value, expression, true, summary, issue...)
 }
 
 // Ensure that the value provided matches with the given regular expression.
@@ -225,15 +219,15 @@ func (t *T) CheckMatch(value interface{}, expression string,
 // be marked as failed, and the test execution will stop. The extra
 // arguments are optional and, if provided, will be assembled together with
 // fmt.Sprint() and printed next to the reported problem in case of errors.
-func (t *T) AssertMatch(value interface{}, expression string,
+func (c *C) AssertMatch(value interface{}, expression string,
                         issue ...interface{}) {
     summary := "AssertMatch(value, expression):"
-    if !t.internalCheckMatch(value, expression, true, summary, issue...) {
-        t.stopNow()
+    if !c.internalCheckMatch(value, expression, true, summary, issue...) {
+        c.stopNow()
     }
 }
 
-func (t *T) internalCheckMatch(value interface{}, expression string,
+func (c *C) internalCheckMatch(value interface{}, expression string,
                                equal bool, summary string,
                                issue ...interface{}) bool {
     valueStr, valueIsStr := value.(string)
@@ -248,20 +242,20 @@ func (t *T) internalCheckMatch(value interface{}, expression string,
         matches, err = regexp.MatchString("^" + expression + "$", valueStr)
     }
     if !matches || err != nil {
-        t.logCaller(2, summary)
+        c.logCaller(2, summary)
         var msg string
         if !matches {
-            t.logValue("Value", value)
+            c.logValue("Value", value)
             msg = fmt.Sprintf("Expected to match expression: %#v", expression)
         } else {
             msg = fmt.Sprintf("Can't compile match expression: %#v", expression)
         }
-        t.logString(msg)
+        c.logString(msg)
         if len(issue) != 0 {
-            t.logString(fmt.Sprint(issue...))
+            c.logString(fmt.Sprint(issue...))
         }
-        t.logNewLine()
-        t.Fail()
+        c.logNewLine()
+        c.Fail()
         return false
     }
     return true

@@ -77,10 +77,10 @@ func (s *String) Write(p []byte) (n int, err os.Error) {
 
 // Trivial wrapper to test errors happening on a different file
 // than the test itself.
-func checkEqualWrapper(t *gocheck.T,
+func checkEqualWrapper(c *gocheck.C,
                        expected interface{},
                        obtained interface{}) (result bool, line int) {
-    return t.CheckEqual(expected, obtained), getMyLine()
+    return c.CheckEqual(expected, obtained), getMyLine()
 }
 
 
@@ -91,10 +91,10 @@ type FailHelper struct {
     testLine int
 }
 
-func (s *FailHelper) TestLogAndFail(t *gocheck.T) {
+func (s *FailHelper) TestLogAndFail(c *gocheck.C) {
     s.testLine = getMyLine()-1
-    t.Log("Expected failure!")
-    t.Fail()
+    c.Log("Expected failure!")
+    c.Fail()
 }
 
 
@@ -103,8 +103,8 @@ func (s *FailHelper) TestLogAndFail(t *gocheck.T) {
 
 type SuccessHelper struct{}
 
-func (s *SuccessHelper) TestLogAndSucceed(t *gocheck.T) {
-    t.Log("Expected success!")
+func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
+    c.Log("Expected success!")
 }
 
 
@@ -125,34 +125,34 @@ func (s *FixtureHelper) trace(name string) {
     }
 }
 
-func (s *FixtureHelper) SetUpSuite(f *gocheck.F) {
+func (s *FixtureHelper) SetUpSuite(c *gocheck.C) {
     s.trace("SetUpSuite")
 }
 
-func (s *FixtureHelper) TearDownSuite(f *gocheck.F) {
+func (s *FixtureHelper) TearDownSuite(c *gocheck.C) {
     s.trace("TearDownSuite")
 }
 
-func (s *FixtureHelper) SetUpTest(f *gocheck.F) {
+func (s *FixtureHelper) SetUpTest(c *gocheck.C) {
     s.trace("SetUpTest")
 }
 
-func (s *FixtureHelper) TearDownTest(f *gocheck.F) {
+func (s *FixtureHelper) TearDownTest(c *gocheck.C) {
     s.trace("TearDownTest")
 }
 
-func (s *FixtureHelper) Test1(t *gocheck.T) {
+func (s *FixtureHelper) Test1(c *gocheck.C) {
     s.trace("Test1")
 }
 
-func (s *FixtureHelper) Test2(t *gocheck.T) {
+func (s *FixtureHelper) Test2(c *gocheck.C) {
     s.trace("Test2")
 }
 
 
 // -----------------------------------------------------------------------
 // Helper which checks the state of the test and ensures that it matches
-// the given expectations.  Depends on t.Errorf() working, so shouldn't
+// the given expectations.  Depends on c.Errorf() working, so shouldn't
 // be used to test this one function.
 
 type expectedState struct {
@@ -165,27 +165,27 @@ type expectedState struct {
 // Verify the state of the test.  Note that since this also verifies if
 // the test is supposed to be in a failed state, no other checks should
 // be done in addition to what is being tested.
-func checkState(t *gocheck.T, result interface{}, expected *expectedState) {
-    failed := t.Failed()
-    t.Succeed()
-    log := t.GetTestLog()
+func checkState(c *gocheck.C, result interface{}, expected *expectedState) {
+    failed := c.Failed()
+    c.Succeed()
+    log := c.GetTestLog()
     matched, matchError := regexp.MatchString("^" + expected.log + "$", log)
     if matchError != nil {
-        t.Errorf("Error in matching expression used in testing %s",
+        c.Errorf("Error in matching expression used in testing %s",
                  expected.name)
     } else if !matched {
-        t.Errorf("%s logged %#v which doesn't match %#v",
+        c.Errorf("%s logged %#v which doesn't match %#v",
                  expected.name, log, expected.log)
     }
     if result != expected.result {
-        t.Errorf("%s returned %#v rather than %#v",
+        c.Errorf("%s returned %#v rather than %#v",
                  expected.name, result, expected.result)
     }
     if failed != expected.failed {
         if failed {
-            t.Errorf("%s has failed when it shouldn't", expected.name)
+            c.Errorf("%s has failed when it shouldn't", expected.name)
         } else {
-            t.Errorf("%s has not failed when it should", expected.name)
+            c.Errorf("%s has not failed when it should", expected.name)
         }
     }
 }
