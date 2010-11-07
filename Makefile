@@ -1,16 +1,8 @@
-include $(GOROOT)/src/Make.inc
 
-TARG=gocheck
-GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
+$(.DEFAULT_GOAL) $(MAKECMDGOALS): subdirs
 
-GOFILES=\
-	gocheck.go\
-	helpers.go\
-	run.go\
+subdirs:
+	make -C src $(MAKECMDGOALS)
+	make -C src/checkers $(MAKECMDGOALS)
 
-include $(GOROOT)/src/Make.pkg
-
-format:
-	${GOFMT} -w gocheck.go
-	${GOFMT} -w helpers.go
-	${GOFMT} -w run.go
+.PHONY: subdirs
