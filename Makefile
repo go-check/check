@@ -12,5 +12,5 @@ include $(GOROOT)/src/Make.pkg
 
 format:
 	${GOFMT} -w gocheck.go
-	${GOFMT} -w gocheckrun.go
-	${GOFMT} -w gochecktest.go
+	${GOFMT} -w helpers.go
+	${GOFMT} -w run.go
