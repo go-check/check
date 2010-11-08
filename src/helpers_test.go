@@ -22,6 +22,7 @@ func (s *HelpersS) TestCountSuite(c *gocheck.C) {
 // Fake checker to verify the behavior of Assert() and Check().
 
 type MyChecker struct {
+    checkError string
     failCheck, noExpectedValue bool
     obtained, expected interface{}
 }
@@ -30,22 +31,22 @@ func (checker *MyChecker) Name() string {
     return "MyChecker"
 }
 
-func (checker *MyChecker) ObtainedLabel() string {
-    return "MyObtained"
+func (checker *MyChecker) ObtainedLabel() (varName, varLabel string) {
+    return "myobtained", "MyObtained"
 }
 
-func (checker *MyChecker) ExpectedLabel() string {
-    return "MyExpected"
+func (checker *MyChecker) ExpectedLabel() (varName, varLabel string) {
+    return "myexpected", "MyExpected"
 }
 
 func (checker *MyChecker) NeedsExpectedValue() bool {
     return !checker.noExpectedValue
 }
 
-func (checker *MyChecker) Check(obtained, expected interface{}) bool {
+func (checker *MyChecker) Check(obtained, expected interface{}) (bool, string) {
     checker.obtained = obtained
     checker.expected = expected
-    return !checker.failCheck
+    return !checker.failCheck, checker.checkError
 }
 
 
@@ -74,21 +75,10 @@ func (s *HelpersS) TestCheckSucceedWithoutExpected(c *gocheck.C) {
     }
 }
 
-func (s *HelpersS) TestCheckWithMissingExpected(c *gocheck.C) {
-    checker := &MyChecker{failCheck: true}
-    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Check\\(obtained, MyChecker, >expected<\\):\n" +
-           "\\.+ Missing expected value for the MyChecker checker\n\n"
-    testHelperFailure(c, "Check(1, checker, !?)", nil, true, log,
-                      func() interface{} {
-        return c.Check(1, checker)
-    })
-}
-
 func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Check\\(obtained, MyChecker, expected\\):\n" +
+           "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ MyExpected \\(int\\): 2\n\n"
     testHelperFailure(c, "Check(1, checker, 2)", false, false, log,
@@ -100,7 +90,7 @@ func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
 func (s *HelpersS) TestCheckFailWithExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Check\\(obtained, MyChecker, expected\\):\n" +
+           "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ MyExpected \\(int\\): 2\n" +
            "\\.+ Hello world!\n\n"
@@ -113,7 +103,7 @@ func (s *HelpersS) TestCheckFailWithExpectedAndMessage(c *gocheck.C) {
 func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Check\\(obtained, MyChecker\\):\n" +
+           "\\.+ Check\\(myobtained, MyChecker\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n\n"
     testHelperFailure(c, "Check(1, checker)", false, false, log,
                       func() interface{} {
@@ -124,12 +114,36 @@ func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
 func (s *HelpersS) TestCheckFailWithoutExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Check\\(obtained, MyChecker\\):\n" +
+           "\\.+ Check\\(myobtained, MyChecker\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Check(1, checker, msg)", false, false, log,
                       func() interface{} {
         return c.Check(1, checker, "Hello", " world!")
+    })
+}
+
+func (s *HelpersS) TestCheckWithMissingExpected(c *gocheck.C) {
+    checker := &MyChecker{failCheck: true}
+    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
+           "\\.+ Check\\(myobtained, MyChecker, >myexpected<\\):\n" +
+           "\\.+ Missing myexpected value for the MyChecker checker\n\n"
+    testHelperFailure(c, "Check(1, checker, !?)", false, false, log,
+                      func() interface{} {
+        return c.Check(1, checker)
+    })
+}
+
+func (s *HelpersS) TestCheckWithError(c *gocheck.C) {
+    checker := &MyChecker{checkError: "Some not so cool data provided!"}
+    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
+           "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
+           "\\.+ MyObtained \\(int\\): 1\n" +
+           "\\.+ MyExpected \\(int\\): 2\n" +
+           "\\.+ Some not so cool data provided!\n\n"
+    testHelperFailure(c, "Check(1, checker, 2)", false, false, log,
+                      func() interface{} {
+        return c.Check(1, checker, 2)
     })
 }
 
@@ -160,22 +174,10 @@ func (s *HelpersS) TestAssertSucceedWithoutExpected(c *gocheck.C) {
     }
 }
 
-func (s *HelpersS) TestAssertWithMissingExpected(c *gocheck.C) {
-    checker := &MyChecker{failCheck: true}
-    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Assert\\(obtained, MyChecker, >expected<\\):\n" +
-           "\\.+ Missing expected value for the MyChecker checker\n\n"
-    testHelperFailure(c, "Assert(1, checker, !?)", nil, true, log,
-                      func() interface{} {
-        c.Assert(1, checker)
-        return nil
-    })
-}
-
 func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Assert\\(obtained, MyChecker, expected\\):\n" +
+           "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ MyExpected \\(int\\): 2\n\n"
     testHelperFailure(c, "Assert(1, checker, 2)", nil, true, log,
@@ -188,7 +190,7 @@ func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
 func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Assert\\(obtained, MyChecker, expected\\):\n" +
+           "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ MyExpected \\(int\\): 2\n" +
            "\\.+ Hello world!\n\n"
@@ -202,7 +204,7 @@ func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
 func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Assert\\(obtained, MyChecker\\):\n" +
+           "\\.+ Assert\\(myobtained, MyChecker\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n\n"
     testHelperFailure(c, "Assert(1, checker)", nil, true, log,
                       func() interface{} {
@@ -214,7 +216,7 @@ func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
 func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
-           "\\.+ Assert\\(obtained, MyChecker\\):\n" +
+           "\\.+ Assert\\(myobtained, MyChecker\\):\n" +
            "\\.+ MyObtained \\(int\\): 1\n" +
            "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Assert(1, checker, msg)", nil, true, log,
@@ -223,6 +225,50 @@ func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
         return nil
     })
 }
+
+func (s *HelpersS) TestAssertWithMissingExpected(c *gocheck.C) {
+    checker := &MyChecker{failCheck: true}
+    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
+           "\\.+ Assert\\(myobtained, MyChecker, >myexpected<\\):\n" +
+           "\\.+ Missing myexpected value for the MyChecker checker\n\n"
+    testHelperFailure(c, "Assert(1, checker, !?)", nil, true, log,
+                      func() interface{} {
+        c.Assert(1, checker)
+        return nil
+    })
+}
+
+func (s *HelpersS) TestAssertWithError(c *gocheck.C) {
+    checker := &MyChecker{checkError: "Some not so cool data provided!"}
+    log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
+           "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
+           "\\.+ MyObtained \\(int\\): 1\n" +
+           "\\.+ MyExpected \\(int\\): 2\n" +
+           "\\.+ Some not so cool data provided!\n\n"
+    testHelperFailure(c, "Assert(1, checker, 2)", nil, true, log,
+                      func() interface{} {
+        c.Assert(1, checker, 2)
+        return nil
+    })
+}
+
+
+
+// -----------------------------------------------------------------------
+// Ensure that values logged work properly in some interesting cases.
+
+func (s *HelpersS) TestValueLoggingWithArrays(c *gocheck.C) {
+    checker := &MyChecker{failCheck: true}
+    log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
+           "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
+           "\\.+ MyObtained \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n" +
+           "\\.+ MyExpected \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x3}\n\n"
+    testHelperFailure(c, "Check([]byte{1}, chk, []byte{3})", false, false, log,
+                      func() interface{} {
+        return c.Check([]byte{1,2}, checker, []byte{1,3})
+    })
+}
+
 
 // -----------------------------------------------------------------------
 // Old tests for Assert*() and Check*() helpers not based on checkers.

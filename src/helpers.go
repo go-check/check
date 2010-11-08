@@ -269,34 +269,35 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
 // the checkers subpackage into gocheck itself. Make sure this is in sync!
 
 // Checkers used with the c.Assert() and c.Check() helpers must have
-// this interface.
+// this interface.  See the gocheck/checkers package for more details.
 type Checker interface {
     Name() string
-    ObtainedLabel() string
-    ExpectedLabel() string
+    ObtainedLabel() (varName, varLabel string)
+    ExpectedLabel() (varName, varLabel string)
     NeedsExpectedValue() bool
-    Check(obtained, expected interface{}) bool
+    Check(obtained, expected interface{}) (result bool, error string)
 }
 
 
-// FIXME
-// Verify if the first value is equal to the second value.  In case
-// they're not equal, an error will be logged, the test will be marked as
-// failed, and the test execution will continue.  The extra arguments are
-// optional and, if provided, will be assembled together with fmt.Sprint()
-// and printed next to the reported problem in case of errors. The returned
-// value will be false in case the verification fails.
+// Verify if the first value matches with the expected value.  What
+// matching means is defined by the provided checker. In case they do not
+// match, an error will be logged, the test will be marked as failed, and
+// the test execution will continue.  Some checkers may not need the expected
+// argument (e.g. IsNil).  In either case, any extra arguments provided to
+// the function will be logged next to the reported problem when the
+// matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Check(obtained interface{}, checker Checker,
                   expected ...interface{}) bool {
     return c.internalCheck("Check", obtained, checker, expected...)
 }
 
-// FIXME
-// Ensure that the first value is equal to the second value.  In case
-// they're not equal, an error will be logged, the test will be marked as
-// failed, and the test execution will stop.  The extra arguments are
-// optional and, if provided, will be assembled together with fmt.Sprint()
-// and printed next to the reported problem in case of errors.
+// Ensure that the first value matches with the expected value.  What
+// matching means is defined by the provided checker. In case they do not
+// match, an error will be logged, the test will be marked as failed, and
+// the test execution will stop.  Some checkers may not need the expected
+// argument (e.g. IsNil).  In either case, any extra arguments provided to
+// the function will be logged next to the reported problem when the
+// matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Assert(obtained interface{}, checker Checker,
                    expected ...interface{}) {
     if !c.internalCheck("Assert", obtained, checker, expected...) {
@@ -311,29 +312,41 @@ func (c *C) internalCheck(funcName string,
     needsExpected := checker.NeedsExpectedValue()
     if needsExpected {
         if len(args) == 0 {
-            c.logCaller(2, fmt.Sprintf("%s(obtained, %s, >expected<):",
-                                       funcName, checker.Name()))
-            c.logString(fmt.Sprint("Missing expected value for the ",
-                                   checker.Name(), " checker"))
+            obtainedVarName, _ := checker.ObtainedLabel()
+            expectedVarName, _ := checker.ExpectedLabel()
+            c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):",
+                                       funcName, obtainedVarName,
+                                       checker.Name(), expectedVarName))
+            c.logString(fmt.Sprint("Missing ", expectedVarName,
+                                   " value for the ", checker.Name(),
+                                   " checker"))
             c.logNewLine()
-            c.FailNow()
+            c.Fail()
+            return false
         }
         expected = args[0]
         args = args[1:]
     }
-    if !checker.Check(obtained, expected) {
+    result, error := checker.Check(obtained, expected)
+    if !result || error != "" {
+        obtainedVarName, obtainedVarLabel := checker.ObtainedLabel()
+        expectedVarName, expectedVarLabel := checker.ExpectedLabel()
         var summary string
         if needsExpected {
-            summary = "%s(obtained, %s, expected):"
+            summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedVarName,
+                                  checker.Name(), expectedVarName)
         } else {
-            summary = "%s(obtained, %s):"
+            summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedVarName,
+                                  checker.Name())
         }
-        c.logCaller(2, fmt.Sprintf(summary, funcName, checker.Name()))
-        c.logValue(checker.ObtainedLabel(), obtained)
+        c.logCaller(2, summary)
+        c.logValue(obtainedVarLabel, obtained)
         if needsExpected {
-            c.logValue(checker.ExpectedLabel(), expected)
+            c.logValue(expectedVarLabel, expected)
         }
-        if len(args) != 0 {
+        if error != "" {
+            c.logString(error)
+        } else if len(args) != 0 {
             c.logString(fmt.Sprint(args...))
         }
         c.logNewLine()
