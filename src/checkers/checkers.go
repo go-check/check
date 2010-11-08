@@ -1,22 +1,18 @@
-package matchers
+package checkers
 
 
-// Checkers which are returned by the functions which are used with the
-// c.Assert() and c.Check() helpers must match this interface.
+// Checkers used with the c.Assert() and c.Check() helpers must have
+// this interface.
 type Checker interface {
-    FuncName() string
-    NeedsExpectedValue() bool
+    Name() string
     ObtainedLabel() string
     ExpectedLabel() string
-    Check() bool
+    NeedsExpectedValue() bool
+    Check(obtained, expected interface{}) bool
 }
 
-type CheckerFunc func(obtained, expected interface{}) Checker
 
-
-type CheckerType struct {
-    Obtained, Expected interface{}
-}
+type CheckerType struct{}
 
 
 // Trick to ensure it matchers the desired interface.
@@ -24,7 +20,7 @@ var _ Checker = (*CheckerType)(nil)
 
 
 // The function name used to build the matcher.
-func (checker *CheckerType) FuncName() string {
+func (checker *CheckerType) Name() string {
     return "Checker"
 }
 
@@ -49,24 +45,22 @@ func (checker *CheckerType) ExpectedLabel() string {
 
 // Method must return true if the obtained value succeeds the
 // expectations established by the given matcher.
-func (checker *CheckerType) Check() bool {
+func (checker *CheckerType) Check(obtained, expected interface{}) bool {
     return false
 }
 
 
 
-func Equals(obtained, expected interface{}) Checker {
-    return &equalsChecker{CheckerType{obtained, expected}}
-}
+var Equals Checker = &equalsChecker{}
 
 type equalsChecker struct {
     CheckerType
 }
 
-func (checker *equalsChecker) FuncName() string {
+func (checker *equalsChecker) Name() string {
     return "Equals"
 }
 
-func (checker *equalsChecker) Check() bool {
-    return checker.Obtained == checker.Expected
+func (checker *equalsChecker) Check(obtained, expected interface{}) bool {
+    return obtained == expected
 }

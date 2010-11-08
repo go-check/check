@@ -18,10 +18,9 @@ var _ = gocheck.Suite(&CheckersS{})
 
 
 func testInfo(c *gocheck.C, checker Checker,
-              funcName, obtainedLabel, expectedLabel string) {
-    if checker.FuncName() != funcName {
-        c.Fatalf("Got function name %s, expected %s",
-                 checker.FuncName(), funcName)
+              name, obtainedLabel, expectedLabel string) {
+    if checker.Name() != name {
+        c.Fatalf("Got name %s, expected %s", checker.Name(), name)
     }
     if checker.ObtainedLabel() != obtainedLabel {
         c.Fatalf("Got obtained label %s, expected %s",
@@ -33,19 +32,18 @@ func testInfo(c *gocheck.C, checker Checker,
     }
 }
 
-func testCheck(c *gocheck.C, checkerFunc CheckerFunc,
+func testCheck(c *gocheck.C, checker Checker,
                obtained, expected interface{}, wantedResult bool) {
-    checker := checkerFunc(obtained, expected)
-    result := checker.Check()
+    result := checker.Check(obtained, expected)
     if result != wantedResult {
-        c.Fatalf("%s(%#v, %#v) returned %#v rather than %#v",
-                 checker.FuncName(), obtained, expected, result, wantedResult)
+        c.Fatalf("%s.Check(%#v, %#v) returned %#v rather than %#v",
+                 checker.Name(), obtained, expected, result, wantedResult)
     }
 }
 
 
 func (s *CheckersS) TestEqualsInfo(c *gocheck.C) {
-    testInfo(c, Equals(nil, nil), "Equals", "Obtained", "Expected")
+    testInfo(c, Equals, "Equals", "Obtained", "Expected")
 }
 
 func (s *CheckersS) TestEqualsCheck(c *gocheck.C) {

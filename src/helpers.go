@@ -260,3 +260,85 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
     }
     return true
 }
+
+
+// -----------------------------------------------------------------------
+// Generic checks and assertions based on checkers.
+
+// We have a custom copy of the following interface to avoid importing
+// the checkers subpackage into gocheck itself. Make sure this is in sync!
+
+// Checkers used with the c.Assert() and c.Check() helpers must have
+// this interface.
+type Checker interface {
+    Name() string
+    ObtainedLabel() string
+    ExpectedLabel() string
+    NeedsExpectedValue() bool
+    Check(obtained, expected interface{}) bool
+}
+
+
+// FIXME
+// Verify if the first value is equal to the second value.  In case
+// they're not equal, an error will be logged, the test will be marked as
+// failed, and the test execution will continue.  The extra arguments are
+// optional and, if provided, will be assembled together with fmt.Sprint()
+// and printed next to the reported problem in case of errors. The returned
+// value will be false in case the verification fails.
+func (c *C) Check(obtained interface{}, checker Checker,
+                  expected ...interface{}) bool {
+    return c.internalCheck("Check", obtained, checker, expected...)
+}
+
+// FIXME
+// Ensure that the first value is equal to the second value.  In case
+// they're not equal, an error will be logged, the test will be marked as
+// failed, and the test execution will stop.  The extra arguments are
+// optional and, if provided, will be assembled together with fmt.Sprint()
+// and printed next to the reported problem in case of errors.
+func (c *C) Assert(obtained interface{}, checker Checker,
+                   expected ...interface{}) {
+    if !c.internalCheck("Assert", obtained, checker, expected...) {
+        c.stopNow()
+    }
+}
+
+func (c *C) internalCheck(funcName string,
+                          obtained interface{}, checker Checker,
+                          args ...interface{}) bool {
+    var expected interface{}
+    needsExpected := checker.NeedsExpectedValue()
+    if needsExpected {
+        if len(args) == 0 {
+            c.logCaller(2, fmt.Sprintf("%s(obtained, %s, >expected<):",
+                                       funcName, checker.Name()))
+            c.logString(fmt.Sprint("Missing expected value for the ",
+                                   checker.Name(), " checker"))
+            c.logNewLine()
+            c.FailNow()
+        }
+        expected = args[0]
+        args = args[1:]
+    }
+    if !checker.Check(obtained, expected) {
+        var summary string
+        if needsExpected {
+            summary = "%s(obtained, %s, expected):"
+        } else {
+            summary = "%s(obtained, %s):"
+        }
+        c.logCaller(2, fmt.Sprintf(summary, funcName, checker.Name()))
+        c.logValue(checker.ObtainedLabel(), obtained)
+        if needsExpected {
+            c.logValue(checker.ExpectedLabel(), expected)
+        }
+        if len(args) != 0 {
+            c.logString(fmt.Sprint(args...))
+        }
+        c.logNewLine()
+        c.Fail()
+        return false
+    }
+    return true
+}
