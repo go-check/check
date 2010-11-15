@@ -267,7 +267,7 @@ type Result struct {
     Skipped int
     Panicked int
     FixturePanicked int
-    Missed int // Not even tried to run, related to a panic in fixture.
+    Missed int // Not even tried to run, related to a panic in the fixture.
     RunError os.Error // Houston, we've got a problem.
 }
 

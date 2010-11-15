@@ -5,7 +5,7 @@ package gocheck_test
 
 import (
     "gocheck"
-    "regexp"
+    . "gocheck/local"
 )
 
 
@@ -27,15 +27,15 @@ func (s *FixtureS) TestCountSuite(c *gocheck.C) {
 func (s *FixtureS) TestOrder(c *gocheck.C) {
     helper := FixtureHelper{}
     gocheck.Run(&helper, nil)
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "Test1")
-    c.CheckEqual(helper.calls[3], "TearDownTest")
-    c.CheckEqual(helper.calls[4], "SetUpTest")
-    c.CheckEqual(helper.calls[5], "Test2")
-    c.CheckEqual(helper.calls[6], "TearDownTest")
-    c.CheckEqual(helper.calls[7], "TearDownSuite")
-    c.CheckEqual(helper.n, 8)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "Test1")
+    c.Check(helper.calls[3], Equals, "TearDownTest")
+    c.Check(helper.calls[4], Equals, "SetUpTest")
+    c.Check(helper.calls[5], Equals, "Test2")
+    c.Check(helper.calls[6], Equals, "TearDownTest")
+    c.Check(helper.calls[7], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 8)
 }
 
 
@@ -46,15 +46,15 @@ func (s *FixtureS) TestPanicOnTest(c *gocheck.C) {
     helper := FixtureHelper{panicOn: "Test1"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "Test1")
-    c.CheckEqual(helper.calls[3], "TearDownTest")
-    c.CheckEqual(helper.calls[4], "SetUpTest")
-    c.CheckEqual(helper.calls[5], "Test2")
-    c.CheckEqual(helper.calls[6], "TearDownTest")
-    c.CheckEqual(helper.calls[7], "TearDownSuite")
-    c.CheckEqual(helper.n, 8)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "Test1")
+    c.Check(helper.calls[3], Equals, "TearDownTest")
+    c.Check(helper.calls[4], Equals, "SetUpTest")
+    c.Check(helper.calls[5], Equals, "Test2")
+    c.Check(helper.calls[6], Equals, "TearDownTest")
+    c.Check(helper.calls[7], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 8)
 
     expected := "^\n-+\n" +
                 "PANIC: gocheck_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
@@ -66,23 +66,18 @@ func (s *FixtureS) TestPanicOnTest(c *gocheck.C) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.Test1\n$"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression:", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnSetUpTest(c *gocheck.C) {
     helper := FixtureHelper{panicOn: "SetUpTest"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "TearDownTest")
-    c.CheckEqual(helper.calls[3], "TearDownSuite")
-    c.CheckEqual(helper.n, 4)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "TearDownTest")
+    c.Check(helper.calls[3], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 4)
 
     expected := "^\n-+\n" +
                 "PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -100,24 +95,19 @@ func (s *FixtureS) TestPanicOnSetUpTest(c *gocheck.C) {
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression:", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnTearDownTest(c *gocheck.C) {
     helper := FixtureHelper{panicOn: "TearDownTest"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "Test1")
-    c.CheckEqual(helper.calls[3], "TearDownTest")
-    c.CheckEqual(helper.calls[4], "TearDownSuite")
-    c.CheckEqual(helper.n, 5)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "Test1")
+    c.Check(helper.calls[3], Equals, "TearDownTest")
+    c.Check(helper.calls[4], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 5)
 
     expected := "^\n-+\n" +
                 "PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -135,21 +125,16 @@ func (s *FixtureS) TestPanicOnTearDownTest(c *gocheck.C) {
                 "\\.\\.\\. Panic: Fixture has panicked " +
                 "\\(see related PANIC\\)\n$"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression:", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnSetUpSuite(c *gocheck.C) {
     helper := FixtureHelper{panicOn: "SetUpSuite"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "TearDownSuite")
-    c.CheckEqual(helper.n, 2)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 2)
 
     expected := "^\n-+\n" +
                 "PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -162,29 +147,22 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *gocheck.C) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.SetUpSuite\n$"
 
-    // XXX Changing the expression above to not match breaks Go. WTF?
-
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression:", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnTearDownSuite(c *gocheck.C) {
     helper := FixtureHelper{panicOn: "TearDownSuite"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "Test1")
-    c.CheckEqual(helper.calls[3], "TearDownTest")
-    c.CheckEqual(helper.calls[4], "SetUpTest")
-    c.CheckEqual(helper.calls[5], "Test2")
-    c.CheckEqual(helper.calls[6], "TearDownTest")
-    c.CheckEqual(helper.calls[7], "TearDownSuite")
-    c.CheckEqual(helper.n, 8)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "Test1")
+    c.Check(helper.calls[3], Equals, "TearDownTest")
+    c.Check(helper.calls[4], Equals, "SetUpTest")
+    c.Check(helper.calls[5], Equals, "Test2")
+    c.Check(helper.calls[6], Equals, "TearDownTest")
+    c.Check(helper.calls[7], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 8)
 
     expected := "^\n-+\n" +
                 "PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -197,12 +175,7 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *gocheck.C) {
                 ".*gocheck_test.go:[0-9]+\n" +
                 "  in FixtureHelper.TearDownSuite\n$"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression:", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 
@@ -213,14 +186,14 @@ func (s *FixtureS) TestPanicOnWrongTestArg(c *gocheck.C) {
     helper := WrongTestArgHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "TearDownTest")
-    c.CheckEqual(helper.calls[3], "SetUpTest")
-    c.CheckEqual(helper.calls[4], "Test2")
-    c.CheckEqual(helper.calls[5], "TearDownTest")
-    c.CheckEqual(helper.calls[6], "TearDownSuite")
-    c.CheckEqual(helper.n, 7)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "TearDownTest")
+    c.Check(helper.calls[3], Equals, "SetUpTest")
+    c.Check(helper.calls[4], Equals, "Test2")
+    c.Check(helper.calls[5], Equals, "TearDownTest")
+    c.Check(helper.calls[6], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 7)
 
     expected := "^\n-+\n" +
                 "PANIC: fixture_test\\.go:[0-9]+: " +
@@ -228,19 +201,14 @@ func (s *FixtureS) TestPanicOnWrongTestArg(c *gocheck.C) {
                 "\\.\\.\\. Panic: WrongTestArgHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *gocheck.C) {
     helper := WrongSetUpTestArgHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.n, 0)
+    c.Check(helper.n, Equals, 0)
 
     expected :=
         "^\n-+\n" +
@@ -249,19 +217,14 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *gocheck.C) {
         "\\.\\.\\. Panic: WrongSetUpTestArgHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *gocheck.C) {
     helper := WrongSetUpSuiteArgHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.n, 0)
+    c.Check(helper.n, Equals, 0)
 
     expected :=
         "^\n-+\n" +
@@ -270,12 +233,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *gocheck.C) {
         "\\.\\.\\. Panic: WrongSetUpSuiteArgHelper\\.SetUpSuite argument " +
         "should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 
@@ -286,14 +244,14 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(c *gocheck.C) {
     helper := WrongTestArgCountHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.calls[0], "SetUpSuite")
-    c.CheckEqual(helper.calls[1], "SetUpTest")
-    c.CheckEqual(helper.calls[2], "TearDownTest")
-    c.CheckEqual(helper.calls[3], "SetUpTest")
-    c.CheckEqual(helper.calls[4], "Test2")
-    c.CheckEqual(helper.calls[5], "TearDownTest")
-    c.CheckEqual(helper.calls[6], "TearDownSuite")
-    c.CheckEqual(helper.n, 7)
+    c.Check(helper.calls[0], Equals, "SetUpSuite")
+    c.Check(helper.calls[1], Equals, "SetUpTest")
+    c.Check(helper.calls[2], Equals, "TearDownTest")
+    c.Check(helper.calls[3], Equals, "SetUpTest")
+    c.Check(helper.calls[4], Equals, "Test2")
+    c.Check(helper.calls[5], Equals, "TearDownTest")
+    c.Check(helper.calls[6], Equals, "TearDownSuite")
+    c.Check(helper.n, Equals, 7)
 
     expected := "^\n-+\n" +
                 "PANIC: fixture_test\\.go:[0-9]+: " +
@@ -301,19 +259,14 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(c *gocheck.C) {
                 "\\.\\.\\. Panic: WrongTestArgCountHelper\\.Test1 argument " +
                 "should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *gocheck.C) {
     helper := WrongSetUpTestArgCountHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.n, 0)
+    c.Check(helper.n, Equals, 0)
 
     expected :=
         "^\n-+\n" +
@@ -322,19 +275,14 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *gocheck.C) {
         "\\.\\.\\. Panic: WrongSetUpTestArgCountHelper\\.SetUpTest argument " +
         "should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *gocheck.C) {
     helper := WrongSetUpSuiteArgCountHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.n, 0)
+    c.Check(helper.n, Equals, 0)
 
     expected :=
         "^\n-+\n" +
@@ -343,12 +291,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *gocheck.C) {
         "\\.\\.\\. Panic: WrongSetUpSuiteArgCountHelper" +
         "\\.SetUpSuite argument should be \\*gocheck\\.C\n"
 
-    matched, err := regexp.MatchString(expected, output.value)
-    if err != nil {
-        c.Error("Bad expression: ", expected)
-    } else if !matched {
-        c.Error("Panic not logged properly:\n", output.value)
-    }
+    c.Check(output.value, Matches, expected)
 }
 
 
@@ -361,8 +304,6 @@ type WrongTestArgHelper struct {
 
 func (s *WrongTestArgHelper) Test1(t int) {
 }
-
-// ----
 
 type WrongSetUpTestArgHelper struct {
     FixtureHelper
@@ -419,7 +360,7 @@ func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *gocheck.C) {
     helper := NoTestsHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.CheckEqual(helper.hasRun, false)
+    c.Check(helper.hasRun, Equals, false)
 }
 
 
@@ -434,9 +375,9 @@ type FixtureCheckHelper struct{
 func (s *FixtureCheckHelper) SetUpSuite(c *gocheck.C) {
     switch s.fail {
         case "SetUpSuiteAssert":
-            c.AssertEqual(false, true)
+            c.Assert(false, Equals, true)
         case "SetUpSuiteCheck":
-            c.CheckEqual(false, true)
+            c.Check(false, Equals, true)
     }
     s.completed = true
 }
@@ -444,9 +385,9 @@ func (s *FixtureCheckHelper) SetUpSuite(c *gocheck.C) {
 func (s *FixtureCheckHelper) SetUpTest(c *gocheck.C) {
     switch s.fail {
         case "SetUpTestAssert":
-            c.AssertEqual(false, true)
+            c.Assert(false, Equals, true)
         case "SetUpTestCheck":
-            c.CheckEqual(false, true)
+            c.Check(false, Equals, true)
     }
     s.completed = true
 }
@@ -459,28 +400,28 @@ func (s *FixtureS) TestSetUpSuiteCheck(c *gocheck.C) {
     helper := FixtureCheckHelper{fail: "SetUpSuiteCheck"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.AssertMatch(output.value,
-                  "\n---+\n" +
-                  "FAIL: fixture_test\\.go:[0-9]+: " +
-                  "FixtureCheckHelper\\.SetUpSuite\n\n" +
-                  "fixture_test\\.go:[0-9]+:\n" +
-                  "\\.+ CheckEqual\\(obtained, expected\\):\n" +
-                  "\\.+ Obtained \\(bool\\): false\n" +
-                  "\\.+ Expected \\(bool\\): true\n\n")
-    c.AssertEqual(helper.completed, true)
+    c.Assert(output.value, Matches,
+             "\n---+\n" +
+             "FAIL: fixture_test\\.go:[0-9]+: " +
+             "FixtureCheckHelper\\.SetUpSuite\n\n" +
+             "fixture_test\\.go:[0-9]+:\n" +
+             "\\.+ Check\\(obtained, Equals, expected\\):\n" +
+             "\\.+ Obtained \\(bool\\): false\n" +
+             "\\.+ Expected \\(bool\\): true\n\n")
+    c.Assert(helper.completed, Equals, true)
 }
 
 func (s *FixtureS) TestSetUpSuiteAssert(c *gocheck.C) {
     helper := FixtureCheckHelper{fail: "SetUpSuiteAssert"}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.AssertMatch(output.value,
-                  "\n---+\n" +
-                  "FAIL: fixture_test\\.go:[0-9]+: " +
-                  "FixtureCheckHelper\\.SetUpSuite\n\n" +
-                  "fixture_test\\.go:[0-9]+:\n" +
-                  "\\.+ AssertEqual\\(obtained, expected\\):\n" +
-                  "\\.+ Obtained \\(bool\\): false\n" +
-                  "\\.+ Expected \\(bool\\): true\n\n")
-    c.AssertEqual(helper.completed, false)
+    c.Assert(output.value, Matches,
+             "\n---+\n" +
+             "FAIL: fixture_test\\.go:[0-9]+: " +
+             "FixtureCheckHelper\\.SetUpSuite\n\n" +
+             "fixture_test\\.go:[0-9]+:\n" +
+             "\\.+ Assert\\(obtained, Equals, expected\\):\n" +
+             "\\.+ Obtained \\(bool\\): false\n" +
+             "\\.+ Expected \\(bool\\): true\n\n")
+    c.Assert(helper.completed, Equals, false)
 }

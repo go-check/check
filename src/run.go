@@ -50,6 +50,14 @@ var filterFlag = flag.String("f", "",
 func TestingT(testingT *testing.T) {
     result := RunAll(&RunConf{Filter: *filterFlag})
     println(result.String())
+    if usedDeprecatedChecks {
+        println("WARNING: The Check/AssertEqual() and Check/AssertMatch() " +
+                "family of functions\n         is deprecated, and will be " +
+                "removed in the future.  Assert() and\n         Check() " +
+                "are both more comfortable and more powerful.  See the\n" +
+                "         documentation at http://labix.org/gocheck for " +
+                "more details.\n")
+    }
     if !result.Passed() {
         testingT.Fail()
     }

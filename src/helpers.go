@@ -3,6 +3,7 @@ package gocheck
 
 import (
     "reflect"
+    "strings"
     "regexp"
     "fmt"
     "os"
@@ -164,8 +165,11 @@ func (c *C) AssertNotEqual(obtained interface{}, expected interface{},
 }
 
 
+var usedDeprecatedChecks = false
+
 func (c *C) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
+    usedDeprecatedChecks = true
     typeA := reflect.Typeof(a)
     typeB := reflect.Typeof(b)
     if (typeA == typeB && checkEqual(a, b)) != equal {
@@ -230,6 +234,7 @@ func (c *C) AssertMatch(value interface{}, expression string,
 func (c *C) internalCheckMatch(value interface{}, expression string,
                                equal bool, summary string,
                                issue ...interface{}) bool {
+    usedDeprecatedChecks = true
     valueStr, valueIsStr := value.(string)
     if !valueIsStr {
         if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
@@ -265,18 +270,22 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
 // -----------------------------------------------------------------------
 // Generic checks and assertions based on checkers.
 
-// We have a custom copy of the following interface to avoid importing
+// We have a custom copy of the following interfaces to avoid importing
 // the checkers subpackage into gocheck itself. Make sure this is in sync!
 
 // Checkers used with the c.Assert() and c.Check() helpers must have
-// this interface.  See the gocheck/checkers package for more details.
+// this interface.  See the gocheck/local package for more details.
 type Checker interface {
     Name() string
-    ObtainedLabel() (varName, varLabel string)
-    ExpectedLabel() (varName, varLabel string)
+    VarNames() (obtained, expected string)
     NeedsExpectedValue() bool
     Check(obtained, expected interface{}) (result bool, error string)
 }
+
+type bugInfo interface {
+    GetBugInfo() string
+}
+
 
 
 // Verify if the first value matches with the expected value.  What
@@ -308,50 +317,71 @@ func (c *C) Assert(obtained interface{}, checker Checker,
 func (c *C) internalCheck(funcName string,
                           obtained interface{}, checker Checker,
                           args ...interface{}) bool {
-    var expected interface{}
-    needsExpected := checker.NeedsExpectedValue()
-    if needsExpected {
-        if len(args) == 0 {
-            obtainedVarName, _ := checker.ObtainedLabel()
-            expectedVarName, _ := checker.ExpectedLabel()
-            c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):",
-                                       funcName, obtainedVarName,
-                                       checker.Name(), expectedVarName))
-            c.logString(fmt.Sprint("Missing ", expectedVarName,
-                                   " value for the ", checker.Name(),
-                                   " checker"))
-            c.logNewLine()
-            c.Fail()
-            return false
-        }
-        expected = args[0]
-        args = args[1:]
+    if checker == nil {
+        c.logCaller(2, fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
+        c.logString("Oops.. you've provided a nil checker!")
+        goto fail
     }
+
+    // If the last argument is a bug info, extract it out.
+    var bug bugInfo
+    if len(args) > 0 {
+        if gotBug, hasBug := args[len(args)-1].(bugInfo); hasBug {
+            bug = gotBug
+            args = args[:len(args)-1]
+        }
+    }
+
+    // Ensure we got the needed number of arguments in expected.  Note that
+    // this logic is a bit more complex than it ought to be, mainly because
+    // it's leaving the door open to multiple expected values.
+    var expectedWanted int
+    var expected interface{}
+    if checker.NeedsExpectedValue() {
+        expectedWanted = 1
+    }
+    if len(args) == expectedWanted {
+        if expectedWanted > 0 {
+            expected = args[0]
+        }
+    } else {
+        obtainedName, expectedName := checker.VarNames()
+        c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName,
+                                   checker.Name(), expectedName))
+        c.logString(fmt.Sprintf("Wrong number of %s args for %s: " +
+                                "want %d, got %d", expectedName, checker.Name(),
+                                expectedWanted, len(args)))
+        goto fail
+    }
+
+    // Do the actual check.
     result, error := checker.Check(obtained, expected)
     if !result || error != "" {
-        obtainedVarName, obtainedVarLabel := checker.ObtainedLabel()
-        expectedVarName, expectedVarLabel := checker.ExpectedLabel()
+        obtainedName, expectedName := checker.VarNames()
         var summary string
-        if needsExpected {
-            summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedVarName,
-                                  checker.Name(), expectedVarName)
+        if expectedWanted > 0 {
+            summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedName,
+                                  checker.Name(), expectedName)
         } else {
-            summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedVarName,
+            summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedName,
                                   checker.Name())
         }
         c.logCaller(2, summary)
-        c.logValue(obtainedVarLabel, obtained)
-        if needsExpected {
-            c.logValue(expectedVarLabel, expected)
+        c.logValue(strings.Title(obtainedName), obtained)
+        if expectedWanted > 0 {
+            c.logValue(strings.Title(expectedName), expected)
         }
         if error != "" {
             c.logString(error)
-        } else if len(args) != 0 {
-            c.logString(fmt.Sprint(args...))
+        } else if bug != nil {
+            c.logString(bug.GetBugInfo())
         }
-        c.logNewLine()
-        c.Fail()
-        return false
+        goto fail
     }
     return true
+
+fail:
+    c.logNewLine()
+    c.Fail()
+    return false
 }

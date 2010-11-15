@@ -1,15 +1,15 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=gocheck/checkers
+TARG=gocheck/local
 GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
 
 GOFILES=\
-	checkers.go\
+	local.go\
 
 include $(GOROOT)/src/Make.pkg
 
 format:
-	${GOFMT} -w checkers.go
+	${GOFMT} -w local.go
 
 testpackage: _test/gocheck.a
 

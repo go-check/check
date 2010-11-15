@@ -17,11 +17,11 @@ format:
 
 
 
-testpackage: _test/gocheck/checkers.a
+testpackage: _test/gocheck/local.a
 
-_test/gocheck/checkers.a: checkers/_test/gocheck/checkers.a
+_test/gocheck/local.a: local/_test/gocheck/local.a
 	@mkdir -p _test/gocheck
-	cp checkers/_test/gocheck/checkers.a _test/gocheck
+	cp local/_test/gocheck/local.a _test/gocheck
 
-checkers/_test/gocheck/checkers.a:
-	make -C checkers _test/gocheck/checkers.a
+local/_test/gocheck/local.a:
+	make -C local _test/gocheck/local.a
