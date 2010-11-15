@@ -37,7 +37,6 @@ package gocheck_test
 
 import (
     "gocheck"
-    gocheck_local "gocheck/local"
     "os"
 )
 
@@ -93,15 +92,11 @@ func myBug(info string) *myBugInfo {
 
 
 // -----------------------------------------------------------------------
-// Ensure the internal interface matches the one in the subpackage.
+// Ensure a real checker actually works fine.
 
-// The Checker interface is internal inside the main gocheck package, to
-// avoid importing the subpackage and thus having to know its location.
-// Here we ensure that the interface in the subpackage actually matches,
-// and thus that the whole thing works end to end.
 func (s *HelpersS) TestCheckerInterface(c *gocheck.C) {
     testHelperSuccess(c, "Check(1, Equals, 1)", true, func() interface{} {
-        return c.Check(1, gocheck_local.Equals, 1)
+        return c.Check(1, gocheck.Equals, 1)
     })
 }
 
@@ -693,15 +688,15 @@ func (s *HelpersS) TestMkDir(c *gocheck.C) {
     helper := MkDirHelper{}
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
-    c.Assert(output.value, gocheck_local.Equals, "")
-    c.Check(helper.isDir1, gocheck_local.Equals, true)
-    c.Check(helper.isDir2, gocheck_local.Equals, true)
-    c.Check(helper.isDir3, gocheck_local.Equals, true)
-    c.Check(helper.isDir4, gocheck_local.Equals, true)
-    c.Check(helper.path1, gocheck_local.Not(gocheck_local.Equals),
+    c.Assert(output.value, gocheck.Equals, "")
+    c.Check(helper.isDir1, gocheck.Equals, true)
+    c.Check(helper.isDir2, gocheck.Equals, true)
+    c.Check(helper.isDir3, gocheck.Equals, true)
+    c.Check(helper.isDir4, gocheck.Equals, true)
+    c.Check(helper.path1, gocheck.Not(gocheck.Equals),
             helper.path2)
-    c.Check(isDir(helper.path1), gocheck_local.Equals, false)
-    c.Check(isDir(helper.path2), gocheck_local.Equals, false)
+    c.Check(isDir(helper.path1), gocheck.Equals, false)
+    c.Check(isDir(helper.path2), gocheck.Equals, false)
 }
 
 func isDir(path string) bool {

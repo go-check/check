@@ -29,7 +29,7 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package checkers
+package gocheck
 
 import (
     "reflect"
@@ -263,10 +263,6 @@ func (checker *matchesChecker) Name() string {
 
 func (checker *matchesChecker) VarNames() (obtained, expected string) {
     return "value", "regex"
-}
-
-type hasString interface {
-    String() string
 }
 
 func (checker *matchesChecker) Check(value, re interface{}) (bool, string) {

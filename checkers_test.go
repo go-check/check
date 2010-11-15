@@ -29,19 +29,12 @@ LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
 NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
-package checkers_test
+package gocheck_test
 
 import (
-    "testing"
     "gocheck"
-    . "gocheck/local"
     "os"
 )
-
-
-func TestGocheck(t *testing.T) {
-    gocheck.TestingT(t)
-}
 
 
 type CheckersS struct{}
@@ -49,7 +42,7 @@ type CheckersS struct{}
 var _ = gocheck.Suite(&CheckersS{})
 
 
-func testInfo(c *gocheck.C, checker Checker,
+func testInfo(c *gocheck.C, checker gocheck.Checker,
               name, obtainedVarName, expectedVarName string) {
     if checker.Name() != name {
         c.Fatalf("Got name %s, expected %s", checker.Name(), name)
@@ -65,7 +58,7 @@ func testInfo(c *gocheck.C, checker Checker,
     }
 }
 
-func testCheck(c *gocheck.C, checker Checker,
+func testCheck(c *gocheck.C, checker gocheck.Checker,
                obtained, expected interface{},
                wantedResult bool, wantedError string) {
     result, error := checker.Check(obtained, expected)
@@ -78,7 +71,7 @@ func testCheck(c *gocheck.C, checker Checker,
 }
 
 func (s *CheckersS) TestBug(c *gocheck.C) {
-    bug := Bug("a %d bc", 42)
+    bug := gocheck.Bug("a %d bc", 42)
     info := bug.GetBugInfo()
     if info != "a 42 bc" {
         c.Fatalf("Bug() returned %#v", info)
@@ -86,77 +79,77 @@ func (s *CheckersS) TestBug(c *gocheck.C) {
 }
 
 func (s *CheckersS) TestIsNil(c *gocheck.C) {
-    testInfo(c, IsNil, "IsNil", "value", "")
+    testInfo(c, gocheck.IsNil, "IsNil", "value", "")
 
-    testCheck(c, IsNil, nil, nil, true, "")
-    testCheck(c, IsNil, "a", nil, false, "")
+    testCheck(c, gocheck.IsNil, nil, nil, true, "")
+    testCheck(c, gocheck.IsNil, "a", nil, false, "")
 
-    testCheck(c, IsNil, (chan int)(nil), nil, true, "")
-    testCheck(c, IsNil, make(chan int), nil, false, "")
-    testCheck(c, IsNil, (os.Error)(nil), nil, true, "")
-    testCheck(c, IsNil, os.NewError(""), nil, false, "")
-    testCheck(c, IsNil, ([]int)(nil), nil, true, "")
-    testCheck(c, IsNil, make([]int, 1), nil, false, "")
+    testCheck(c, gocheck.IsNil, (chan int)(nil), nil, true, "")
+    testCheck(c, gocheck.IsNil, make(chan int), nil, false, "")
+    testCheck(c, gocheck.IsNil, (os.Error)(nil), nil, true, "")
+    testCheck(c, gocheck.IsNil, os.NewError(""), nil, false, "")
+    testCheck(c, gocheck.IsNil, ([]int)(nil), nil, true, "")
+    testCheck(c, gocheck.IsNil, make([]int, 1), nil, false, "")
 }
 
 func (s *CheckersS) TestNotNil(c *gocheck.C) {
-    testInfo(c, NotNil, "NotNil", "value", "")
+    testInfo(c, gocheck.NotNil, "NotNil", "value", "")
 
-    testCheck(c, NotNil, nil, nil, false, "")
-    testCheck(c, NotNil, "a", nil, true, "")
+    testCheck(c, gocheck.NotNil, nil, nil, false, "")
+    testCheck(c, gocheck.NotNil, "a", nil, true, "")
 
-    testCheck(c, NotNil, (chan int)(nil), nil, false, "")
-    testCheck(c, NotNil, make(chan int), nil, true, "")
-    testCheck(c, NotNil, (os.Error)(nil), nil, false, "")
-    testCheck(c, NotNil, os.NewError(""), nil, true, "")
-    testCheck(c, NotNil, ([]int)(nil), nil, false, "")
-    testCheck(c, NotNil, make([]int, 1), nil, true, "")
+    testCheck(c, gocheck.NotNil, (chan int)(nil), nil, false, "")
+    testCheck(c, gocheck.NotNil, make(chan int), nil, true, "")
+    testCheck(c, gocheck.NotNil, (os.Error)(nil), nil, false, "")
+    testCheck(c, gocheck.NotNil, os.NewError(""), nil, true, "")
+    testCheck(c, gocheck.NotNil, ([]int)(nil), nil, false, "")
+    testCheck(c, gocheck.NotNil, make([]int, 1), nil, true, "")
 }
 
 func (s *CheckersS) TestNot(c *gocheck.C) {
-    testInfo(c, Not(IsNil), "Not(IsNil)", "value", "")
+    testInfo(c, gocheck.Not(gocheck.IsNil), "Not(IsNil)", "value", "")
 
-    testCheck(c, Not(IsNil), nil, nil, false, "")
-    testCheck(c, Not(IsNil), "a", nil, true, "")
+    testCheck(c, gocheck.Not(gocheck.IsNil), nil, nil, false, "")
+    testCheck(c, gocheck.Not(gocheck.IsNil), "a", nil, true, "")
 }
 
 
 func (s *CheckersS) TestEquals(c *gocheck.C) {
-    testInfo(c, Equals, "Equals", "obtained", "expected")
+    testInfo(c, gocheck.Equals, "Equals", "obtained", "expected")
 
     // The simplest.
-    testCheck(c, Equals, 42, 42, true, "")
-    testCheck(c, Equals, 42, 43, false, "")
+    testCheck(c, gocheck.Equals, 42, 42, true, "")
+    testCheck(c, gocheck.Equals, 42, 43, false, "")
 
     // Different native types.
-    testCheck(c, Equals, int32(42), int64(42), false, "")
+    testCheck(c, gocheck.Equals, int32(42), int64(42), false, "")
 
     // With nil.
-    testCheck(c, Equals, 42, nil, false, "")
+    testCheck(c, gocheck.Equals, 42, nil, false, "")
 
     // Arrays
-    testCheck(c, Equals, []byte{1,2}, []byte{1,2}, true, "")
-    testCheck(c, Equals, []byte{1,2}, []byte{1,3}, false, "")
+    testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,2}, true, "")
+    testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,3}, false, "")
 }
 
 func (s *CheckersS) TestMatches(c *gocheck.C) {
-    testInfo(c, Matches, "Matches", "value", "regex")
+    testInfo(c, gocheck.Matches, "Matches", "value", "regex")
 
     // Simple matching
-    testCheck(c, Matches, "abc", "abc", true, "")
-    testCheck(c, Matches, "abc", "a.c", true, "")
+    testCheck(c, gocheck.Matches, "abc", "abc", true, "")
+    testCheck(c, gocheck.Matches, "abc", "a.c", true, "")
 
     // Must match fully
-    testCheck(c, Matches, "abc", "ab", false, "")
-    testCheck(c, Matches, "abc", "bc", false, "")
+    testCheck(c, gocheck.Matches, "abc", "ab", false, "")
+    testCheck(c, gocheck.Matches, "abc", "bc", false, "")
 
     // String()-enabled values accepted
-    testCheck(c, Matches, os.NewError("abc"), "a.c", true, "")
-    testCheck(c, Matches, os.NewError("abc"), "a.d", false, "")
+    testCheck(c, gocheck.Matches, os.NewError("abc"), "a.c", true, "")
+    testCheck(c, gocheck.Matches, os.NewError("abc"), "a.d", false, "")
 
     // Some error conditions.
-    testCheck(c, Matches, 1, "a.c", false,
+    testCheck(c, gocheck.Matches, 1, "a.c", false,
               "Obtained value is not a string and has no .String()")
-    testCheck(c, Matches, "abc", "a[c", false,
+    testCheck(c, gocheck.Matches, "abc", "a[c", false,
               "Can't compile regex: unmatched '['")
 }

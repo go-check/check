@@ -302,24 +302,6 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
 // -----------------------------------------------------------------------
 // Generic checks and assertions based on checkers.
 
-// We have a custom copy of the following interfaces to avoid importing
-// the checkers subpackage into gocheck itself. Make sure this is in sync!
-
-// Checkers used with the c.Assert() and c.Check() helpers must have
-// this interface.  See the gocheck/local package for more details.
-type Checker interface {
-    Name() string
-    VarNames() (obtained, expected string)
-    NeedsExpectedValue() bool
-    Check(obtained, expected interface{}) (result bool, error string)
-}
-
-type bugInfo interface {
-    GetBugInfo() string
-}
-
-
-
 // Verify if the first value matches with the expected value.  What
 // matching means is defined by the provided checker. In case they do not
 // match, an error will be logged, the test will be marked as failed, and
@@ -356,9 +338,9 @@ func (c *C) internalCheck(funcName string,
     }
 
     // If the last argument is a bug info, extract it out.
-    var bug bugInfo
+    var bug BugInfo
     if len(args) > 0 {
-        if gotBug, hasBug := args[len(args)-1].(bugInfo); hasBug {
+        if gotBug, hasBug := args[len(args)-1].(BugInfo); hasBug {
             bug = gotBug
             args = args[:len(args)-1]
         }

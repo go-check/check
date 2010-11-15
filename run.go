@@ -47,25 +47,8 @@ var allSuites []interface{}
 // with the Test prefix in the given value will be considered as a test to
 // be run.
 func Suite(suite interface{}) interface{} {
-    return Suites(suite)[0]
-}
-
-// Register all of the provided values as test suites to be run.  Any methods
-// starting with the Test prefix in the given values will be considered as a
-// test to be run.
-func Suites(suites ...interface{}) []interface{} {
-    lenAllSuites := len(allSuites)
-    lenSuites := len(suites)
-    if lenAllSuites + lenSuites > cap(allSuites) {
-        newAllSuites := make([]interface{}, (lenAllSuites+lenSuites)*2)
-        copy(newAllSuites, allSuites)
-        allSuites = newAllSuites
-    }
-    allSuites = allSuites[0:lenAllSuites+lenSuites]
-    for i, suite := range suites {
-        allSuites[lenAllSuites+i] = suite
-    }
-    return suites
+    allSuites = append(allSuites, suite)
+    return suite
 }
 
 
