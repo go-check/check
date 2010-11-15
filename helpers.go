@@ -310,8 +310,8 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Check(obtained interface{}, checker Checker,
-                  expected ...interface{}) bool {
-    return c.internalCheck("Check", obtained, checker, expected...)
+                  args ...interface{}) bool {
+    return c.internalCheck("Check", obtained, checker, args...)
 }
 
 // Ensure that the first value matches with the expected value.  What
@@ -322,8 +322,8 @@ func (c *C) Check(obtained interface{}, checker Checker,
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Assert(obtained interface{}, checker Checker,
-                   expected ...interface{}) {
-    if !c.internalCheck("Assert", obtained, checker, expected...) {
+                   args ...interface{}) {
+    if !c.internalCheck("Assert", obtained, checker, args...) {
         c.stopNow()
     }
 }
