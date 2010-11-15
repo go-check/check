@@ -8,6 +8,7 @@ package gocheck_test
 
 import (
     "gocheck"
+    gocheck_local "gocheck/local"
     "strings"
     "regexp"
     "fmt"
@@ -60,7 +61,9 @@ func (s *FoundationS) TestFailNow(c *gocheck.C) {
             c.Error("FailNow() didn't fail the test")
         } else {
             c.Succeed()
-            c.CheckEqual(c.GetTestLog(), "")
+            if c.GetTestLog() != "" {
+                c.Error("Something got logged:\n" + c.GetTestLog())
+            }
         }
     })()
 
@@ -73,7 +76,9 @@ func (s *FoundationS) TestSucceedNow(c *gocheck.C) {
         if c.Failed() {
             c.Error("SucceedNow() didn't succeed the test")
         }
-        c.CheckEqual(c.GetTestLog(), "")
+        if c.GetTestLog() != "" {
+            c.Error("Something got logged:\n" + c.GetTestLog())
+        }
     })()
 
     c.Fail()
@@ -104,9 +109,11 @@ func (s *FoundationS) TestFatal(c *gocheck.C) {
             c.Error("Fatal() didn't fail the test")
         } else {
             c.Succeed()
-            c.CheckEqual(c.GetTestLog(),
-                         fmt.Sprintf("foundation_test.go:%d:\n" +
-                                     "... Error: Die now!\n", line))
+            expected := fmt.Sprintf("foundation_test.go:%d:\n" +
+                                    "... Error: Die now!\n", line)
+            if c.GetTestLog() != expected {
+                c.Error("Incorrect log:\n" + c.GetTestLog())
+            }
         }
     })()
 
@@ -122,9 +129,11 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
             c.Error("Fatalf() didn't fail the test")
         } else {
             c.Succeed()
-            c.CheckEqual(c.GetTestLog(),
-                         fmt.Sprintf("foundation_test.go:%d:\n" +
-                                     "... Error: Die now!\n", line))
+            expected := fmt.Sprintf("foundation_test.go:%d:\n" +
+                                    "... Error: Die now!\n", line)
+            if c.GetTestLog() != expected {
+                c.Error("Incorrect log:\n" + c.GetTestLog())
+            }
         }
     })()
 
@@ -137,14 +146,14 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
     log := fmt.Sprintf(
         "foundation_test.go:%d:\n" +
-        "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
+        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n" +
         "\\.\\.\\. Obtained \\(int\\): 10\n" +
         "\\.\\.\\. Expected \\(int\\): 20\n\n",
         getMyLine()+1)
-    result := c.CheckEqual(10, 20)
+    result := c.Check(10, gocheck_local.Equals, 20)
     checkState(c, result,
                &expectedState{
-                    name: "CheckEqual(10, 20)",
+                    name: "Check(10, Equals, 20)",
                     result: false,
                     failed: true,
                     log: log,
@@ -156,13 +165,13 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *gocheck.C) {
     testLine := getMyLine()-1
     log := fmt.Sprintf(
         "foundation_test.go:%d > gocheck_test.go:%d:\n" +
-        "\\.\\.\\. CheckEqual\\(obtained, expected\\):\n" +
+        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n" +
         "\\.\\.\\. Obtained \\(int\\): 10\n" +
         "\\.\\.\\. Expected \\(int\\): 20\n\n",
         testLine, line)
     checkState(c, result,
                &expectedState{
-                    name: "CheckEqual(10, 20)",
+                    name: "Check(10, Equals, 20)",
                     result: false,
                     failed: true,
                     log: log,
@@ -228,7 +237,8 @@ func (s *EmbeddedInternalS) TestMethod(c *gocheck.C) {
 
 func (s *EmbeddedS) TestMethod(c *gocheck.C) {
     // http://code.google.com/p/go/issues/detail?id=906
-    c.CheckEqual(s.called, false,
-                 "The bug described in issue 906 is affecting the runner")
+    c.Check(s.called, gocheck_local.Equals, false,
+            gocheck_local.Bug("The bug described in issue 906 is " +
+                              "affecting the runner"))
     s.called = true
 }

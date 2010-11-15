@@ -3,6 +3,7 @@ package gocheck
 
 import (
     "reflect"
+    "strings"
     "regexp"
     "fmt"
     "os"
@@ -164,8 +165,11 @@ func (c *C) AssertNotEqual(obtained interface{}, expected interface{},
 }
 
 
+var usedDeprecatedChecks = false
+
 func (c *C) internalCheckEqual(a interface{}, b interface{}, equal bool,
                                summary string, issue ...interface{}) bool {
+    usedDeprecatedChecks = true
     typeA := reflect.Typeof(a)
     typeB := reflect.Typeof(b)
     if (typeA == typeB && checkEqual(a, b)) != equal {
@@ -230,6 +234,7 @@ func (c *C) AssertMatch(value interface{}, expression string,
 func (c *C) internalCheckMatch(value interface{}, expression string,
                                equal bool, summary string,
                                issue ...interface{}) bool {
+    usedDeprecatedChecks = true
     valueStr, valueIsStr := value.(string)
     if !valueIsStr {
         if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
@@ -259,4 +264,124 @@ func (c *C) internalCheckMatch(value interface{}, expression string,
         return false
     }
     return true
+}
+
+
+// -----------------------------------------------------------------------
+// Generic checks and assertions based on checkers.
+
+// We have a custom copy of the following interfaces to avoid importing
+// the checkers subpackage into gocheck itself. Make sure this is in sync!
+
+// Checkers used with the c.Assert() and c.Check() helpers must have
+// this interface.  See the gocheck/local package for more details.
+type Checker interface {
+    Name() string
+    VarNames() (obtained, expected string)
+    NeedsExpectedValue() bool
+    Check(obtained, expected interface{}) (result bool, error string)
+}
+
+type bugInfo interface {
+    GetBugInfo() string
+}
+
+
+
+// Verify if the first value matches with the expected value.  What
+// matching means is defined by the provided checker. In case they do not
+// match, an error will be logged, the test will be marked as failed, and
+// the test execution will continue.  Some checkers may not need the expected
+// argument (e.g. IsNil).  In either case, any extra arguments provided to
+// the function will be logged next to the reported problem when the
+// matching fails.  This is a handy way to provide problem-specific hints.
+func (c *C) Check(obtained interface{}, checker Checker,
+                  expected ...interface{}) bool {
+    return c.internalCheck("Check", obtained, checker, expected...)
+}
+
+// Ensure that the first value matches with the expected value.  What
+// matching means is defined by the provided checker. In case they do not
+// match, an error will be logged, the test will be marked as failed, and
+// the test execution will stop.  Some checkers may not need the expected
+// argument (e.g. IsNil).  In either case, any extra arguments provided to
+// the function will be logged next to the reported problem when the
+// matching fails.  This is a handy way to provide problem-specific hints.
+func (c *C) Assert(obtained interface{}, checker Checker,
+                   expected ...interface{}) {
+    if !c.internalCheck("Assert", obtained, checker, expected...) {
+        c.stopNow()
+    }
+}
+
+func (c *C) internalCheck(funcName string,
+                          obtained interface{}, checker Checker,
+                          args ...interface{}) bool {
+    if checker == nil {
+        c.logCaller(2, fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
+        c.logString("Oops.. you've provided a nil checker!")
+        goto fail
+    }
+
+    // If the last argument is a bug info, extract it out.
+    var bug bugInfo
+    if len(args) > 0 {
+        if gotBug, hasBug := args[len(args)-1].(bugInfo); hasBug {
+            bug = gotBug
+            args = args[:len(args)-1]
+        }
+    }
+
+    // Ensure we got the needed number of arguments in expected.  Note that
+    // this logic is a bit more complex than it ought to be, mainly because
+    // it's leaving the door open to multiple expected values.
+    var expectedWanted int
+    var expected interface{}
+    if checker.NeedsExpectedValue() {
+        expectedWanted = 1
+    }
+    if len(args) == expectedWanted {
+        if expectedWanted > 0 {
+            expected = args[0]
+        }
+    } else {
+        obtainedName, expectedName := checker.VarNames()
+        c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName,
+                                   checker.Name(), expectedName))
+        c.logString(fmt.Sprintf("Wrong number of %s args for %s: " +
+                                "want %d, got %d", expectedName, checker.Name(),
+                                expectedWanted, len(args)))
+        goto fail
+    }
+
+    // Do the actual check.
+    result, error := checker.Check(obtained, expected)
+    if !result || error != "" {
+        obtainedName, expectedName := checker.VarNames()
+        var summary string
+        if expectedWanted > 0 {
+            summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedName,
+                                  checker.Name(), expectedName)
+        } else {
+            summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedName,
+                                  checker.Name())
+        }
+        c.logCaller(2, summary)
+        c.logValue(strings.Title(obtainedName), obtained)
+        if expectedWanted > 0 {
+            c.logValue(strings.Title(expectedName), expected)
+        }
+        if error != "" {
+            c.logString(error)
+        } else if bug != nil {
+            c.logString(bug.GetBugInfo())
+        }
+        goto fail
+    }
+    return true
+
+fail:
+    c.logNewLine()
+    c.Fail()
+    return false
 }

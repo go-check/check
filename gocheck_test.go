@@ -15,6 +15,7 @@ package gocheck_test
 
 import (
     "gocheck"
+    gocheck_local "gocheck/local"
     "testing"
     "runtime"
     "regexp"
@@ -80,7 +81,7 @@ func (s *String) Write(p []byte) (n int, err os.Error) {
 func checkEqualWrapper(c *gocheck.C,
                        expected interface{},
                        obtained interface{}) (result bool, line int) {
-    return c.CheckEqual(expected, obtained), getMyLine()
+    return c.Check(expected, gocheck_local.Equals, obtained), getMyLine()
 }
 
 
