@@ -83,6 +83,10 @@ func (s *CheckersS) TestNot(c *gocheck.C) {
 }
 
 
+type simpleStruct struct {
+    i int
+}
+
 func (s *CheckersS) TestEquals(c *gocheck.C) {
     testInfo(c, gocheck.Equals, "Equals", "obtained", "expected")
 
@@ -99,6 +103,14 @@ func (s *CheckersS) TestEquals(c *gocheck.C) {
     // Arrays
     testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,2}, true, "")
     testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,3}, false, "")
+
+    // Struct values
+    testCheck(c, gocheck.Equals, simpleStruct{1}, simpleStruct{1}, true, "")
+    testCheck(c, gocheck.Equals, simpleStruct{1}, simpleStruct{2}, false, "")
+
+    // Struct pointers
+    testCheck(c, gocheck.Equals, &simpleStruct{1}, &simpleStruct{1}, true, "")
+    testCheck(c, gocheck.Equals, &simpleStruct{1}, &simpleStruct{2}, false, "")
 }
 
 func (s *CheckersS) TestMatches(c *gocheck.C) {

@@ -201,14 +201,7 @@ func (checker *equalsChecker) Name() string {
 
 func (checker *equalsChecker) Check(obtained, expected interface{}) (
         result bool, error string) {
-    // This will use a fast path to check for equality of normal types,
-    // and then fallback to reflect.DeepEqual if things go wrong.
-    defer func() {
-        if recover() != nil {
-            result = reflect.DeepEqual(obtained, expected)
-        }
-    }()
-    return obtained == expected, ""
+    return reflect.DeepEqual(obtained, expected), ""
 }
 
 
