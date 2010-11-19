@@ -8,7 +8,6 @@ package gocheck_test
 
 import (
     "gocheck"
-    gocheck_local "gocheck/local"
     "strings"
     "regexp"
     "fmt"
@@ -150,7 +149,7 @@ func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
         "\\.\\.\\. Obtained \\(int\\): 10\n" +
         "\\.\\.\\. Expected \\(int\\): 20\n\n",
         getMyLine()+1)
-    result := c.Check(10, gocheck_local.Equals, 20)
+    result := c.Check(10, gocheck.Equals, 20)
     checkState(c, result,
                &expectedState{
                     name: "Check(10, Equals, 20)",
@@ -237,8 +236,8 @@ func (s *EmbeddedInternalS) TestMethod(c *gocheck.C) {
 
 func (s *EmbeddedS) TestMethod(c *gocheck.C) {
     // http://code.google.com/p/go/issues/detail?id=906
-    c.Check(s.called, gocheck_local.Equals, false,
-            gocheck_local.Bug("The bug described in issue 906 is " +
-                              "affecting the runner"))
+    c.Check(s.called, gocheck.Equals, false,
+            gocheck.Bug("The bug described in issue 906 is " +
+                        "affecting the runner"))
     s.called = true
 }

@@ -4,8 +4,7 @@ package gocheck_test
 
 
 import (
-    "gocheck"
-    . "gocheck/local"
+    . "gocheck"
 )
 
 
@@ -14,9 +13,9 @@ import (
 
 type FixtureS struct{}
 
-var fixtureS = gocheck.Suite(&FixtureS{})
+var fixtureS = Suite(&FixtureS{})
 
-func (s *FixtureS) TestCountSuite(c *gocheck.C) {
+func (s *FixtureS) TestCountSuite(c *C) {
     suitesRun += 1
 }
 
@@ -24,9 +23,9 @@ func (s *FixtureS) TestCountSuite(c *gocheck.C) {
 // -----------------------------------------------------------------------
 // Basic fixture ordering verification.
 
-func (s *FixtureS) TestOrder(c *gocheck.C) {
+func (s *FixtureS) TestOrder(c *C) {
     helper := FixtureHelper{}
-    gocheck.Run(&helper, nil)
+    Run(&helper, nil)
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "Test1")
@@ -42,10 +41,10 @@ func (s *FixtureS) TestOrder(c *gocheck.C) {
 // -----------------------------------------------------------------------
 // Check the behavior when panics occur within tests and fixtures.
 
-func (s *FixtureS) TestPanicOnTest(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnTest(c *C) {
     helper := FixtureHelper{panicOn: "Test1"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "Test1")
@@ -69,10 +68,10 @@ func (s *FixtureS) TestPanicOnTest(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnSetUpTest(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnSetUpTest(c *C) {
     helper := FixtureHelper{panicOn: "SetUpTest"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "TearDownTest")
@@ -98,10 +97,10 @@ func (s *FixtureS) TestPanicOnSetUpTest(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnTearDownTest(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnTearDownTest(c *C) {
     helper := FixtureHelper{panicOn: "TearDownTest"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "Test1")
@@ -128,10 +127,10 @@ func (s *FixtureS) TestPanicOnTearDownTest(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnSetUpSuite(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
     helper := FixtureHelper{panicOn: "SetUpSuite"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "TearDownSuite")
     c.Check(helper.n, Equals, 2)
@@ -150,10 +149,10 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnTearDownSuite(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
     helper := FixtureHelper{panicOn: "TearDownSuite"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "Test1")
@@ -182,10 +181,10 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *gocheck.C) {
 // -----------------------------------------------------------------------
 // A wrong argument on a test or fixture will produce a nice error.
 
-func (s *FixtureS) TestPanicOnWrongTestArg(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongTestArg(c *C) {
     helper := WrongTestArgHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "TearDownTest")
@@ -204,10 +203,10 @@ func (s *FixtureS) TestPanicOnWrongTestArg(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *C) {
     helper := WrongSetUpTestArgHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.n, Equals, 0)
 
     expected :=
@@ -220,10 +219,10 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *C) {
     helper := WrongSetUpSuiteArgHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.n, Equals, 0)
 
     expected :=
@@ -240,10 +239,10 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *gocheck.C) {
 // -----------------------------------------------------------------------
 // Nice errors also when tests or fixture have wrong arg count.
 
-func (s *FixtureS) TestPanicOnWrongTestArgCount(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongTestArgCount(c *C) {
     helper := WrongTestArgCountHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.calls[0], Equals, "SetUpSuite")
     c.Check(helper.calls[1], Equals, "SetUpTest")
     c.Check(helper.calls[2], Equals, "TearDownTest")
@@ -262,10 +261,10 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *C) {
     helper := WrongSetUpTestArgCountHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.n, Equals, 0)
 
     expected :=
@@ -278,10 +277,10 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *gocheck.C) {
     c.Check(output.value, Matches, expected)
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *gocheck.C) {
+func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *C) {
     helper := WrongSetUpSuiteArgCountHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.n, Equals, 0)
 
     expected :=
@@ -323,21 +322,21 @@ type WrongTestArgCountHelper struct {
     FixtureHelper
 }
 
-func (s *WrongTestArgCountHelper) Test1(c *gocheck.C, i int) {
+func (s *WrongTestArgCountHelper) Test1(c *C, i int) {
 }
 
 type WrongSetUpTestArgCountHelper struct {
     FixtureHelper
 }
 
-func (s *WrongSetUpTestArgCountHelper) SetUpTest(c *gocheck.C, i int) {
+func (s *WrongSetUpTestArgCountHelper) SetUpTest(c *C, i int) {
 }
 
 type WrongSetUpSuiteArgCountHelper struct {
     FixtureHelper
 }
 
-func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(c *gocheck.C, i int) {
+func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(c *C, i int) {
 }
 
 
@@ -348,18 +347,18 @@ type NoTestsHelper struct{
     hasRun bool
 }
 
-func (s *NoTestsHelper) SetUpSuite(c *gocheck.C) {
+func (s *NoTestsHelper) SetUpSuite(c *C) {
     s.hasRun = true
 }
 
-func (s *NoTestsHelper) TearDownSuite(c *gocheck.C) {
+func (s *NoTestsHelper) TearDownSuite(c *C) {
     s.hasRun = true
 }
 
-func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *gocheck.C) {
+func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *C) {
     helper := NoTestsHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Check(helper.hasRun, Equals, false)
 }
 
@@ -372,7 +371,7 @@ type FixtureCheckHelper struct{
     completed bool
 }
 
-func (s *FixtureCheckHelper) SetUpSuite(c *gocheck.C) {
+func (s *FixtureCheckHelper) SetUpSuite(c *C) {
     switch s.fail {
         case "SetUpSuiteAssert":
             c.Assert(false, Equals, true)
@@ -382,7 +381,7 @@ func (s *FixtureCheckHelper) SetUpSuite(c *gocheck.C) {
     s.completed = true
 }
 
-func (s *FixtureCheckHelper) SetUpTest(c *gocheck.C) {
+func (s *FixtureCheckHelper) SetUpTest(c *C) {
     switch s.fail {
         case "SetUpTestAssert":
             c.Assert(false, Equals, true)
@@ -392,14 +391,14 @@ func (s *FixtureCheckHelper) SetUpTest(c *gocheck.C) {
     s.completed = true
 }
 
-func (s *FixtureCheckHelper) Test(c *gocheck.C) {
+func (s *FixtureCheckHelper) Test(c *C) {
     // Do nothing.
 }
 
-func (s *FixtureS) TestSetUpSuiteCheck(c *gocheck.C) {
+func (s *FixtureS) TestSetUpSuiteCheck(c *C) {
     helper := FixtureCheckHelper{fail: "SetUpSuiteCheck"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Assert(output.value, Matches,
              "\n---+\n" +
              "FAIL: fixture_test\\.go:[0-9]+: " +
@@ -411,10 +410,10 @@ func (s *FixtureS) TestSetUpSuiteCheck(c *gocheck.C) {
     c.Assert(helper.completed, Equals, true)
 }
 
-func (s *FixtureS) TestSetUpSuiteAssert(c *gocheck.C) {
+func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
     helper := FixtureCheckHelper{fail: "SetUpSuiteAssert"}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    Run(&helper, &RunConf{Output: &output})
     c.Assert(output.value, Matches,
              "\n---+\n" +
              "FAIL: fixture_test\\.go:[0-9]+: " +
