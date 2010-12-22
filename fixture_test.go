@@ -424,3 +424,38 @@ func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
              "\\.+ Expected \\(bool\\): true\n\n")
     c.Assert(helper.completed, Equals, false)
 }
+
+
+// -----------------------------------------------------------------------
+// Verify that logging within SetUpTest() persists within the test log itself.
+
+type FixtureLogHelper struct {
+    c *C
+}
+
+func (s *FixtureLogHelper) SetUpTest(c *C) {
+    s.c = c
+    c.Log("1")
+}
+
+func (s *FixtureLogHelper) Test(c *C) {
+    c.Log("2")
+    s.c.Log("3")
+    c.Log("4")
+    c.Fail()
+}
+
+func (s *FixtureLogHelper) TearDownTest(c *C) {
+    s.c.Log("5")
+}
+
+func (s *FixtureS) TestFixtureLogging(c *C) {
+    helper := FixtureLogHelper{}
+    output := String{}
+    Run(&helper, &RunConf{Output: &output})
+    c.Assert(output.value, Matches,
+             "\n---+\n" +
+             "FAIL: fixture_test\\.go:[0-9]+: " +
+             "FixtureLogHelper\\.Test\n\n" +
+             "1\n2\n3\n4\n5\n")
+}

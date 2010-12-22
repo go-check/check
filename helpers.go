@@ -63,7 +63,7 @@ func (c *C) ExpectFailure(reason string) {
 
 // Return the current test error output.
 func (c *C) GetTestLog() string {
-    return c.logv
+    return c.logb.String()
 }
 
 // Log some information into the test error output.  The provided arguments
