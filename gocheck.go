@@ -282,6 +282,8 @@ type Result struct {
 type resultTracker struct {
     writer io.Writer
     result Result
+    verbose bool
+    _lastWasProblem bool
     _waiting int
     _missed int
     _waitChan chan *C
@@ -289,11 +291,11 @@ type resultTracker struct {
     _stopChan chan bool
 }
 
-func newResultTracker(writer io.Writer) *resultTracker {
-    return &resultTracker{writer: writer,
+func newResultTracker(writer io.Writer, verbose bool) *resultTracker {
+    return &resultTracker{writer: writer, verbose: verbose,
                           _waitChan: make(chan *C),     // Synchronous
                           _doneChan: make(chan *C, 32), // Asynchronous
-                          _stopChan: make(chan bool)}      // Synchronous
+                          _stopChan: make(chan bool)}   // Synchronous
 }
 
 func (tracker *resultTracker) start() {
@@ -327,6 +329,7 @@ func (tracker *resultTracker) _loopRoutine() {
                         case succeededSt:
                             if c.kind == testKd {
                                 tracker.result.Succeeded++
+                                tracker._reportVerbose("PASS", c)
                             }
                         case failedSt:
                             tracker.result.Failed++
@@ -379,6 +382,7 @@ func handleExpectedFailure(c *C) {
 }
 
 func (tracker *resultTracker) _reportProblem(label string, c *C) {
+    tracker._lastWasProblem = true
     pc := c.method.Get()
     header := fmt.Sprintf(
         "\n-----------------------------------" +
@@ -389,6 +393,21 @@ func (tracker *resultTracker) _reportProblem(label string, c *C) {
     c.logb.WriteTo(tracker.writer)
 }
 
+func (tracker *resultTracker) _reportVerbose(label string, c *C) {
+    if tracker.verbose {
+        var line string
+        if tracker._lastWasProblem {
+            tracker._lastWasProblem = false
+            line = "\n-----------------------------------" +
+                   "-----------------------------------\n"
+        }
+        pc := c.method.Get()
+        header := fmt.Sprintf(
+            "%s%s: %s: %s\n",
+            line, label, niceFuncPath(pc), niceFuncName(pc))
+        io.WriteString(tracker.writer, header)
+    }
+}
 
 
 // -----------------------------------------------------------------------
@@ -406,12 +425,14 @@ type suiteRunner struct {
 type RunConf struct {
     Output io.Writer
     Filter string
+    Verbose bool
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
 func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     var output io.Writer
     var filter string
+    var verbose bool
 
     output = os.Stdout
 
@@ -419,9 +440,8 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
         if runConf.Output != nil {
             output = runConf.Output
         }
-        if runConf.Filter != "" {
-            filter = runConf.Filter
-        }
+        filter = runConf.Filter
+        verbose = runConf.Verbose
     }
 
     suiteType := reflect.Typeof(suite)
@@ -429,7 +449,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     suiteValue := reflect.NewValue(suite)
 
     runner := suiteRunner{suite:suite,
-                          tracker:newResultTracker(output)}
+                          tracker:newResultTracker(output, verbose)}
     runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
     runner.tempDir = new(tempDir)
     testsLen := 0

@@ -5,15 +5,6 @@
 - t.LockResource("database", "config-dir"), acquires exclusive access
   to these resources and prevents parallel tests from using them.
 - Benchmark support
-- Implement PASS logging in verbose mode:
-
----------------------------------------------------------------------
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
-PASS: filename:line:TestMethod
----------------------------------------------------------------------
-
 - Improved logging of multiline strings:
 
 ---------------------------------------------------------------------

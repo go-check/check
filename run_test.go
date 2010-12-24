@@ -253,7 +253,6 @@ func (s *RunS) TestRequirePartialMatch(c *C) {
     c.Check(helper.n, Equals, 8)
 }
 
-
 func (s *RunS) TestFilterError(c *C) {
     helper := FixtureHelper{}
     output := String{}
@@ -262,4 +261,31 @@ func (s *RunS) TestFilterError(c *C) {
     c.Check(result.String(), Equals,
             "ERROR: Bad filter expression: unmatched ']'")
     c.Check(helper.n, Equals, 0)
+}
+
+// -----------------------------------------------------------------------
+// Verify that verbose mode prints tests which pass as well. 
+
+func (s *RunS) TestVerboseMode(c *C) {
+    helper := FixtureHelper{}
+    output := String{}
+    runConf := RunConf{Output: &output, Verbose: true}
+    Run(&helper, &runConf)
+
+    expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\n" +
+                "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+
+    c.Assert(output.value, Matches, expected)
+}
+
+func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
+    helper := FixtureHelper{panicOn: "Test1"}
+    output := String{}
+    runConf := RunConf{Output: &output, Verbose: true}
+    Run(&helper, &runConf)
+
+    expected := ".*PANIC.*\n-+\n" + // Should have an extra line.
+                "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+
+    c.Assert(output.value, Matches, expected)
 }

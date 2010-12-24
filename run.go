@@ -27,11 +27,14 @@ var filterFlag = flag.String("f", "",
                              "Regular expression to select " +
                              "what to run (gocheck)")
 
+var verboseFlag = flag.Bool("v1", false, "Verbose mode (gocheck)")
+
+
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-    result := RunAll(&RunConf{Filter: *filterFlag})
+    result := RunAll(&RunConf{Filter: *filterFlag, Verbose: *verboseFlag})
     println(result.String())
     if usedDeprecatedChecks {
         println("WARNING: The Check/AssertEqual() and Check/AssertMatch() " +
