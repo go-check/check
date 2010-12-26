@@ -296,9 +296,13 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 // -----------------------------------------------------------------------
 // Verify the stream output mode.  In this mode there's no output caching.
 
-type StreamHelper struct{
+type StreamHelper struct {
     l2 sync.Mutex
     l3 sync.Mutex
+}
+
+func (s *StreamHelper) SetUpSuite(c *C) {
+    c.Log("0")
 }
 
 func (s *StreamHelper) Test1(c *C) {
@@ -316,18 +320,49 @@ func (s *StreamHelper) Test2(c *C) {
     c.Log("2")
     s.l2.Unlock()
     s.l3.Lock() // Wait for "3".
+    c.Fail()
+    c.Log("4")
 }
 
 
 func (s *RunS) TestStreamMode(c *C) {
-    helper := FixtureHelper{}
+    helper := &StreamHelper{}
     output := String{}
     runConf := RunConf{Output: &output, Stream: true}
-    Run(&helper, &runConf)
+    Run(helper, &runConf)
 
-    //expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\n" +
-    //            "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
-    expected := "<BROKEN>"
+    expected := "START: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n0\n" +
+                "PASS: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n\n" +
+                "START: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n1\n" +
+                "PASS: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n\n" +
+                "START: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n2\n3\n4\n" +
+                "FAIL: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n\n"
+
+    c.Assert(output.value, Matches, expected)
+}
+
+type StreamMissHelper struct{}
+
+func (s *StreamMissHelper) SetUpSuite(c *C) {
+    c.Log("0")
+    c.Fail()
+}
+
+func (s *StreamMissHelper) Test1(c *C) {
+    c.Log("1")
+}
+
+func (s *RunS) TestStreamModeWithMiss(c *C) {
+    helper := &StreamMissHelper{}
+    output := String{}
+    runConf := RunConf{Output: &output, Stream: true}
+    Run(helper, &runConf)
+
+    expected :=
+        "START: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n0\n" +
+        "FAIL: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n\n" +
+        "START: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n" +
+        "MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
 
     c.Assert(output.value, Matches, expected)
 }

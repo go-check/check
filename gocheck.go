@@ -132,10 +132,10 @@ func (c *C) logNewLine() {
 }
 
 func (c *C) writeLog(content string) {
-    output := []byte(content)
-    c.logb.Write(output)
+    contentb := []byte(content)
+    c.logb.Write(contentb)
     if c.logw != nil {
-        c.logw.Write(output)
+        c.logw.Write(contentb)
     }
 }
 
@@ -375,10 +375,7 @@ type suiteRunner struct {
     tests []*reflect.FuncValue
     tracker *resultTracker
     tempDir *tempDir
-    output io.Writer
-    outputMutex sync.Mutex
-    stream bool
-    verbose bool
+    output *outputWriter
     reportedProblemLast bool
 }
 
@@ -391,16 +388,15 @@ type RunConf struct {
 
 // Create a new suiteRunner able to run all methods in the given suite.
 func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
-    var output io.Writer
-    var stream bool
-    var verbose bool
+    var writer io.Writer
+    var stream, verbose bool
     var filter string
 
-    output = os.Stdout
+    writer = os.Stdout
 
     if runConf != nil {
         if runConf.Output != nil {
-            output = runConf.Output
+            writer = runConf.Output
         }
         stream = runConf.Stream
         verbose = runConf.Verbose
@@ -411,8 +407,9 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     suiteNumMethods := suiteType.NumMethod()
     suiteValue := reflect.NewValue(suite)
 
-    runner := &suiteRunner{suite:suite, output:output, stream:stream,
-                           verbose:verbose, tracker:newResultTracker()}
+    runner := &suiteRunner{suite:suite,
+                           output:newOutputWriter(writer, stream, verbose),
+                           tracker:newResultTracker()}
     runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
     runner.tempDir = new(tempDir)
     testsLen := 0
@@ -515,7 +512,11 @@ func (runner *suiteRunner) run() *Result {
 func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind,
                                     logb *bytes.Buffer,
                                     dispatcher func(c *C)) *C {
-    c := newC(method, kind, logb, nil, runner.tempDir)
+    var logw io.Writer
+    if runner.output.Stream {
+        logw = runner.output
+    }
+    c := newC(method, kind, logb, logw, runner.tempDir)
     runner.tracker.expectCall(c)
     go (func() {
         runner.reportCallStarted(c)
@@ -654,60 +655,99 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 }
 
 func (runner *suiteRunner) reportCallStarted(c *C) {
+    runner.output.WriteCallStarted("START", c)
 }
 
 func (runner *suiteRunner) reportCallDone(c *C) {
     runner.tracker.callDone(c)
     switch c.status {
     case succeededSt:
-        if c.kind == testKd {
-            runner.reportVerbose("PASS", c)
-        }
+        runner.output.WriteCallSuccess("PASS", c)
     case failedSt:
-        runner.reportProblem("FAIL", c)
+        runner.output.WriteCallProblem("FAIL", c)
     case panickedSt:
-        runner.reportProblem("PANIC", c)
+        runner.output.WriteCallProblem("PANIC", c)
     case fixturePanickedSt:
         // That's a testKd call reporting that its fixture
         // has panicked. The fixture call which caused the
         // panic itself was tracked above. We'll report to
         // aid debugging.
-        runner.reportProblem("PANIC", c)
+        runner.output.WriteCallProblem("PANIC", c)
     case missedSt:
-        // XXX Report this in verbose mode?
+        runner.output.WriteCallSuccess("MISS", c)
     }
 }
 
-func (runner *suiteRunner) reportProblem(label string, c *C) {
-    pc := c.method.Get()
-    header := fmt.Sprintf(
-        "\n-----------------------------------" +
-        "-----------------------------------\n" +
-        "%s: %s: %s\n\n",
-        label, niceFuncPath(pc), niceFuncName(pc))
-    runner.output.Write([]byte(header))
 
-    runner.outputMutex.Lock()
-    runner.reportedProblemLast = true
-    c.logb.WriteTo(runner.output)
-    runner.outputMutex.Unlock()
+// -----------------------------------------------------------------------
+// Output writer manages atomic output writing according to settings.
+
+type outputWriter struct {
+    m sync.Mutex
+    writer io.Writer
+    wroteCallProblemLast bool
+    Stream bool
+    Verbose bool
 }
 
-func (runner *suiteRunner) reportVerbose(label string, c *C) {
-    if runner.verbose {
-        pc := c.method.Get()
-        header := fmt.Sprintf(
-            "%s: %s: %s\n",
-            label, niceFuncPath(pc), niceFuncName(pc))
+func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
+    return &outputWriter{writer:writer, Stream:stream, Verbose:verbose}
+}
 
-        runner.outputMutex.Lock()
-        if runner.reportedProblemLast {
-            runner.reportedProblemLast = false
+func (ow *outputWriter) Write(content []byte) (n int, err os.Error) {
+    ow.m.Lock()
+    n, err = ow.writer.Write(content)
+    ow.m.Unlock()
+    return
+}
+
+func (ow *outputWriter) WriteCallStarted(label string, c *C) {
+    if ow.Stream {
+        header := renderCallHeader(label, c, "", "")
+        ow.m.Lock()
+        ow.writer.Write([]byte(header))
+        ow.m.Unlock()
+    }
+}
+
+func (ow *outputWriter) WriteCallProblem(label string, c *C) {
+    var prefix string
+    if !ow.Stream {
+        prefix = "\n-----------------------------------" +
+                 "-----------------------------------\n"
+    }
+    header := renderCallHeader(label, c, prefix, "\n")
+    ow.m.Lock()
+    ow.wroteCallProblemLast = true
+    ow.writer.Write([]byte(header))
+    if !ow.Stream {
+        c.logb.WriteTo(ow.writer)
+    }
+    ow.m.Unlock()
+}
+
+func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
+    if ow.Stream || (ow.Verbose && c.kind == testKd) {
+        var suffix string
+        if ow.Stream {
+            suffix = "\n"
+        }
+        header := renderCallHeader(label, c, "", suffix)
+        ow.m.Lock()
+        // Resist temptation of using line as prefix above due to race.
+        if !ow.Stream && ow.wroteCallProblemLast {
             header = "\n-----------------------------------" +
                      "-----------------------------------\n" +
                      header
         }
-        runner.output.Write([]byte(header))
-        runner.outputMutex.Unlock()
+        ow.wroteCallProblemLast = false
+        ow.writer.Write([]byte(header))
+        ow.m.Unlock()
     }
+}
+
+func renderCallHeader(label string, c *C, prefix, suffix string) string {
+    pc := c.method.Get()
+    return fmt.Sprintf("%s%s: %s: %s\n%s", prefix, label, niceFuncPath(pc),
+                       niceFuncName(pc), suffix)
 }
