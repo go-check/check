@@ -43,17 +43,18 @@ type C struct {
     kind funcKind
     status funcStatus
     logb *bytes.Buffer
+    logw io.Writer
     done chan *C
     expectedFailure *string
     tempDir *tempDir
 }
 
-func newC(method *reflect.FuncValue, kind funcKind, logb *bytes.Buffer,
-          tempDir *tempDir) *C {
+func newC(method *reflect.FuncValue, kind funcKind,
+          logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
     if logb == nil {
         logb = bytes.NewBuffer(nil)
     }
-    return &C{method:method, kind:kind, logb:logb,
+    return &C{method:method, kind:kind, logb:logb, logw:logw,
               tempDir:tempDir, done:make(chan *C, 1)}
 }
 
@@ -119,17 +120,23 @@ func (c *C) MkDir() string {
 // Low-level logging functions.
 
 func (c *C) log(args ...interface{}) {
-    c.logb.WriteString(fmt.Sprint(args...))
-    c.logb.WriteByte('\n')
+    c.writeLog(fmt.Sprint(args...) + "\n")
 }
 
 func (c *C) logf(format string, args ...interface{}) {
-    c.logb.WriteString(fmt.Sprintf(format, args...))
-    c.logb.WriteByte('\n')
+    c.writeLog(fmt.Sprintf(format + "\n", args...))
 }
 
 func (c *C) logNewLine() {
-    c.logb.WriteByte('\n')
+    c.writeLog("\n")
+}
+
+func (c *C) writeLog(content string) {
+    output := []byte(content)
+    c.logb.Write(output)
+    if c.logw != nil {
+        c.logw.Write(output)
+    }
 }
 
 type hasString interface {
@@ -280,20 +287,17 @@ type Result struct {
 }
 
 type resultTracker struct {
-    writer io.Writer
     result Result
-    verbose bool
     _lastWasProblem bool
     _waiting int
     _missed int
-    _waitChan chan *C
+    _expectChan chan *C
     _doneChan chan *C
     _stopChan chan bool
 }
 
-func newResultTracker(writer io.Writer, verbose bool) *resultTracker {
-    return &resultTracker{writer: writer, verbose: verbose,
-                          _waitChan: make(chan *C),     // Synchronous
+func newResultTracker() *resultTracker {
+    return &resultTracker{_expectChan: make(chan *C),   // Synchronous
                           _doneChan: make(chan *C, 32), // Asynchronous
                           _stopChan: make(chan bool)}   // Synchronous
 }
@@ -306,8 +310,8 @@ func (tracker *resultTracker) waitAndStop() {
     <-tracker._stopChan
 }
 
-func (tracker *resultTracker) waitForCall(c *C) {
-    tracker._waitChan <- c
+func (tracker *resultTracker) expectCall(c *C) {
+    tracker._expectChan <- c
 }
 
 func (tracker *resultTracker) callDone(c *C) {
@@ -320,34 +324,26 @@ func (tracker *resultTracker) _loopRoutine() {
         if tracker._waiting > 0 {
             // Calls still running. Can't stop.
             select {
-                case c = <-tracker._waitChan:
+                // XXX Reindent this (not now to make diff clear)
+                case c = <-tracker._expectChan:
                     tracker._waiting += 1
                 case c = <-tracker._doneChan:
                     tracker._waiting -= 1
-                    handleExpectedFailure(c)
                     switch c.status {
                         case succeededSt:
                             if c.kind == testKd {
                                 tracker.result.Succeeded++
-                                tracker._reportVerbose("PASS", c)
                             }
                         case failedSt:
                             tracker.result.Failed++
-                            tracker._reportProblem("FAIL", c)
                         case panickedSt:
                             if c.kind == fixtureKd {
                                 tracker.result.FixturePanicked++
                             } else {
                                 tracker.result.Panicked++
                             }
-                            tracker._reportProblem("PANIC", c)
                         case fixturePanickedSt:
-                            // That's a testKd call reporting that its fixture
-                            // has panicked. The fixture call which caused the
-                            // panic itself was tracked above. We'll report to
-                            // aid debugging.
-                            tracker._reportProblem("PANIC", c)
-                            // And will track it as missed, since the panic
+                            // Track it as missed, since the panic
                             // was on the fixture, not on the test.
                             tracker.result.Missed++
                         case missedSt:
@@ -359,53 +355,12 @@ func (tracker *resultTracker) _loopRoutine() {
             select {
                 case tracker._stopChan <- true:
                     return
-                case c = <-tracker._waitChan:
+                case c = <-tracker._expectChan:
                     tracker._waiting += 1
                 case c = <-tracker._doneChan:
                     panic("Tracker got an unexpected done call.")
             }
         }
-    }
-}
-
-func handleExpectedFailure(c *C) {
-    if c.expectedFailure != nil {
-        switch c.status {
-            case failedSt:
-                c.status = succeededSt
-            case succeededSt:
-                c.status = failedSt
-                c.logString("Error: Test succeeded, but was expected to fail")
-                c.logString("Reason: " + *c.expectedFailure)
-        }
-    }
-}
-
-func (tracker *resultTracker) _reportProblem(label string, c *C) {
-    tracker._lastWasProblem = true
-    pc := c.method.Get()
-    header := fmt.Sprintf(
-        "\n-----------------------------------" +
-        "-----------------------------------\n" +
-        "%s: %s: %s\n\n",
-        label, niceFuncPath(pc), niceFuncName(pc))
-    io.WriteString(tracker.writer, header)
-    c.logb.WriteTo(tracker.writer)
-}
-
-func (tracker *resultTracker) _reportVerbose(label string, c *C) {
-    if tracker.verbose {
-        var line string
-        if tracker._lastWasProblem {
-            tracker._lastWasProblem = false
-            line = "\n-----------------------------------" +
-                   "-----------------------------------\n"
-        }
-        pc := c.method.Get()
-        header := fmt.Sprintf(
-            "%s%s: %s: %s\n",
-            line, label, niceFuncPath(pc), niceFuncName(pc))
-        io.WriteString(tracker.writer, header)
     }
 }
 
@@ -420,19 +375,26 @@ type suiteRunner struct {
     tests []*reflect.FuncValue
     tracker *resultTracker
     tempDir *tempDir
+    output io.Writer
+    outputMutex sync.Mutex
+    stream bool
+    verbose bool
+    reportedProblemLast bool
 }
 
 type RunConf struct {
     Output io.Writer
-    Filter string
+    Stream bool
     Verbose bool
+    Filter string
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
 func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     var output io.Writer
-    var filter string
+    var stream bool
     var verbose bool
+    var filter string
 
     output = os.Stdout
 
@@ -440,16 +402,17 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
         if runConf.Output != nil {
             output = runConf.Output
         }
-        filter = runConf.Filter
+        stream = runConf.Stream
         verbose = runConf.Verbose
+        filter = runConf.Filter
     }
 
     suiteType := reflect.Typeof(suite)
     suiteNumMethods := suiteType.NumMethod()
     suiteValue := reflect.NewValue(suite)
 
-    runner := suiteRunner{suite:suite,
-                          tracker:newResultTracker(output, verbose)}
+    runner := &suiteRunner{suite:suite, output:output, stream:stream,
+                           verbose:verbose, tracker:newResultTracker()}
     runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
     runner.tempDir = new(tempDir)
     testsLen := 0
@@ -459,7 +422,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
         if regexp, err := regexp.Compile(filter); err != nil {
             msg := "Bad filter expression: " + err.String()
             runner.tracker.result.RunError = os.NewError(msg)
-            return &runner
+            return runner
         } else {
             filterRegexp = regexp
         }
@@ -502,7 +465,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
     }
 
     runner.tests = runner.tests[0:testsLen]
-    return &runner
+    return runner
 }
 
 // Return true if the given suite name and method name should be
@@ -552,9 +515,10 @@ func (runner *suiteRunner) run() *Result {
 func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind,
                                     logb *bytes.Buffer,
                                     dispatcher func(c *C)) *C {
-    c := newC(method, kind, logb, runner.tempDir)
-    runner.tracker.waitForCall(c)
+    c := newC(method, kind, logb, nil, runner.tempDir)
+    runner.tracker.expectCall(c)
     go (func() {
+        runner.reportCallStarted(c)
         defer runner.callDone(c)
         dispatcher(c)
     })()
@@ -584,7 +548,18 @@ func (runner *suiteRunner) callDone(c *C) {
                 c.status = panickedSt
         }
     }
-    runner.tracker.callDone(c)
+    if c.expectedFailure != nil {
+        switch c.status {
+            case failedSt:
+                c.status = succeededSt
+            case succeededSt:
+                c.status = failedSt
+                c.logString("Error: Test succeeded, but was expected to fail")
+                c.logString("Reason: " + *c.expectedFailure)
+        }
+    }
+
+    runner.reportCallDone(c)
     c.done <- c
 }
 
@@ -676,4 +651,63 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
         }
     }
     return succeeded
+}
+
+func (runner *suiteRunner) reportCallStarted(c *C) {
+}
+
+func (runner *suiteRunner) reportCallDone(c *C) {
+    runner.tracker.callDone(c)
+    switch c.status {
+    case succeededSt:
+        if c.kind == testKd {
+            runner.reportVerbose("PASS", c)
+        }
+    case failedSt:
+        runner.reportProblem("FAIL", c)
+    case panickedSt:
+        runner.reportProblem("PANIC", c)
+    case fixturePanickedSt:
+        // That's a testKd call reporting that its fixture
+        // has panicked. The fixture call which caused the
+        // panic itself was tracked above. We'll report to
+        // aid debugging.
+        runner.reportProblem("PANIC", c)
+    case missedSt:
+        // XXX Report this in verbose mode?
+    }
+}
+
+func (runner *suiteRunner) reportProblem(label string, c *C) {
+    pc := c.method.Get()
+    header := fmt.Sprintf(
+        "\n-----------------------------------" +
+        "-----------------------------------\n" +
+        "%s: %s: %s\n\n",
+        label, niceFuncPath(pc), niceFuncName(pc))
+    runner.output.Write([]byte(header))
+
+    runner.outputMutex.Lock()
+    runner.reportedProblemLast = true
+    c.logb.WriteTo(runner.output)
+    runner.outputMutex.Unlock()
+}
+
+func (runner *suiteRunner) reportVerbose(label string, c *C) {
+    if runner.verbose {
+        pc := c.method.Get()
+        header := fmt.Sprintf(
+            "%s: %s: %s\n",
+            label, niceFuncPath(pc), niceFuncName(pc))
+
+        runner.outputMutex.Lock()
+        if runner.reportedProblemLast {
+            runner.reportedProblemLast = false
+            header = "\n-----------------------------------" +
+                     "-----------------------------------\n" +
+                     header
+        }
+        runner.output.Write([]byte(header))
+        runner.outputMutex.Unlock()
+    }
 }

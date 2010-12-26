@@ -4,6 +4,7 @@ package gocheck_test
 
 import (
     . "gocheck"
+    "sync"
     "os"
 )
 
@@ -263,6 +264,7 @@ func (s *RunS) TestFilterError(c *C) {
     c.Check(helper.n, Equals, 0)
 }
 
+
 // -----------------------------------------------------------------------
 // Verify that verbose mode prints tests which pass as well. 
 
@@ -286,6 +288,46 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 
     expected := ".*PANIC.*\n-+\n" + // Should have an extra line.
                 "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+
+    c.Assert(output.value, Matches, expected)
+}
+
+
+// -----------------------------------------------------------------------
+// Verify the stream output mode.  In this mode there's no output caching.
+
+type StreamHelper struct{
+    l2 sync.Mutex
+    l3 sync.Mutex
+}
+
+func (s *StreamHelper) Test1(c *C) {
+    c.Log("1")
+    s.l2.Lock()
+    s.l3.Lock()
+    go func() {
+        s.l2.Lock() // Wait for "2".
+        c.Log("3")
+        s.l3.Unlock()
+    }()
+}
+
+func (s *StreamHelper) Test2(c *C) {
+    c.Log("2")
+    s.l2.Unlock()
+    s.l3.Lock() // Wait for "3".
+}
+
+
+func (s *RunS) TestStreamMode(c *C) {
+    helper := FixtureHelper{}
+    output := String{}
+    runConf := RunConf{Output: &output, Stream: true}
+    Run(&helper, &runConf)
+
+    //expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\n" +
+    //            "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+    expected := "<BROKEN>"
 
     c.Assert(output.value, Matches, expected)
 }
