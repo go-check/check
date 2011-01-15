@@ -12,30 +12,30 @@ var _ = gocheck.Suite(&CheckersS{})
 
 
 func testInfo(c *gocheck.C, checker gocheck.Checker,
-              name, obtainedVarName, expectedVarName string) {
+name, obtainedVarName, expectedVarName string) {
     if checker.Name() != name {
         c.Fatalf("Got name %s, expected %s", checker.Name(), name)
     }
     obtainedName, expectedName := checker.VarNames()
     if obtainedName != obtainedVarName {
         c.Fatalf("Got obtained label %#v, expected %#v",
-                 obtainedName, obtainedVarName)
+            obtainedName, obtainedVarName)
     }
     if expectedName != expectedVarName {
         c.Fatalf("Got expected label %#v, expected %#v",
-                 expectedName, expectedVarName)
+            expectedName, expectedVarName)
     }
 }
 
 func testCheck(c *gocheck.C, checker gocheck.Checker,
-               obtained, expected interface{},
-               wantedResult bool, wantedError string) {
+obtained, expected interface{},
+wantedResult bool, wantedError string) {
     result, error := checker.Check(obtained, expected)
     if result != wantedResult || error != wantedError {
-        c.Fatalf("%s.Check(%#v, %#v) returned " +
-                 "(%#v, %#v) rather than (%#v, %#v)",
-                 checker.Name(), obtained, expected,
-                 result, error, wantedResult, wantedError)
+        c.Fatalf("%s.Check(%#v, %#v) returned "+
+            "(%#v, %#v) rather than (%#v, %#v)",
+            checker.Name(), obtained, expected,
+            result, error, wantedResult, wantedError)
     }
 }
 
@@ -101,8 +101,8 @@ func (s *CheckersS) TestEquals(c *gocheck.C) {
     testCheck(c, gocheck.Equals, 42, nil, false, "")
 
     // Arrays
-    testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,2}, true, "")
-    testCheck(c, gocheck.Equals, []byte{1,2}, []byte{1,3}, false, "")
+    testCheck(c, gocheck.Equals, []byte{1, 2}, []byte{1, 2}, true, "")
+    testCheck(c, gocheck.Equals, []byte{1, 2}, []byte{1, 3}, false, "")
 
     // Struct values
     testCheck(c, gocheck.Equals, simpleStruct{1}, simpleStruct{1}, true, "")
@@ -130,7 +130,7 @@ func (s *CheckersS) TestMatches(c *gocheck.C) {
 
     // Some error conditions.
     testCheck(c, gocheck.Matches, 1, "a.c", false,
-              "Obtained value is not a string and has no .String()")
+        "Obtained value is not a string and has no .String()")
     testCheck(c, gocheck.Matches, "abc", "a[c", false,
-              "Can't compile regex: unmatched '['")
+        "Can't compile regex: unmatched '['")
 }

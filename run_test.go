@@ -3,7 +3,7 @@
 package gocheck_test
 
 import (
-    . "gocheck"
+    .   "gocheck"
     "sync"
     "os"
 )
@@ -59,7 +59,7 @@ func (s *RunS) TestFixture(c *C) {
 
 func (s *RunS) TestPanicOnTest(c *C) {
     output := String{}
-    helper := &FixtureHelper{panicOn:"Test1"}
+    helper := &FixtureHelper{panicOn: "Test1"}
     result := Run(helper, &RunConf{Output: &output})
     c.Check(result.Succeeded, Equals, 1)
     c.Check(result.Failed, Equals, 0)
@@ -72,7 +72,7 @@ func (s *RunS) TestPanicOnTest(c *C) {
 
 func (s *RunS) TestPanicOnSetUpTest(c *C) {
     output := String{}
-    helper := &FixtureHelper{panicOn:"SetUpTest"}
+    helper := &FixtureHelper{panicOn: "SetUpTest"}
     result := Run(helper, &RunConf{Output: &output})
     c.Check(result.Succeeded, Equals, 0)
     c.Check(result.Failed, Equals, 0)
@@ -85,7 +85,7 @@ func (s *RunS) TestPanicOnSetUpTest(c *C) {
 
 func (s *RunS) TestPanicOnSetUpSuite(c *C) {
     output := String{}
-    helper := &FixtureHelper{panicOn:"SetUpSuite"}
+    helper := &FixtureHelper{panicOn: "SetUpSuite"}
     result := Run(helper, &RunConf{Output: &output})
     c.Check(result.Succeeded, Equals, 0)
     c.Check(result.Failed, Equals, 0)
@@ -101,10 +101,10 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 // Check result aggregation.
 
 func (s *RunS) TestAdd(c *C) {
-    result := &Result{Succeeded:1, Skipped:2, Failed:3, Panicked:4,
-                              FixturePanicked:5, Missed:6}
-    result.Add(&Result{Succeeded:10, Skipped:20, Failed:30,
-                               Panicked:40, FixturePanicked:50, Missed:60})
+    result := &Result{Succeeded: 1, Skipped: 2, Failed: 3, Panicked: 4,
+        FixturePanicked: 5, Missed: 6}
+    result.Add(&Result{Succeeded: 10, Skipped: 20, Failed: 30,
+        Panicked: 40, FixturePanicked: 50, Missed: 60})
     c.Check(result.Succeeded, Equals, 11)
     c.Check(result.Skipped, Equals, 22)
     c.Check(result.Failed, Equals, 33)
@@ -120,59 +120,59 @@ func (s *RunS) TestAdd(c *C) {
 
 func (s *RunS) TestPassed(c *C) {
     c.Assert((&Result{}).Passed(), Equals, true)
-    c.Assert((&Result{Succeeded:1}).Passed(), Equals, true)
-    c.Assert((&Result{Skipped:1}).Passed(), Equals, true)
-    c.Assert((&Result{Failed:1}).Passed(), Equals, false)
-    c.Assert((&Result{Panicked:1}).Passed(), Equals, false)
-    c.Assert((&Result{FixturePanicked:1}).Passed(), Equals, false)
-    c.Assert((&Result{Missed:1}).Passed(), Equals, false)
-    c.Assert((&Result{RunError:os.NewError("!")}).Passed(), Equals, false)
+    c.Assert((&Result{Succeeded: 1}).Passed(), Equals, true)
+    c.Assert((&Result{Skipped: 1}).Passed(), Equals, true)
+    c.Assert((&Result{Failed: 1}).Passed(), Equals, false)
+    c.Assert((&Result{Panicked: 1}).Passed(), Equals, false)
+    c.Assert((&Result{FixturePanicked: 1}).Passed(), Equals, false)
+    c.Assert((&Result{Missed: 1}).Passed(), Equals, false)
+    c.Assert((&Result{RunError: os.NewError("!")}).Passed(), Equals, false)
 }
 
 // -----------------------------------------------------------------------
 // Check that result printing is working correctly.
 
 func (s *RunS) TestPrintSuccess(c *C) {
-    result := &Result{Succeeded:5}
+    result := &Result{Succeeded: 5}
     c.Check(result.String(), Equals, "OK: 5 passed")
 }
 
 func (s *RunS) TestPrintFailure(c *C) {
-    result := &Result{Failed:5}
+    result := &Result{Failed: 5}
     c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FAILED")
 }
 
 func (s *RunS) TestPrintSkipped(c *C) {
-    result := &Result{Skipped:5}
+    result := &Result{Skipped: 5}
     c.Check(result.String(), Equals, "OK: 0 passed, 5 skipped")
 }
 
 func (s *RunS) TestPrintPanicked(c *C) {
-    result := &Result{Panicked:5}
+    result := &Result{Panicked: 5}
     c.Check(result.String(), Equals, "OOPS: 0 passed, 5 PANICKED")
 }
 
 func (s *RunS) TestPrintFixturePanicked(c *C) {
-    result := &Result{FixturePanicked:5}
+    result := &Result{FixturePanicked: 5}
     c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FIXTURE PANICKED")
 }
 
 func (s *RunS) TestPrintMissed(c *C) {
-    result := &Result{Missed:5}
+    result := &Result{Missed: 5}
     c.Check(result.String(), Equals, "OOPS: 0 passed, 5 MISSED")
 }
 
 func (s *RunS) TestPrintAll(c *C) {
-    result := &Result{Succeeded:1, Skipped:2, Panicked:3,
-                              FixturePanicked:4, Missed:5}
+    result := &Result{Succeeded: 1, Skipped: 2, Panicked: 3,
+        FixturePanicked: 4, Missed: 5}
     c.Check(result.String(), Equals,
-            "OOPS: 1 passed, 2 skipped, 3 PANICKED, " +
+        "OOPS: 1 passed, 2 skipped, 3 PANICKED, "+
             "4 FIXTURE PANICKED, 5 MISSED")
 }
 
 func (s *RunS) TestPrintRunError(c *C) {
-    result := &Result{Succeeded:1, Failed:1,
-                              RunError: os.NewError("Kaboom!")}
+    result := &Result{Succeeded: 1, Failed: 1,
+        RunError: os.NewError("Kaboom!")}
     c.Check(result.String(), Equals, "ERROR: Kaboom!")
 }
 
@@ -260,7 +260,7 @@ func (s *RunS) TestFilterError(c *C) {
     runConf := RunConf{Output: &output, Filter: "]["}
     result := Run(&helper, &runConf)
     c.Check(result.String(), Equals,
-            "ERROR: Bad filter expression: unmatched ']'")
+        "ERROR: Bad filter expression: unmatched ']'")
     c.Check(helper.n, Equals, 0)
 }
 
@@ -275,7 +275,7 @@ func (s *RunS) TestVerboseMode(c *C) {
     Run(&helper, &runConf)
 
     expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\n" +
-                "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+        "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
 
     c.Assert(output.value, Matches, expected)
 }
@@ -287,7 +287,7 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
     Run(&helper, &runConf)
 
     expected := ".*PANIC.*\n-+\n" + // Should have an extra line.
-                "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+        "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
 
     c.Assert(output.value, Matches, expected)
 }
@@ -297,8 +297,8 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 // Verify the stream output mode.  In this mode there's no output caching.
 
 type StreamHelper struct {
-    l2 sync.Mutex
-    l3 sync.Mutex
+    l2  sync.Mutex
+    l3  sync.Mutex
 }
 
 func (s *StreamHelper) SetUpSuite(c *C) {
@@ -332,11 +332,11 @@ func (s *RunS) TestStreamMode(c *C) {
     Run(helper, &runConf)
 
     expected := "START: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n0\n" +
-                "PASS: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n\n" +
-                "START: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n1\n" +
-                "PASS: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n\n" +
-                "START: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n2\n3\n4\n" +
-                "FAIL: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n\n"
+        "PASS: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n\n" +
+        "START: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n1\n" +
+        "PASS: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n\n" +
+        "START: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n2\n3\n4\n" +
+        "FAIL: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n\n"
 
     c.Assert(output.value, Matches, expected)
 }
@@ -360,9 +360,9 @@ func (s *RunS) TestStreamModeWithMiss(c *C) {
 
     expected :=
         "START: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n0\n" +
-        "FAIL: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n\n" +
-        "START: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n" +
-        "MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
+            "FAIL: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n\n" +
+            "START: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n" +
+            "MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
 
     c.Assert(output.value, Matches, expected)
 }

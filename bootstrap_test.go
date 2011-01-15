@@ -67,8 +67,9 @@ func (s *BootstrapS) TestRunShowsErrors(c *gocheck.C) {
     output := String{}
     gocheck.Run(&FailHelper{}, &gocheck.RunConf{Output: &output})
     if strings.Index(output.value, "Expected failure!") == -1 {
-        critical(fmt.Sprintf("RunWithWriter() output did not contain the " +
-                             "expected failure! Got: %#v", output.value))
+        critical(fmt.Sprintf("RunWithWriter() output did not contain the "+
+            "expected failure! Got: %#v",
+            output.value))
     }
 }
 
@@ -76,7 +77,8 @@ func (s *BootstrapS) TestRunDoesntShowSuccesses(c *gocheck.C) {
     output := String{}
     gocheck.Run(&SuccessHelper{}, &gocheck.RunConf{Output: &output})
     if strings.Index(output.value, "Expected success!") != -1 {
-        critical(fmt.Sprintf("RunWithWriter() output contained a successful " +
-                             "test! Got: %#v", output.value))
+        critical(fmt.Sprintf("RunWithWriter() output contained a successful "+
+            "test! Got: %#v",
+            output.value))
     }
 }

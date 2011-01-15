@@ -19,14 +19,15 @@ import (
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
 const suitesRunExpected = 6
+
 var suitesRun int = 0
 
 func Test(t *testing.T) {
     gocheck.TestingT(t)
     if suitesRun != suitesRunExpected &&
-       flag.Lookup("f").Value.String() == "" {
+        flag.Lookup("f").Value.String() == "" {
         critical(fmt.Sprintf("Expected %d suites to run rather than %d",
-                             suitesRunExpected, suitesRun))
+            suitesRunExpected, suitesRun))
     }
 }
 
@@ -37,7 +38,7 @@ func Test(t *testing.T) {
 // Break down badly.  This is used in test cases which can't yet assume
 // that the fundamental bits are working.
 func critical(error string) {
-    fmt.Fprintln(os.Stderr, "CRITICAL: " + error)
+    fmt.Fprintln(os.Stderr, "CRITICAL: "+error)
     os.Exit(1)
 }
 
@@ -69,8 +70,8 @@ func (s *String) Write(p []byte) (n int, err os.Error) {
 // Trivial wrapper to test errors happening on a different file
 // than the test itself.
 func checkEqualWrapper(c *gocheck.C,
-                       expected interface{},
-                       obtained interface{}) (result bool, line int) {
+expected interface{},
+obtained interface{}) (result bool, line int) {
     return c.Check(expected, gocheck.Equals, obtained), getMyLine()
 }
 
@@ -83,7 +84,7 @@ type FailHelper struct {
 }
 
 func (s *FailHelper) TestLogAndFail(c *gocheck.C) {
-    s.testLine = getMyLine()-1
+    s.testLine = getMyLine() - 1
     c.Log("Expected failure!")
     c.Fail()
 }
@@ -103,8 +104,8 @@ func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
 // Helper suite for testing ordering and behavior of fixture.
 
 type FixtureHelper struct {
-    calls [64]string
-    n int
+    calls   [64]string
+    n       int
     panicOn string
 }
 
@@ -147,10 +148,10 @@ func (s *FixtureHelper) Test2(c *gocheck.C) {
 // be used to test this one function.
 
 type expectedState struct {
-    name string
+    name   string
     result interface{}
     failed bool
-    log string
+    log    string
 }
 
 // Verify the state of the test.  Note that since this also verifies if
@@ -160,17 +161,17 @@ func checkState(c *gocheck.C, result interface{}, expected *expectedState) {
     failed := c.Failed()
     c.Succeed()
     log := c.GetTestLog()
-    matched, matchError := regexp.MatchString("^" + expected.log + "$", log)
+    matched, matchError := regexp.MatchString("^"+expected.log+"$", log)
     if matchError != nil {
         c.Errorf("Error in matching expression used in testing %s",
-                 expected.name)
+            expected.name)
     } else if !matched {
         c.Errorf("%s logged %#v which doesn't match %#v",
-                 expected.name, log, expected.log)
+            expected.name, log, expected.log)
     }
     if result != expected.result {
         c.Errorf("%s returned %#v rather than %#v",
-                 expected.name, result, expected.result)
+            expected.name, result, expected.result)
     }
     if failed != expected.failed {
         if failed {

@@ -27,8 +27,9 @@ func (s *FoundationS) TestCountSuite(c *gocheck.C) {
 
 func (s *FoundationS) TestErrorf(c *gocheck.C) {
     // Do not use checkState() here.  It depends on Errorf() working.
-    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n" +
-                               "... Error: Error message!\n", getMyLine()+1)
+    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n"+
+        "... Error: Error message!\n",
+        getMyLine()+1)
     c.Errorf("Error %v!", "message")
     failed := c.Failed()
     c.Succeed()
@@ -43,15 +44,16 @@ func (s *FoundationS) TestErrorf(c *gocheck.C) {
 }
 
 func (s *FoundationS) TestError(c *gocheck.C) {
-    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n" +
-                               "... Error: Error message!\n", getMyLine()+1)
+    expectedLog := fmt.Sprintf("foundation_test.go:%d:\n"+
+        "... Error: Error message!\n",
+        getMyLine()+1)
     c.Error("Error ", "message!")
     checkState(c, nil,
-               &expectedState{
-                    name: "Error(`Error `, `message!`)",
-                    failed: true,
-                    log: expectedLog,
-               })
+        &expectedState{
+            name:   "Error(`Error `, `message!`)",
+            failed: true,
+            log:    expectedLog,
+        })
 }
 
 func (s *FoundationS) TestFailNow(c *gocheck.C) {
@@ -90,14 +92,14 @@ func (s *FoundationS) TestFailureHeader(c *gocheck.C) {
     failHelper := FailHelper{}
     gocheck.Run(&failHelper, &gocheck.RunConf{Output: &output})
     header := fmt.Sprintf(
-        "\n-----------------------------------" +
-        "-----------------------------------\n" +
-        "FAIL: gocheck_test.go:%d: FailHelper.TestLogAndFail\n",
+        "\n-----------------------------------"+
+            "-----------------------------------\n"+
+            "FAIL: gocheck_test.go:%d: FailHelper.TestLogAndFail\n",
         failHelper.testLine)
     if strings.Index(output.value, header) == -1 {
-        c.Errorf("Failure didn't print a proper header.\n" +
-                 "... Got:\n%s... Expected something with:\n%s",
-                 output.value, header)
+        c.Errorf("Failure didn't print a proper header.\n"+
+            "... Got:\n%s... Expected something with:\n%s",
+            output.value, header)
     }
 }
 
@@ -108,15 +110,16 @@ func (s *FoundationS) TestFatal(c *gocheck.C) {
             c.Error("Fatal() didn't fail the test")
         } else {
             c.Succeed()
-            expected := fmt.Sprintf("foundation_test.go:%d:\n" +
-                                    "... Error: Die now!\n", line)
+            expected := fmt.Sprintf("foundation_test.go:%d:\n"+
+                "... Error: Die now!\n",
+                line)
             if c.GetTestLog() != expected {
                 c.Error("Incorrect log:\n" + c.GetTestLog())
             }
         }
     })()
 
-    line = getMyLine()+1
+    line = getMyLine() + 1
     c.Fatal("Die ", "now!")
     c.Log("Fatal() didn't stop the test")
 }
@@ -128,15 +131,16 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
             c.Error("Fatalf() didn't fail the test")
         } else {
             c.Succeed()
-            expected := fmt.Sprintf("foundation_test.go:%d:\n" +
-                                    "... Error: Die now!\n", line)
+            expected := fmt.Sprintf("foundation_test.go:%d:\n"+
+                "... Error: Die now!\n",
+                line)
             if c.GetTestLog() != expected {
                 c.Error("Incorrect log:\n" + c.GetTestLog())
             }
         }
     })()
 
-    line = getMyLine()+1
+    line = getMyLine() + 1
     c.Fatalf("Die %s!", "now")
     c.Log("Fatalf() didn't stop the test")
 }
@@ -144,37 +148,37 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
     log := fmt.Sprintf(
-        "foundation_test.go:%d:\n" +
-        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n" +
-        "\\.\\.\\. Obtained \\(int\\): 10\n" +
-        "\\.\\.\\. Expected \\(int\\): 20\n\n",
+        "foundation_test.go:%d:\n"+
+            "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+            "\\.\\.\\. Obtained \\(int\\): 10\n"+
+            "\\.\\.\\. Expected \\(int\\): 20\n\n",
         getMyLine()+1)
     result := c.Check(10, gocheck.Equals, 20)
     checkState(c, result,
-               &expectedState{
-                    name: "Check(10, Equals, 20)",
-                    result: false,
-                    failed: true,
-                    log: log,
-               })
+        &expectedState{
+            name:   "Check(10, Equals, 20)",
+            result: false,
+            failed: true,
+            log:    log,
+        })
 }
 
 func (s *FoundationS) TestCallerLoggingInDifferentFile(c *gocheck.C) {
     result, line := checkEqualWrapper(c, 10, 20)
-    testLine := getMyLine()-1
+    testLine := getMyLine() - 1
     log := fmt.Sprintf(
-        "foundation_test.go:%d > gocheck_test.go:%d:\n" +
-        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n" +
-        "\\.\\.\\. Obtained \\(int\\): 10\n" +
-        "\\.\\.\\. Expected \\(int\\): 20\n\n",
+        "foundation_test.go:%d > gocheck_test.go:%d:\n"+
+            "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+            "\\.\\.\\. Obtained \\(int\\): 10\n"+
+            "\\.\\.\\. Expected \\(int\\): 20\n\n",
         testLine, line)
     checkState(c, result,
-               &expectedState{
-                    name: "Check(10, Equals, 20)",
-                    result: false,
-                    failed: true,
-                    log: log,
-               })
+        &expectedState{
+            name:   "Check(10, Equals, 20)",
+            result: false,
+            failed: true,
+            log:    log,
+        })
 }
 
 // -----------------------------------------------------------------------
@@ -198,10 +202,10 @@ func (s *FoundationS) TestExpectFailure(c *gocheck.C) {
 
     expected :=
         "^\n-+\n" +
-        "FAIL: foundation_test\\.go:[0-9]+:" +
-        " ExpectFailureHelper\\.TestSucceed\n\n" +
-        "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
-        "\\.\\.\\. Reason: Bug #XYZ\n$"
+            "FAIL: foundation_test\\.go:[0-9]+:" +
+            " ExpectFailureHelper\\.TestSucceed\n\n" +
+            "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
+            "\\.\\.\\. Reason: Bug #XYZ\n$"
 
     matched, err := regexp.MatchString(expected, output.value)
     if err != nil {
@@ -237,7 +241,7 @@ func (s *EmbeddedInternalS) TestMethod(c *gocheck.C) {
 func (s *EmbeddedS) TestMethod(c *gocheck.C) {
     // http://code.google.com/p/go/issues/detail?id=906
     c.Check(s.called, gocheck.Equals, false,
-            gocheck.Bug("The bug described in issue 906 is " +
-                        "affecting the runner"))
+        gocheck.Bug("The bug described in issue 906 is "+
+            "affecting the runner"))
     s.called = true
 }

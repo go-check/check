@@ -87,7 +87,7 @@ func (c *C) Error(args ...interface{}) {
 // The provided arguments will be assembled together into a string using
 // fmt.Sprintf().
 func (c *C) Errorf(format string, args ...interface{}) {
-    c.logCaller(1, fmt.Sprintf("Error: " + format, args...))
+    c.logCaller(1, fmt.Sprintf("Error: "+format, args...))
     c.Fail()
 }
 
@@ -119,7 +119,7 @@ func (c *C) Fatalf(format string, args ...interface{}) {
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Check(obtained interface{}, checker Checker,
-                  args ...interface{}) bool {
+args ...interface{}) bool {
     return c.internalCheck("Check", obtained, checker, args...)
 }
 
@@ -131,15 +131,15 @@ func (c *C) Check(obtained interface{}, checker Checker,
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
 func (c *C) Assert(obtained interface{}, checker Checker,
-                   args ...interface{}) {
+args ...interface{}) {
     if !c.internalCheck("Assert", obtained, checker, args...) {
         c.stopNow()
     }
 }
 
 func (c *C) internalCheck(funcName string,
-                          obtained interface{}, checker Checker,
-                          args ...interface{}) bool {
+obtained interface{}, checker Checker,
+args ...interface{}) bool {
     if checker == nil {
         c.logCaller(2, fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
         c.logString("Oops.. you've provided a nil checker!")
@@ -170,10 +170,11 @@ func (c *C) internalCheck(funcName string,
     } else {
         obtainedName, expectedName := checker.VarNames()
         c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName,
-                                   checker.Name(), expectedName))
-        c.logString(fmt.Sprintf("Wrong number of %s args for %s: " +
-                                "want %d, got %d", expectedName, checker.Name(),
-                                expectedWanted, len(args)))
+            checker.Name(), expectedName))
+        c.logString(fmt.Sprintf("Wrong number of %s args for %s: "+
+            "want %d, got %d",
+            expectedName, checker.Name(),
+            expectedWanted, len(args)))
         goto fail
     }
 
@@ -184,10 +185,10 @@ func (c *C) internalCheck(funcName string,
         var summary string
         if expectedWanted > 0 {
             summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedName,
-                                  checker.Name(), expectedName)
+                checker.Name(), expectedName)
         } else {
             summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedName,
-                                  checker.Name())
+                checker.Name())
         }
         c.logCaller(2, summary)
         c.logValue(strings.Title(obtainedName), obtained)

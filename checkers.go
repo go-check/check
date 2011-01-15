@@ -13,7 +13,7 @@ import (
 
 type bugInfo struct {
     format string
-    args []interface{}
+    args   []interface{}
 }
 
 // Function to attach some information to an Assert() or Check() call.
@@ -81,8 +81,7 @@ func (checker *CheckerType) VarNames() (obtained, expected string) {
 // Method must return true if the obtained value succeeds the
 // expectations established by the given matcher.  If an error is
 // returned, it means the provided parameters are somehow invalid.
-func (checker *CheckerType) Check(obtained, expected interface{}) (
-        result bool, error string) {
+func (checker *CheckerType) Check(obtained, expected interface{}) (result bool, error string) {
     return false, ""
 }
 
@@ -114,8 +113,7 @@ func (checker *notChecker) VarNames() (obtained, expected string) {
     return
 }
 
-func (checker *notChecker) Check(obtained, expected interface{}) (
-        result bool, error string) {
+func (checker *notChecker) Check(obtained, expected interface{}) (result bool, error string) {
     result, error = checker.sub.Check(obtained, expected)
     result = !result // So much for so little. :-)
     return
@@ -128,7 +126,7 @@ func (checker *notChecker) Check(obtained, expected interface{}) (
 // Check if the obtained value is nil. E.g. Assert(err, IsNil).
 var IsNil Checker = &isNilChecker{}
 
-type isNilChecker struct{
+type isNilChecker struct {
     CheckerType
 }
 
@@ -144,8 +142,7 @@ func (checker *isNilChecker) VarNames() (obtained, expected string) {
     return "value", ""
 }
 
-func (checker *isNilChecker) Check(obtained, expected interface{}) (
-        result bool, error string) {
+func (checker *isNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
     return isNil(obtained), ""
 }
 
@@ -168,7 +165,7 @@ func isNil(obtained interface{}) (result bool) {
 // This is an Alias for Not(IsNil), since it's a fairly common check.
 var NotNil Checker = &notNilChecker{}
 
-type notNilChecker struct{
+type notNilChecker struct {
     isNilChecker
 }
 
@@ -176,8 +173,7 @@ func (checker *notNilChecker) Name() string {
     return "NotNil"
 }
 
-func (checker *notNilChecker) Check(obtained, expected interface{}) (
-        result bool, error string) {
+func (checker *notNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
     return !isNil(obtained), ""
 }
 
@@ -199,8 +195,7 @@ func (checker *equalsChecker) Name() string {
     return "Equals"
 }
 
-func (checker *equalsChecker) Check(obtained, expected interface{}) (
-        result bool, error string) {
+func (checker *equalsChecker) Check(obtained, expected interface{}) (result bool, error string) {
     return reflect.DeepEqual(obtained, expected), ""
 }
 
@@ -239,7 +234,7 @@ func (checker *matchesChecker) Check(value, re interface{}) (bool, string) {
         }
     }
     if valueIsStr {
-        matches, err := regexp.MatchString("^" + reStr + "$", valueStr)
+        matches, err := regexp.MatchString("^"+reStr+"$", valueStr)
         if err != nil {
             return false, "Can't compile regex: " + err.String()
         }

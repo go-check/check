@@ -24,10 +24,10 @@ func Suite(suite interface{}) interface{} {
 // Public running interface.
 
 var filterFlag = flag.String("f", "",
-                             "Regular expression selecting " +
-                             "what to run (gocheck)")
+    "Regular expression selecting "+
+        "what to run (gocheck)")
 var streamFlag = flag.Bool("vv", false,
-                           "Super verbose mode without caching (gocheck)")
+    "Super verbose mode without caching (gocheck)")
 var verboseFlag *bool
 
 func init() {
@@ -50,8 +50,8 @@ func init() {
 // module.
 func TestingT(testingT *testing.T) {
     result := RunAll(&RunConf{Filter: *filterFlag,
-                              Verbose: *verboseFlag,
-                              Stream: *streamFlag})
+        Verbose: *verboseFlag,
+        Stream:  *streamFlag})
     println(result.String())
     if !result.Passed() {
         testingT.Fail()
@@ -89,8 +89,8 @@ func (r *Result) Add(other *Result) {
 
 func (r *Result) Passed() bool {
     return (r.Failed == 0 && r.Panicked == 0 &&
-            r.FixturePanicked == 0 && r.Missed == 0 &&
-            r.RunError == nil)
+        r.FixturePanicked == 0 && r.Missed == 0 &&
+        r.RunError == nil)
 }
 
 func (r *Result) String() string {
@@ -100,7 +100,7 @@ func (r *Result) String() string {
 
     var value string
     if r.Failed == 0 && r.Panicked == 0 && r.FixturePanicked == 0 &&
-       r.Missed == 0 {
+        r.Missed == 0 {
         value = "OK: "
     } else {
         value = "OOPS: "
