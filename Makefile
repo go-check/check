@@ -11,8 +11,16 @@ GOFILES=\
 
 include $(GOROOT)/src/Make.pkg
 
-format:
-	${GOFMT} -w gocheck.go
-	${GOFMT} -w helpers.go
-	${GOFMT} -w run.go
-	${GOFMT} -w checkers.go
+GOFMT=gofmt -spaces=true -tabwidth=4 -tabindent=false
+
+BADFMT=$(shell $(GOFMT) -l $(GOFILES) $(wildcard *_test.go))
+
+gofmt: $(BADFMT)
+	@for F in $(BADFMT); do $(GOFMT) -w $$F && echo $$F; done
+
+ifneq ($(BADFMT),)
+ifneq ($(MAKECMDGOALS),gofmt)
+$(warning WARNING: make gofmt: $(BADFMT))
+endif
+endif
+

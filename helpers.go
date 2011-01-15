@@ -194,10 +194,11 @@ func (c *C) internalCheck(funcName string,
         if expectedWanted > 0 {
             c.logValue(strings.Title(expectedName), expected)
         }
+        if bug != nil {
+            c.logString(bug.GetBugInfo())
+        }
         if error != "" {
             c.logString(error)
-        } else if bug != nil {
-            c.logString(bug.GetBugInfo())
         }
         goto fail
     }
