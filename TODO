@@ -1,4 +1,3 @@
-- Tests missed with ExpectFailure() should be tracked and reported.
 - GoTest prefix support, for running parallel tests
 - Display source code of calling site
 - t.LockResource("database", "config-dir"), acquires exclusive access
