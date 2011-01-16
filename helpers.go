@@ -51,7 +51,21 @@ func (c *C) SucceedNow() {
 // which cover well known problems until a better time to fix the problem
 // is found, without forgetting about the fact that a failure still exists.
 func (c *C) ExpectFailure(reason string) {
-    c.expectedFailure = &reason
+    if reason == "" {
+        panic("Missing reason why the test is expected to fail")
+    }
+    c.mustFail = true
+    c.reason = reason
+}
+
+// Skip the running test, for the given reason.
+func (c *C) Skip(reason string) {
+    if reason == "" {
+        panic("Missing reason why the test is being skipped")
+    }
+    c.reason = reason
+    c.status = skippedSt
+    c.stopNow()
 }
 
 
@@ -118,8 +132,7 @@ func (c *C) Fatalf(format string, args ...interface{}) {
 // argument (e.g. IsNil).  In either case, any extra arguments provided to
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
-func (c *C) Check(obtained interface{}, checker Checker,
-args ...interface{}) bool {
+func (c *C) Check(obtained interface{}, checker Checker, args ...interface{}) bool {
     return c.internalCheck("Check", obtained, checker, args...)
 }
 
@@ -130,16 +143,13 @@ args ...interface{}) bool {
 // argument (e.g. IsNil).  In either case, any extra arguments provided to
 // the function will be logged next to the reported problem when the
 // matching fails.  This is a handy way to provide problem-specific hints.
-func (c *C) Assert(obtained interface{}, checker Checker,
-args ...interface{}) {
+func (c *C) Assert(obtained interface{}, checker Checker, args ...interface{}) {
     if !c.internalCheck("Assert", obtained, checker, args...) {
         c.stopNow()
     }
 }
 
-func (c *C) internalCheck(funcName string,
-obtained interface{}, checker Checker,
-args ...interface{}) bool {
+func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
     if checker == nil {
         c.logCaller(2, fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
         c.logString("Oops.. you've provided a nil checker!")

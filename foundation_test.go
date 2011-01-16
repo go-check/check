@@ -91,13 +91,14 @@ func (s *FoundationS) TestFailureHeader(c *gocheck.C) {
     output := String{}
     failHelper := FailHelper{}
     gocheck.Run(&failHelper, &gocheck.RunConf{Output: &output})
-    header := fmt.Sprintf(
+    header := fmt.Sprintf(""+
         "\n-----------------------------------"+
-            "-----------------------------------\n"+
-            "FAIL: gocheck_test.go:%d: FailHelper.TestLogAndFail\n",
+        "-----------------------------------\n"+
+        "FAIL: gocheck_test.go:%d: FailHelper.TestLogAndFail\n",
         failHelper.testLine)
     if strings.Index(output.value, header) == -1 {
-        c.Errorf("Failure didn't print a proper header.\n"+
+        c.Errorf(""+
+            "Failure didn't print a proper header.\n"+
             "... Got:\n%s... Expected something with:\n%s",
             output.value, header)
     }
@@ -147,11 +148,11 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 
 
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
-    log := fmt.Sprintf(
+    log := fmt.Sprintf(""+
         "foundation_test.go:%d:\n"+
-            "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
-            "\\.\\.\\. Obtained \\(int\\): 10\n"+
-            "\\.\\.\\. Expected \\(int\\): 20\n\n",
+        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+        "\\.\\.\\. Obtained \\(int\\): 10\n"+
+        "\\.\\.\\. Expected \\(int\\): 20\n\n",
         getMyLine()+1)
     result := c.Check(10, gocheck.Equals, 20)
     checkState(c, result,
@@ -166,11 +167,11 @@ func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
 func (s *FoundationS) TestCallerLoggingInDifferentFile(c *gocheck.C) {
     result, line := checkEqualWrapper(c, 10, 20)
     testLine := getMyLine() - 1
-    log := fmt.Sprintf(
+    log := fmt.Sprintf(""+
         "foundation_test.go:%d > gocheck_test.go:%d:\n"+
-            "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
-            "\\.\\.\\. Obtained \\(int\\): 10\n"+
-            "\\.\\.\\. Expected \\(int\\): 20\n\n",
+        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+        "\\.\\.\\. Obtained \\(int\\): 10\n"+
+        "\\.\\.\\. Expected \\(int\\): 20\n\n",
         testLine, line)
     checkState(c, result,
         &expectedState{
@@ -200,12 +201,12 @@ func (s *FoundationS) TestExpectFailure(c *gocheck.C) {
     output := String{}
     gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
 
-    expected :=
+    expected := "" +
         "^\n-+\n" +
-            "FAIL: foundation_test\\.go:[0-9]+:" +
-            " ExpectFailureHelper\\.TestSucceed\n\n" +
-            "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
-            "\\.\\.\\. Reason: Bug #XYZ\n$"
+        "FAIL: foundation_test\\.go:[0-9]+:" +
+        " ExpectFailureHelper\\.TestSucceed\n\n" +
+        "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
+        "\\.\\.\\. Reason: Bug #XYZ\n$"
 
     matched, err := regexp.MatchString(expected, output.value)
     if err != nil {
@@ -215,6 +216,41 @@ func (s *FoundationS) TestExpectFailure(c *gocheck.C) {
     }
 }
 
+
+// -----------------------------------------------------------------------
+// Skip() allows stopping a test without positive/negative results.
+
+type SkipTestHelper struct{}
+
+func (s *SkipTestHelper) TestFail(c *gocheck.C) {
+    c.Skip("Wrong platform or whatever")
+    c.Error("Boom!")
+}
+
+func (s *FoundationS) TestSkip(c *gocheck.C) {
+    helper := SkipTestHelper{}
+    output := String{}
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+
+    if output.value != "" {
+        c.Error("Skip() logged something:\n", output.value)
+    }
+}
+
+func (s *FoundationS) TestSkipVerbose(c *gocheck.C) {
+    helper := SkipTestHelper{}
+    output := String{}
+    gocheck.Run(&helper, &gocheck.RunConf{Output: &output, Verbose: true})
+
+    expected := "SKIP: foundation_test\\.go:[0-9]+: SkipTestHelper\\.TestFail" +
+        " \\(Wrong platform or whatever\\)"
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
+        c.Error("Bad expression: ", expected)
+    } else if !matched {
+        c.Error("Skip() didn't log properly:\n", output.value)
+    }
+}
 
 // -----------------------------------------------------------------------
 // Ensure that suites with embedded types are working fine, including the

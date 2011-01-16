@@ -1,5 +1,4 @@
 - Tests missed with ExpectFailure() should be tracked and reported.
-- t.Skip() in tests and in SetUpTest and SetUpSuite
 - GoTest prefix support, for running parallel tests
 - Display source code of calling site
 - t.LockResource("database", "config-dir"), acquires exclusive access

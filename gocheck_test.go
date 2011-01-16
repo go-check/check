@@ -107,38 +107,44 @@ type FixtureHelper struct {
     calls   [64]string
     n       int
     panicOn string
+    skip    bool
+    skipOnN int
 }
 
-func (s *FixtureHelper) trace(name string) {
-    s.calls[s.n] = name
+func (s *FixtureHelper) trace(name string, c *gocheck.C) {
+    n := s.n
+    s.calls[n] = name
     s.n += 1
     if name == s.panicOn {
         panic(name)
     }
+    if s.skip && s.skipOnN == n{
+        c.Skip("skipOnN == n")
+    }
 }
 
 func (s *FixtureHelper) SetUpSuite(c *gocheck.C) {
-    s.trace("SetUpSuite")
+    s.trace("SetUpSuite", c)
 }
 
 func (s *FixtureHelper) TearDownSuite(c *gocheck.C) {
-    s.trace("TearDownSuite")
+    s.trace("TearDownSuite", c)
 }
 
 func (s *FixtureHelper) SetUpTest(c *gocheck.C) {
-    s.trace("SetUpTest")
+    s.trace("SetUpTest", c)
 }
 
 func (s *FixtureHelper) TearDownTest(c *gocheck.C) {
-    s.trace("TearDownTest")
+    s.trace("TearDownTest", c)
 }
 
 func (s *FixtureHelper) Test1(c *gocheck.C) {
-    s.trace("Test1")
+    s.trace("Test1", c)
 }
 
 func (s *FixtureHelper) Test2(c *gocheck.C) {
-    s.trace("Test2")
+    s.trace("Test2", c)
 }
 
 

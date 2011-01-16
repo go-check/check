@@ -39,14 +39,15 @@ const (
 type funcStatus int
 
 type C struct {
-    method          *reflect.FuncValue
-    kind            funcKind
-    status          funcStatus
-    logb            *bytes.Buffer
-    logw            io.Writer
-    done            chan *C
-    expectedFailure *string
-    tempDir         *tempDir
+    method   *reflect.FuncValue
+    kind     funcKind
+    status   funcStatus
+    logb     *bytes.Buffer
+    logw     io.Writer
+    done     chan *C
+    reason   string
+    mustFail bool
+    tempDir  *tempDir
 }
 
 func newC(method *reflect.FuncValue, kind funcKind,
@@ -348,6 +349,10 @@ func (tracker *resultTracker) _loopRoutine() {
                     tracker.result.Missed++
                 case missedSt:
                     tracker.result.Missed++
+                case skippedSt:
+                    if c.kind == testKd {
+                        tracker.result.Skipped++
+                    }
                 }
             }
         } else {
@@ -489,16 +494,18 @@ func (runner *suiteRunner) run() *Result {
                 for i := 0; i != len(runner.tests); i++ {
                     c := runner.runTest(runner.tests[i])
                     if c.status == fixturePanickedSt {
-                        runner.missTests(runner.tests[i+1:])
+                        runner.skipTests(missedSt, runner.tests[i+1:])
                         break
                     }
                 }
+            } else if c != nil && c.status == skippedSt {
+                runner.skipTests(skippedSt, runner.tests)
             } else {
-                runner.missTests(runner.tests)
+                runner.skipTests(missedSt, runner.tests)
             }
             runner.runFixture(runner.tearDownSuite, nil)
         } else {
-            runner.missTests(runner.tests)
+            runner.skipTests(missedSt, runner.tests)
         }
         runner.tracker.waitAndStop()
         runner.tempDir.removeAll()
@@ -542,21 +549,25 @@ func (runner *suiteRunner) callDone(c *C) {
     if value != nil {
         switch v := value.(type) {
         case *fixturePanic:
-            c.logSoftPanic("Fixture has panicked (see related PANIC)")
-            c.status = fixturePanickedSt
+            if v.status == skippedSt {
+                c.status = skippedSt
+            } else {
+                c.logSoftPanic("Fixture has panicked (see related PANIC)")
+                c.status = fixturePanickedSt
+            }
         default:
             c.logPanic(1, value)
             c.status = panickedSt
         }
     }
-    if c.expectedFailure != nil {
+    if c.mustFail {
         switch c.status {
         case failedSt:
             c.status = succeededSt
         case succeededSt:
             c.status = failedSt
             c.logString("Error: Test succeeded, but was expected to fail")
-            c.logString("Reason: " + *c.expectedFailure)
+            c.logString("Reason: " + c.reason)
         }
     }
 
@@ -568,8 +579,7 @@ func (runner *suiteRunner) callDone(c *C) {
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *reflect.FuncValue,
-logb *bytes.Buffer) *C {
+func (runner *suiteRunner) runFixture(method *reflect.FuncValue, logb *bytes.Buffer) *C {
     if method != nil {
         c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
             c.method.Call([]reflect.Value{reflect.NewValue(c)})
@@ -582,16 +592,20 @@ logb *bytes.Buffer) *C {
 // Run the fixture method with runFixture(), but panic with a fixturePanic{}
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
-func (runner *suiteRunner) runFixtureWithPanic(method *reflect.FuncValue,
-logb *bytes.Buffer) *C {
+func (runner *suiteRunner) runFixtureWithPanic(method *reflect.FuncValue, logb *bytes.Buffer, skipped *bool) *C {
+    if *skipped {
+        return nil
+    }
     c := runner.runFixture(method, logb)
     if c != nil && c.status != succeededSt {
-        panic(&fixturePanic{method})
+        *skipped = c.status == skippedSt
+        panic(&fixturePanic{c.status, method})
     }
     return c
 }
 
 type fixturePanic struct {
+    status funcStatus
     method *reflect.FuncValue
 }
 
@@ -599,9 +613,9 @@ type fixturePanic struct {
 // asynchronously.
 func (runner *suiteRunner) forkTest(method *reflect.FuncValue) *C {
     return runner.forkCall(method, testKd, nil, func(c *C) {
-        defer runner.runFixtureWithPanic(runner.tearDownTest, nil)
-        // Whatever is logged in SetUpTest persists in the test log itself.
-        runner.runFixtureWithPanic(runner.setUpTest, c.logb)
+        var skipped bool
+        defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
+        runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
         methodType := c.method.Type().(*reflect.FuncType)
         if methodType.In(1) == reflect.Typeof(c) && methodType.NumIn() == 2 {
             c.method.Call([]reflect.Value{reflect.NewValue(c)})
@@ -621,12 +635,13 @@ func (runner *suiteRunner) runTest(method *reflect.FuncValue) *C {
     return c
 }
 
-// Helper to mark tests as missed.  A bit heavy for what it does, but it
-// enables homogeneous handling of tracking, including nice verbose output.
-func (runner *suiteRunner) missTests(methods []*reflect.FuncValue) {
+// Helper to mark tests as skipped or missed.  A bit heavy for what
+// it does, but it enables homogeneous handling of tracking, including
+// nice verbose output.
+func (runner *suiteRunner) skipTests(status funcStatus, methods []*reflect.FuncValue) {
     for _, method := range methods {
         runner.runFunc(method, testKd, nil, func(c *C) {
-            c.status = missedSt
+            c.status = status
         })
     }
 }
@@ -663,6 +678,8 @@ func (runner *suiteRunner) reportCallDone(c *C) {
     switch c.status {
     case succeededSt:
         runner.output.WriteCallSuccess("PASS", c)
+    case skippedSt:
+        runner.output.WriteCallSuccess("SKIP", c)
     case failedSt:
         runner.output.WriteCallProblem("FAIL", c)
     case panickedSt:
@@ -703,7 +720,7 @@ func (ow *outputWriter) Write(content []byte) (n int, err os.Error) {
 
 func (ow *outputWriter) WriteCallStarted(label string, c *C) {
     if ow.Stream {
-        header := renderCallHeader(label, c, "", "")
+        header := renderCallHeader(label, c, "", "\n")
         ow.m.Lock()
         ow.writer.Write([]byte(header))
         ow.m.Unlock()
@@ -716,7 +733,7 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
         prefix = "\n-----------------------------------" +
             "-----------------------------------\n"
     }
-    header := renderCallHeader(label, c, prefix, "\n")
+    header := renderCallHeader(label, c, prefix, "\n\n")
     ow.m.Lock()
     ow.wroteCallProblemLast = true
     ow.writer.Write([]byte(header))
@@ -729,8 +746,12 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
     if ow.Stream || (ow.Verbose && c.kind == testKd) {
         var suffix string
+        if c.reason != "" {
+            suffix = " (" + c.reason + ")"
+        }
+        suffix += "\n"
         if ow.Stream {
-            suffix = "\n"
+            suffix += "\n"
         }
         header := renderCallHeader(label, c, "", suffix)
         ow.m.Lock()
@@ -748,6 +769,6 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 
 func renderCallHeader(label string, c *C, prefix, suffix string) string {
     pc := c.method.Get()
-    return fmt.Sprintf("%s%s: %s: %s\n%s", prefix, label, niceFuncPath(pc),
+    return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
         niceFuncName(pc), suffix)
 }

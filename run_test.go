@@ -358,11 +358,10 @@ func (s *RunS) TestStreamModeWithMiss(c *C) {
     runConf := RunConf{Output: &output, Stream: true}
     Run(helper, &runConf)
 
-    expected :=
-        "START: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n0\n" +
-            "FAIL: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n\n" +
-            "START: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n" +
-            "MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
+    expected := "START: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n0\n" +
+        "FAIL: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n\n" +
+        "START: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n" +
+        "MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
 
     c.Assert(output.value, Matches, expected)
 }

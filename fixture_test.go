@@ -459,3 +459,32 @@ func (s *FixtureS) TestFixtureLogging(c *C) {
             "FixtureLogHelper\\.Test\n\n"+
             "1\n2\n3\n4\n5\n")
 }
+
+
+// -----------------------------------------------------------------------
+// Skip() within fixture methods.
+
+func (s *FixtureS) TestSkipSuite(c *C) {
+    helper := FixtureHelper{skip: true, skipOnN: 0}
+    output := String{}
+    result := Run(&helper, &RunConf{Output: &output})
+    c.Assert(output.value, Equals, "")
+    c.Assert(helper.calls[0], Equals, "SetUpSuite")
+    c.Assert(helper.calls[1], Equals, "TearDownSuite")
+    c.Assert(helper.n, Equals, 2)
+    c.Assert(result.Skipped, Equals, 2)
+}
+
+func (s *FixtureS) TestSkipTest(c *C) {
+    helper := FixtureHelper{skip: true, skipOnN: 1}
+    output := String{}
+    result := Run(&helper, &RunConf{Output: &output})
+    c.Assert(helper.calls[0], Equals, "SetUpSuite")
+    c.Assert(helper.calls[1], Equals, "SetUpTest")
+    c.Assert(helper.calls[2], Equals, "SetUpTest")
+    c.Assert(helper.calls[3], Equals, "Test2")
+    c.Assert(helper.calls[4], Equals, "TearDownTest")
+    c.Assert(helper.calls[5], Equals, "TearDownSuite")
+    c.Assert(helper.n, Equals, 6)
+    c.Assert(result.Skipped, Equals, 1)
+}
