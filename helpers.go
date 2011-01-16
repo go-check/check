@@ -58,7 +58,9 @@ func (c *C) ExpectFailure(reason string) {
     c.reason = reason
 }
 
-// Skip the running test, for the given reason.
+// Skip the running test, for the given reason.  If used within SetUpTest,
+// the individual test being set up will be skipped, and in SetUpSuite it
+// will cause the whole suite to be skipped.
 func (c *C) Skip(reason string) {
     if reason == "" {
         panic("Missing reason why the test is being skipped")
