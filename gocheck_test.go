@@ -118,7 +118,7 @@ func (s *FixtureHelper) trace(name string, c *gocheck.C) {
     if name == s.panicOn {
         panic(name)
     }
-    if s.skip && s.skipOnN == n{
+    if s.skip && s.skipOnN == n {
         c.Skip("skipOnN == n")
     }
 }

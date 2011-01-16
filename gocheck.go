@@ -521,9 +521,7 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind,
-logb *bytes.Buffer,
-dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
     var logw io.Writer
     if runner.output.Stream {
         logw = runner.output
@@ -539,9 +537,7 @@ dispatcher func(c *C)) *C {
 }
 
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runFunc(method *reflect.FuncValue, kind funcKind,
-logb *bytes.Buffer,
-dispatcher func(c *C)) *C {
+func (runner *suiteRunner) runFunc(method *reflect.FuncValue, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
     c := runner.forkCall(method, kind, logb, dispatcher)
     <-c.done
     return c
