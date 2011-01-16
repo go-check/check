@@ -278,13 +278,14 @@ func niceFuncName(pc uintptr) string {
 // Result tracker to aggregate call results.
 
 type Result struct {
-    Succeeded       int
-    Failed          int
-    Skipped         int
-    Panicked        int
-    FixturePanicked int
-    Missed          int      // Not even tried to run, related to a panic in the fixture.
-    RunError        os.Error // Houston, we've got a problem.
+    Succeeded        int
+    Failed           int
+    Skipped          int
+    Panicked         int
+    FixturePanicked  int
+    ExpectedFailures int
+    Missed           int      // Not even tried to run, related to a panic in the fixture.
+    RunError         os.Error // Houston, we've got a problem.
 }
 
 type resultTracker struct {
@@ -333,7 +334,11 @@ func (tracker *resultTracker) _loopRoutine() {
                 switch c.status {
                 case succeededSt:
                     if c.kind == testKd {
-                        tracker.result.Succeeded++
+                        if c.mustFail {
+                            tracker.result.ExpectedFailures++
+                        } else {
+                            tracker.result.Succeeded++
+                        }
                     }
                 case failedSt:
                     tracker.result.Failed++
@@ -677,7 +682,11 @@ func (runner *suiteRunner) reportCallDone(c *C) {
     runner.tracker.callDone(c)
     switch c.status {
     case succeededSt:
-        runner.output.WriteCallSuccess("PASS", c)
+        if c.mustFail {
+            runner.output.WriteCallSuccess("FAIL EXPECTED", c)
+        } else {
+            runner.output.WriteCallSuccess("PASS", c)
+        }
     case skippedSt:
         runner.output.WriteCallSuccess("SKIP", c)
     case failedSt:

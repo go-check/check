@@ -185,26 +185,28 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *gocheck.C) {
 // -----------------------------------------------------------------------
 // ExpectFailure() inverts the logic of failure.
 
-type ExpectFailureHelper struct{}
+type ExpectFailureSucceedHelper struct{}
 
-func (s *ExpectFailureHelper) TestFail(c *gocheck.C) {
+func (s *ExpectFailureSucceedHelper) TestSucceed(c *gocheck.C) {
     c.ExpectFailure("It booms!")
     c.Error("Boom!")
 }
 
-func (s *ExpectFailureHelper) TestSucceed(c *gocheck.C) {
+type ExpectFailureFailHelper struct{}
+
+func (s *ExpectFailureFailHelper) TestFail(c *gocheck.C) {
     c.ExpectFailure("Bug #XYZ")
 }
 
-func (s *FoundationS) TestExpectFailure(c *gocheck.C) {
-    helper := ExpectFailureHelper{}
+func (s *FoundationS) TestExpectFailureFail(c *gocheck.C) {
+    helper := ExpectFailureFailHelper{}
     output := String{}
-    gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+    result := gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
 
     expected := "" +
         "^\n-+\n" +
         "FAIL: foundation_test\\.go:[0-9]+:" +
-        " ExpectFailureHelper\\.TestSucceed\n\n" +
+        " ExpectFailureFailHelper\\.TestFail\n\n" +
         "\\.\\.\\. Error: Test succeeded, but was expected to fail\n" +
         "\\.\\.\\. Reason: Bug #XYZ\n$"
 
@@ -214,6 +216,36 @@ func (s *FoundationS) TestExpectFailure(c *gocheck.C) {
     } else if !matched {
         c.Error("ExpectFailure() didn't log properly:\n", output.value)
     }
+
+    c.Assert(result.ExpectedFailures, gocheck.Equals, 0)
+}
+
+func (s *FoundationS) TestExpectFailureSucceed(c *gocheck.C) {
+    helper := ExpectFailureSucceedHelper{}
+    output := String{}
+    result := gocheck.Run(&helper, &gocheck.RunConf{Output: &output})
+
+    c.Assert(output.value, gocheck.Equals, "")
+    c.Assert(result.ExpectedFailures, gocheck.Equals, 1)
+}
+
+func (s *FoundationS) TestExpectFailureSucceedVerbose(c *gocheck.C) {
+    helper := ExpectFailureSucceedHelper{}
+    output := String{}
+    result := gocheck.Run(&helper, &gocheck.RunConf{Output: &output, Verbose: true})
+
+    expected := "" +
+        "FAIL EXPECTED: foundation_test\\.go:[0-9]+:" +
+        " ExpectFailureSucceedHelper\\.TestSucceed \\(It booms!\\)\n"
+
+    matched, err := regexp.MatchString(expected, output.value)
+    if err != nil {
+        c.Error("Bad expression: ", expected)
+    } else if !matched {
+        c.Error("ExpectFailure() didn't log properly:\n", output.value)
+    }
+
+    c.Assert(result.ExpectedFailures, gocheck.Equals, 1)
 }
 
 

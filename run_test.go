@@ -147,6 +147,11 @@ func (s *RunS) TestPrintSkipped(c *C) {
     c.Check(result.String(), Equals, "OK: 0 passed, 5 skipped")
 }
 
+func (s *RunS) TestPrintExpectedFailures(c *C) {
+    result := &Result{ExpectedFailures: 5}
+    c.Check(result.String(), Equals, "OK: 0 passed, 5 expected failures")
+}
+
 func (s *RunS) TestPrintPanicked(c *C) {
     result := &Result{Panicked: 5}
     c.Check(result.String(), Equals, "OOPS: 0 passed, 5 PANICKED")
@@ -154,7 +159,7 @@ func (s *RunS) TestPrintPanicked(c *C) {
 
 func (s *RunS) TestPrintFixturePanicked(c *C) {
     result := &Result{FixturePanicked: 5}
-    c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FIXTURE PANICKED")
+    c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FIXTURE-PANICKED")
 }
 
 func (s *RunS) TestPrintMissed(c *C) {
@@ -163,11 +168,11 @@ func (s *RunS) TestPrintMissed(c *C) {
 }
 
 func (s *RunS) TestPrintAll(c *C) {
-    result := &Result{Succeeded: 1, Skipped: 2, Panicked: 3,
-        FixturePanicked: 4, Missed: 5}
+    result := &Result{Succeeded: 1, Skipped: 2, ExpectedFailures: 3,
+        Panicked: 4, FixturePanicked: 5, Missed: 6}
     c.Check(result.String(), Equals,
-        "OOPS: 1 passed, 2 skipped, 3 PANICKED, "+
-            "4 FIXTURE PANICKED, 5 MISSED")
+        "OOPS: 1 passed, 2 skipped, 3 expected failures, 4 PANICKED, "+
+            "5 FIXTURE-PANICKED, 6 MISSED")
 }
 
 func (s *RunS) TestPrintRunError(c *C) {

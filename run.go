@@ -109,6 +109,9 @@ func (r *Result) String() string {
     if r.Skipped != 0 {
         value += fmt.Sprintf(", %d skipped", r.Skipped)
     }
+    if r.ExpectedFailures != 0 {
+        value += fmt.Sprintf(", %d expected failures", r.ExpectedFailures)
+    }
     if r.Failed != 0 {
         value += fmt.Sprintf(", %d FAILED", r.Failed)
     }
@@ -116,7 +119,7 @@ func (r *Result) String() string {
         value += fmt.Sprintf(", %d PANICKED", r.Panicked)
     }
     if r.FixturePanicked != 0 {
-        value += fmt.Sprintf(", %d FIXTURE PANICKED", r.FixturePanicked)
+        value += fmt.Sprintf(", %d FIXTURE-PANICKED", r.FixturePanicked)
     }
     if r.Missed != 0 {
         value += fmt.Sprintf(", %d MISSED", r.Missed)
