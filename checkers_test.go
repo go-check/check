@@ -59,6 +59,7 @@ func (s *CheckersS) TestIsNil(c *gocheck.C) {
     testCheck(c, gocheck.IsNil, os.NewError(""), nil, false, "")
     testCheck(c, gocheck.IsNil, ([]int)(nil), nil, true, "")
     testCheck(c, gocheck.IsNil, make([]int, 1), nil, false, "")
+    testCheck(c, gocheck.IsNil, int(0), nil, false, "")
 }
 
 func (s *CheckersS) TestNotNil(c *gocheck.C) {

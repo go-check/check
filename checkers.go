@@ -2,7 +2,6 @@ package gocheck
 
 import (
     "reflect"
-    "unsafe"
     "regexp"
     "fmt"
 )
@@ -146,13 +145,17 @@ func (checker *isNilChecker) Check(obtained, expected interface{}) (result bool,
     return isNil(obtained), ""
 }
 
+type hasIsNil interface {
+    IsNil() bool
+}
 
 func isNil(obtained interface{}) (result bool) {
     if obtained == nil {
         result = true
     } else {
-        value := reflect.NewValue(obtained)
-        result = *(*uintptr)(unsafe.Pointer(value.Addr())) == 0
+        if v, ok := reflect.NewValue(obtained).(hasIsNil); ok {
+            result = v.IsNil()
+        }
     }
     return
 }
