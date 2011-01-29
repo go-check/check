@@ -405,8 +405,8 @@ func (s *FixtureS) TestSetUpSuiteCheck(c *C) {
             "FixtureCheckHelper\\.SetUpSuite\n\n"+
             "fixture_test\\.go:[0-9]+:\n"+
             "\\.+ Check\\(obtained, Equals, expected\\):\n"+
-            "\\.+ Obtained \\(bool\\): false\n"+
-            "\\.+ Expected \\(bool\\): true\n\n")
+            "\\.+ obtained = \\(bool\\) false\n"+
+            "\\.+ expected = \\(bool\\) true\n\n")
     c.Assert(helper.completed, Equals, true)
 }
 
@@ -420,8 +420,8 @@ func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
             "FixtureCheckHelper\\.SetUpSuite\n\n"+
             "fixture_test\\.go:[0-9]+:\n"+
             "\\.+ Assert\\(obtained, Equals, expected\\):\n"+
-            "\\.+ Obtained \\(bool\\): false\n"+
-            "\\.+ Expected \\(bool\\): true\n\n")
+            "\\.+ obtained = \\(bool\\) false\n"+
+            "\\.+ expected = \\(bool\\) true\n\n")
     c.Assert(helper.completed, Equals, false)
 }
 

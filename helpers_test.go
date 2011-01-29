@@ -98,8 +98,8 @@ func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n\n"
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n\n"
     testHelperFailure(c, "Check(1, checker, 2)", false, false, log,
         func() interface{} {
             return c.Check(1, checker, 2)
@@ -110,8 +110,8 @@ func (s *HelpersS) TestCheckFailWithExpectedAndBugInfo(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n" +
         "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Check(1, checker, 2, msg)", false, false, log,
         func() interface{} {
@@ -123,7 +123,7 @@ func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n\n"
+        "\\.+ myobtained = \\(int\\) 1\n\n"
     testHelperFailure(c, "Check(1, checker)", false, false, log,
         func() interface{} {
             return c.Check(1, checker)
@@ -134,7 +134,7 @@ func (s *HelpersS) TestCheckFailWithoutExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
         "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Check(1, checker, msg)", false, false, log,
         func() interface{} {
@@ -170,8 +170,8 @@ func (s *HelpersS) TestCheckWithError(c *gocheck.C) {
     checker := &MyChecker{checkError: "Some not so cool data provided!"}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n" +
         "\\.+ Some not so cool data provided!\n\n"
     testHelperFailure(c, "Check(1, checker, 2)", false, false, log,
         func() interface{} {
@@ -221,8 +221,8 @@ func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n\n"
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n\n"
     testHelperFailure(c, "Assert(1, checker, 2)", nil, true, log,
         func() interface{} {
             c.Assert(1, checker, 2)
@@ -234,8 +234,8 @@ func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n" +
         "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Assert(1, checker, 2, msg)", nil, true, log,
         func() interface{} {
@@ -248,7 +248,7 @@ func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Assert\\(myobtained, MyChecker\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n\n"
+        "\\.+ myobtained = \\(int\\) 1\n\n"
     testHelperFailure(c, "Assert(1, checker)", nil, true, log,
         func() interface{} {
             c.Assert(1, checker)
@@ -260,7 +260,7 @@ func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
     checker := &MyChecker{failCheck: true, noExpectedValue: true}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Assert\\(myobtained, MyChecker\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
         "\\.+ Hello world!\n\n"
     testHelperFailure(c, "Assert(1, checker, msg)", nil, true, log,
         func() interface{} {
@@ -286,8 +286,8 @@ func (s *HelpersS) TestAssertWithError(c *gocheck.C) {
     checker := &MyChecker{checkError: "Some not so cool data provided!"}
     log := "helpers_test\\.go:[0-9]+ > helpers_test\\.go:[0-9]+:\n" +
         "\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(int\\): 1\n" +
-        "\\.+ Myexpected \\(int\\): 2\n" +
+        "\\.+ myobtained = \\(int\\) 1\n" +
+        "\\.+ myexpected = \\(int\\) 2\n" +
         "\\.+ Some not so cool data provided!\n\n"
     testHelperFailure(c, "Assert(1, checker, 2)", nil, true, log,
         func() interface{} {
@@ -315,8 +315,8 @@ func (s *HelpersS) TestValueLoggingWithArrays(c *gocheck.C) {
     checker := &MyChecker{failCheck: true}
     log := "helpers_test.go:[0-9]+ > helpers_test.go:[0-9]+:\n" +
         "\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
-        "\\.+ Myobtained \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x2}\n" +
-        "\\.+ Myexpected \\(\\[\\]uint8\\): \\[\\]byte{0x1, 0x3}\n\n"
+        "\\.+ myobtained = \\(\\[\\]uint8\\) \\[\\]byte{0x1, 0x2}\n" +
+        "\\.+ myexpected = \\(\\[\\]uint8\\) \\[\\]byte{0x1, 0x3}\n\n"
     testHelperFailure(c, "Check([]byte{1}, chk, []byte{3})", false, false, log,
         func() interface{} {
             return c.Check([]byte{1, 2}, checker, []byte{1, 3})

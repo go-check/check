@@ -146,19 +146,19 @@ type hasString interface {
 
 func (c *C) logValue(label string, value interface{}) {
     if label == "" {
-        if _, ok := value.(hasString); ok {
-            c.logf("... %#v (%v)", value, value)
+        if v, ok := value.(hasString); ok {
+            c.logf("... %#v (%q)", value, v.String())
         } else {
             c.logf("... %#v", value)
         }
     } else if value == nil {
         c.logf("... %s (nil): nil", label)
     } else {
-        if _, ok := value.(hasString); ok {
-            c.logf("... %s (%s): %#v (%v)",
-                label, reflect.Typeof(value).String(), value, value)
+        if v, ok := value.(hasString); ok {
+            c.logf("... %s = (%s) %#v (%q)",
+                label, reflect.Typeof(value).String(), value, v.String())
         } else {
-            c.logf("... %s (%s): %#v",
+            c.logf("... %s = (%s) %#v",
                 label, reflect.Typeof(value).String(), value)
         }
     }

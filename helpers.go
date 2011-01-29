@@ -2,7 +2,6 @@ package gocheck
 
 
 import (
-    "strings"
     "fmt"
 )
 
@@ -203,9 +202,9 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
                 checker.Name())
         }
         c.logCaller(2, summary)
-        c.logValue(strings.Title(obtainedName), obtained)
+        c.logValue(obtainedName, obtained)
         if expectedWanted > 0 {
-            c.logValue(strings.Title(expectedName), expected)
+            c.logValue(expectedName, expected)
         }
         if bug != nil {
             c.logString(bug.GetBugInfo())
