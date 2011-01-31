@@ -8,6 +8,7 @@ GOFILES=\
 	helpers.go\
 	run.go\
 	checkers.go\
+	printer.go\
 
 include $(GOROOT)/src/Make.pkg
 

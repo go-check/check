@@ -1,18 +1,18 @@
 package gocheck
 
 import (
-    "reflect"
-    "runtime"
-    "strings"
-    "strconv"
-    "regexp"
     "bytes"
-    "path"
-    "sync"
-    "rand"
     "fmt"
     "io"
     "os"
+    "path"
+    "rand"
+    "reflect"
+    "regexp"
+    "runtime"
+    "strconv"
+    "strings"
+    "sync"
 )
 
 
@@ -191,8 +191,7 @@ func (c *C) logCaller(skip int, issue string) {
                 }
             }
         }
-        if testFile != "" && (testFile != callerFile ||
-            testLine != callerLine) {
+        if testFile != "" && (testFile != callerFile || testLine != callerLine) {
             c.logf("%s:%d > %s:%d:\n... %s", nicePath(testFile), testLine,
                 nicePath(callerFile), callerLine, issue)
         } else {

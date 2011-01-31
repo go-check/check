@@ -149,7 +149,7 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
     log := fmt.Sprintf(""+
-        "foundation_test.go:%d:\n"+
+        "foundation_test.go:%d:\n"+ //"    result := c.Check(10, gocheck.Equals, 20)\n"+
         "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
         "\\.\\.\\. obtained = \\(int\\) 10\n"+
         "\\.\\.\\. expected = \\(int\\) 20\n\n",

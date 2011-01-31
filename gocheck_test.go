@@ -18,7 +18,7 @@ import (
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
-const suitesRunExpected = 6
+const suitesRunExpected = 7
 
 var suitesRun int = 0
 
