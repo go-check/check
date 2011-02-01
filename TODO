@@ -1,7 +1,4 @@
 - GoTest prefix support, for running parallel tests
-- Display source code of calling site
-- t.LockResource("database", "config-dir"), acquires exclusive access
-  to these resources and prevents parallel tests from using them.
 - Benchmark support
 - Improved logging of multiline strings:
 
