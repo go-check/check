@@ -152,15 +152,18 @@ func (c *C) logValue(label string, value interface{}) {
             c.logf("... %#v", value)
         }
     } else if value == nil {
-        c.logf("... %s (nil): nil", label)
+        c.logf("... %s = nil", label)
     } else {
         if v, ok := value.(hasString); ok {
-            c.logf("... %s = (%s) %#v (%q)",
-                label, reflect.Typeof(value).String(), value, v.String())
-        } else {
-            c.logf("... %s = (%s) %#v",
-                label, reflect.Typeof(value).String(), value)
+            fv := fmt.Sprintf("%#v", value)
+            qv := fmt.Sprintf("%q", v.String())
+            if fv != qv {
+                c.logf("... %s %s = %s (%s)", label, reflect.Typeof(value).String(), fv, qv)
+                return
+            }
         }
+        c.logf("... %s %s = %#v",
+            label, reflect.Typeof(value).String(), value)
     }
 }
 

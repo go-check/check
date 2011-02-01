@@ -24,27 +24,22 @@ func printTestFunc() {
         println(3)
     }
     switch 5 {
-    case 6:
-        println(6)
+    case 6: println(6)
         println(7)
     }
     switch interface{}(9).(type) {
-    case int:
-        println(10)
+    case int: println(10)
         println(11)
     }
     select {
-    case <-(chan bool)(nil):
-        println(14)
+    case <-(chan bool)(nil): println(14)
         println(15)
-    default:
-        println(16)
+    default: println(16)
         println(17)
     }
     println(19,
         20)
-    _ = func() {
-        println(21)
+    _ = func() { println(21)
         println(22)
     }
     println(24, func() {

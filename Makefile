@@ -14,7 +14,7 @@ include $(GOROOT)/src/Make.pkg
 
 GOFMT=gofmt -spaces=true -tabwidth=4 -tabindent=false
 
-BADFMT=$(shell $(GOFMT) -l $(GOFILES) $(wildcard *_test.go))
+BADFMT=$(shell $(GOFMT) -l $(GOFILES) $(filter-out printer_test.go,$(wildcard *_test.go)))
 
 gofmt: $(BADFMT)
 	@for F in $(BADFMT); do $(GOFMT) -w $$F && echo $$F; done
