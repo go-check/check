@@ -43,28 +43,45 @@ func printLine(filename string, line int) (string, os.Error) {
 }
 
 type linePrinter struct {
-    fset *token.FileSet
-    line int
-    output bytes.Buffer
-    stmt ast.Stmt
     config *printer.Config
+    fset   *token.FileSet
+    line   int
+    output bytes.Buffer
+    stmt   ast.Stmt
+}
+
+func (lp *linePrinter) emit() bool {
+    if lp.stmt != nil {
+        lp.trim(lp.stmt)
+        lp.config.Fprint(&lp.output, lp.fset, lp.stmt)
+        lp.stmt = nil
+        return true
+    }
+    return false
 }
 
 func (lp *linePrinter) Visit(n ast.Node) (w ast.Visitor) {
     if n == nil {
+        if lp.output.Len() == 0 {
+            lp.emit()
+        }
         return nil
     }
-    if stmt, ok := n.(ast.Stmt); ok {
-        lp.stmt = stmt
+    first := lp.fset.Position(n.Pos()).Line
+    last := lp.fset.Position(n.End()).Line
+    if first <= lp.line && last >= lp.line {
+        // Print the innermost statement containing the line.
+        if stmt, ok := n.(ast.Stmt); ok {
+            if _, ok := n.(*ast.BlockStmt); !ok {
+                lp.stmt = stmt
+            }
+        }
+        if first == lp.line && lp.emit() {
+            return nil
+        }
+        return lp
     }
-    p := n.Pos()
-    line := lp.fset.Position(p).Line
-    if line == lp.line {
-        lp.trim(lp.stmt)
-        lp.config.Fprint(&lp.output, lp.fset, lp.stmt)
-        return nil
-    }
-    return lp
+    return nil
 }
 
 func (lp *linePrinter) trim(n ast.Node) bool {
@@ -72,8 +89,7 @@ func (lp *linePrinter) trim(n ast.Node) bool {
     if !ok {
         return true
     }
-    p := n.Pos()
-    line := lp.fset.Position(p).Line
+    line := lp.fset.Position(n.Pos()).Line
     if line != lp.line {
         return false
     }

@@ -1,7 +1,7 @@
 package gocheck_test
 
 import (
-    . "gocheck"
+    .   "gocheck"
 )
 
 var _ = Suite(&PrinterS{})
@@ -24,24 +24,38 @@ func printTestFunc() {
         println(3)
     }
     switch 5 {
-    case 6: println(6)
+    case 6:
+        println(6)
         println(7)
     }
     switch interface{}(9).(type) {
-    case int: println(10)
+    case int:
+        println(10)
         println(11)
     }
     select {
-    case <-(chan bool)(nil): println(14)
+    case <-(chan bool)(nil):
+        println(14)
         println(15)
-    default: println(16)
+    default:
+        println(16)
         println(17)
     }
     println(19,
         20)
+    _ = func() {
+        println(21)
+        println(22)
+    }
+    println(24, func() {
+        println(25)
+    })
 }
 
-var printLineTests = []struct{line int; output string}{
+var printLineTests = []struct {
+    line   int
+    output string
+}{
     {1, "println(1)"},
     {2, "if 2 == 2 {\n    ...\n}"},
     {3, "println(3)"},
@@ -55,6 +69,12 @@ var printLineTests = []struct{line int; output string}{
     {16, "default:\n    println(16)\n    ..."},
     {17, "println(17)"},
     {19, "println(19,\n    20)"},
+    {20, "println(19,\n    20)"},
+    {21, "_ = func() {\n    println(21)\n    println(22)\n}"},
+    {22, "println(22)"},
+    {24, "println(24, func() {\n    println(25)\n})"},
+    {25, "println(25)"},
+    {26, "println(24, func() {\n    println(25)\n})"},
 }
 
 func (s *PrinterS) TestPrintLine(c *C) {
@@ -65,7 +85,9 @@ func (s *PrinterS) TestPrintLine(c *C) {
     }
 }
 
-var indentTests = []struct{in, out string}{
+var indentTests = []struct {
+    in, out string
+}{
     {"", ""},
     {"\n", "\n"},
     {"a", ">>>a"},

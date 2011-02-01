@@ -28,7 +28,8 @@ func (s *FoundationS) TestCountSuite(c *gocheck.C) {
 func (s *FoundationS) TestErrorf(c *gocheck.C) {
     // Do not use checkState() here.  It depends on Errorf() working.
     expectedLog := fmt.Sprintf("foundation_test.go:%d:\n"+
-        "... Error: Error message!\n",
+        "    c.Errorf(\"Error %%v!\", \"message\")\n"+
+        "... Error: Error message!\n\n",
         getMyLine()+1)
     c.Errorf("Error %v!", "message")
     failed := c.Failed()
@@ -45,7 +46,8 @@ func (s *FoundationS) TestErrorf(c *gocheck.C) {
 
 func (s *FoundationS) TestError(c *gocheck.C) {
     expectedLog := fmt.Sprintf("foundation_test.go:%d:\n"+
-        "... Error: Error message!\n",
+        "    c\\.Error\\(\"Error \", \"message!\"\\)\n"+
+        "\\.\\.\\. Error: Error message!\n\n",
         getMyLine()+1)
     c.Error("Error ", "message!")
     checkState(c, nil,
@@ -112,10 +114,11 @@ func (s *FoundationS) TestFatal(c *gocheck.C) {
         } else {
             c.Succeed()
             expected := fmt.Sprintf("foundation_test.go:%d:\n"+
-                "... Error: Die now!\n",
+                "    c.Fatal(\"Die \", \"now!\")\n"+
+                "... Error: Die now!\n\n",
                 line)
             if c.GetTestLog() != expected {
-                c.Error("Incorrect log:\n" + c.GetTestLog())
+                c.Error("Incorrect log:", c.GetTestLog())
             }
         }
     })()
@@ -133,10 +136,11 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
         } else {
             c.Succeed()
             expected := fmt.Sprintf("foundation_test.go:%d:\n"+
-                "... Error: Die now!\n",
+                "    c.Fatalf(\"Die %%s!\", \"now\")\n"+
+                "... Error: Die now!\n\n",
                 line)
             if c.GetTestLog() != expected {
-                c.Error("Incorrect log:\n" + c.GetTestLog())
+                c.Error("Incorrect log:", c.GetTestLog())
             }
         }
     })()
@@ -149,8 +153,8 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
     log := fmt.Sprintf(""+
-        "foundation_test.go:%d:\n"+ //"    result := c.Check(10, gocheck.Equals, 20)\n"+
-        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+        "foundation_test.go:%d:\n"+
+        "    result := c.Check\\(10, gocheck.Equals, 20\\)\n"+
         "\\.\\.\\. obtained = \\(int\\) 10\n"+
         "\\.\\.\\. expected = \\(int\\) 20\n\n",
         getMyLine()+1)
@@ -168,8 +172,10 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *gocheck.C) {
     result, line := checkEqualWrapper(c, 10, 20)
     testLine := getMyLine() - 1
     log := fmt.Sprintf(""+
-        "foundation_test.go:%d > gocheck_test.go:%d:\n"+
-        "\\.\\.\\. Check\\(obtained, Equals, expected\\):\n"+
+        "foundation_test.go:%d:\n"+
+        "    result, line := checkEqualWrapper\\(c, 10, 20\\)\n"+
+        "gocheck_test.go:%d:\n"+
+        "    return c.Check\\(obtained, gocheck.Equals, expected\\), getMyLine\\(\\)\n"+
         "\\.\\.\\. obtained = \\(int\\) 10\n"+
         "\\.\\.\\. expected = \\(int\\) 20\n\n",
         testLine, line)

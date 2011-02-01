@@ -21,7 +21,7 @@ gofmt: $(BADFMT)
 
 ifneq ($(BADFMT),)
 ifneq ($(MAKECMDGOALS),gofmt)
-$(warning WARNING: make gofmt: $(BADFMT))
+#$(warning WARNING: make gofmt: $(BADFMT))
 endif
 endif
 

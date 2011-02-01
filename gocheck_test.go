@@ -69,10 +69,8 @@ func (s *String) Write(p []byte) (n int, err os.Error) {
 
 // Trivial wrapper to test errors happening on a different file
 // than the test itself.
-func checkEqualWrapper(c *gocheck.C,
-expected interface{},
-obtained interface{}) (result bool, line int) {
-    return c.Check(expected, gocheck.Equals, obtained), getMyLine()
+func checkEqualWrapper(c *gocheck.C, obtained, expected interface{}) (result bool, line int) {
+    return c.Check(obtained, gocheck.Equals, expected), getMyLine()
 }
 
 

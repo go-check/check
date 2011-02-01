@@ -94,7 +94,9 @@ func (c *C) Logf(format string, args ...interface{}) {
 // The provided arguments will be assembled together into a string using
 // fmt.Sprint().
 func (c *C) Error(args ...interface{}) {
-    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.logCaller(1)
+    c.logString(fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.logNewLine()
     c.Fail()
 }
 
@@ -102,7 +104,9 @@ func (c *C) Error(args ...interface{}) {
 // The provided arguments will be assembled together into a string using
 // fmt.Sprintf().
 func (c *C) Errorf(format string, args ...interface{}) {
-    c.logCaller(1, fmt.Sprintf("Error: "+format, args...))
+    c.logCaller(1)
+    c.logString(fmt.Sprintf("Error: "+format, args...))
+    c.logNewLine()
     c.Fail()
 }
 
@@ -110,7 +114,9 @@ func (c *C) Errorf(format string, args ...interface{}) {
 // stop the test execution. The provided arguments will be assembled
 // together into a string using fmt.Sprint().
 func (c *C) Fatal(args ...interface{}) {
-    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.logCaller(1)
+    c.logString(fmt.Sprint("Error: ", fmt.Sprint(args...)))
+    c.logNewLine()
     c.FailNow()
 }
 
@@ -118,7 +124,9 @@ func (c *C) Fatal(args ...interface{}) {
 // stop the test execution. The provided arguments will be assembled
 // together into a string using fmt.Sprintf().
 func (c *C) Fatalf(format string, args ...interface{}) {
-    c.logCaller(1, fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
+    c.logCaller(1)
+    c.logString(fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
+    c.logNewLine()
     c.FailNow()
 }
 
@@ -152,7 +160,8 @@ func (c *C) Assert(obtained interface{}, checker Checker, args ...interface{}) {
 
 func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
     if checker == nil {
-        c.logCaller(2, fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
+        c.logCaller(2)
+        c.logString(fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
         c.logString("Oops.. you've provided a nil checker!")
         goto fail
     }
@@ -180,12 +189,10 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
         }
     } else {
         obtainedName, expectedName := checker.VarNames()
-        c.logCaller(2, fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName,
-            checker.Name(), expectedName))
-        c.logString(fmt.Sprintf("Wrong number of %s args for %s: "+
-            "want %d, got %d",
-            expectedName, checker.Name(),
-            expectedWanted, len(args)))
+        c.logCaller(2)
+        c.logString(fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName, checker.Name(), expectedName))
+        c.logString(fmt.Sprintf("Wrong number of %s args for %s: want %d, got %d",
+            expectedName, checker.Name(), expectedWanted, len(args)))
         goto fail
     }
 
@@ -193,15 +200,7 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
     result, error := checker.Check(obtained, expected)
     if !result || error != "" {
         obtainedName, expectedName := checker.VarNames()
-        var summary string
-        if expectedWanted > 0 {
-            summary = fmt.Sprintf("%s(%s, %s, %s):", funcName, obtainedName,
-                checker.Name(), expectedName)
-        } else {
-            summary = fmt.Sprintf("%s(%s, %s):", funcName, obtainedName,
-                checker.Name())
-        }
-        c.logCaller(2, summary)
+        c.logCaller(2)
         c.logValue(obtainedName, obtained)
         if expectedWanted > 0 {
             c.logValue(expectedName, expected)

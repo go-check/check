@@ -168,36 +168,48 @@ func (c *C) logString(issue string) {
     c.log("... ", issue)
 }
 
-func (c *C) logCaller(skip int, issue string) {
+func (c *C) logCaller(skip int) {
     // This is a bit heavier than it ought to be.
     skip += 1 // Our own frame.
-    if pc, callerFile, callerLine, ok := runtime.Caller(skip); ok {
-        var testFile string
-        var testLine int
-        testFunc := runtime.FuncForPC(c.method.Get())
-        if runtime.FuncForPC(pc) != testFunc {
-            for {
-                skip += 1
-                if pc, file, line, ok := runtime.Caller(skip); ok {
-                    // Note that the test line may be different on
-                    // distinct calls for the same test.  Showing
-                    // the "internal" line is helpful when debugging.
-                    if runtime.FuncForPC(pc) == testFunc {
-                        testFile, testLine = file, line
-                        break
-                    }
-                } else {
+    pc, callerFile, callerLine, ok := runtime.Caller(skip)
+    if !ok {
+        return
+    }
+    var testFile string
+    var testLine int
+    testFunc := runtime.FuncForPC(c.method.Get())
+    if runtime.FuncForPC(pc) != testFunc {
+        for {
+            skip += 1
+            if pc, file, line, ok := runtime.Caller(skip); ok {
+                // Note that the test line may be different on
+                // distinct calls for the same test.  Showing
+                // the "internal" line is helpful when debugging.
+                if runtime.FuncForPC(pc) == testFunc {
+                    testFile, testLine = file, line
                     break
                 }
+            } else {
+                break
             }
         }
-        if testFile != "" && (testFile != callerFile || testLine != callerLine) {
-            c.logf("%s:%d > %s:%d:\n... %s", nicePath(testFile), testLine,
-                nicePath(callerFile), callerLine, issue)
-        } else {
-            c.logf("%s:%d:\n... %s", nicePath(callerFile), callerLine, issue)
+    }
+    if testFile != "" && (testFile != callerFile || testLine != callerLine) {
+        c.logCode(testFile, testLine)
+    }
+    c.logCode(callerFile, callerLine)
+}
+
+func (c *C) logCode(path string, line int) {
+    c.logf("%s:%d:", nicePath(path), line)
+    code, err := printLine(path, line)
+    if code == "" {
+        code = "..." // XXX Open the file and take the raw line.
+        if err != nil {
+            code += err.String()
         }
     }
+    c.log(indent(code, "    "))
 }
 
 func (c *C) logPanic(skip int, value interface{}) {
