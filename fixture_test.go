@@ -4,7 +4,7 @@ package gocheck_test
 
 
 import (
-    .   "gocheck"
+    .   "launchpad.net/gocheck"
 )
 
 

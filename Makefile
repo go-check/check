@@ -1,6 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
-TARG=gocheck
+TARG=launchpad.net/gocheck
 GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
 
 GOFILES=\
