@@ -102,8 +102,6 @@ func (lp *linePrinter) trim(n ast.Node) bool {
         stmt.Body = lp.trimBlock(stmt.Body)
     case *ast.CaseClause:
         stmt.Body = lp.trimList(stmt.Body)
-    case *ast.TypeCaseClause:
-        stmt.Body = lp.trimList(stmt.Body)
     case *ast.CommClause:
         stmt.Body = lp.trimList(stmt.Body)
     case *ast.BlockStmt:
