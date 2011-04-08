@@ -23,35 +23,19 @@ func Suite(suite interface{}) interface{} {
 // -----------------------------------------------------------------------
 // Public running interface.
 
-var filterFlag = flag.String("f", "",
-    "Regular expression selecting "+
-        "what to run (gocheck)")
-var streamFlag = flag.Bool("vv", false,
-    "Super verbose mode without caching (gocheck)")
-var verboseFlag *bool
-
-func init() {
-    usage := "Verbose mode (gocheck)"
-    if v := flag.Lookup("v"); v != nil {
-        // Hijack -v from gotest.
-        verboseFlag = flag.Bool("vt", false, "Verbose mode (gotest)")
-        vt := flag.Lookup("vt")
-        vt.Value, v.Value = v.Value, vt.Value
-        v.Usage = usage
-    } else {
-        // Define brand new option.
-        verboseFlag = flag.Bool("v", false, usage)
-    }
-}
+var filterFlag = flag.String("gocheck.f", "",
+    "Regular expression selecting what to run")
+var verboseFlag = flag.Bool("gocheck.v", false,
+    "Verbose mode")
+var streamFlag = flag.Bool("gocheck.vv", false,
+    "Super verbose mode (disables output caching)")
 
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-    result := RunAll(&RunConf{Filter: *filterFlag,
-        Verbose: *verboseFlag,
-        Stream:  *streamFlag})
+    result := RunAll(&RunConf{Filter: *filterFlag, Verbose: *verboseFlag, Stream:  *streamFlag})
     println(result.String())
     if !result.Passed() {
         testingT.Fail()
