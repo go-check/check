@@ -1,9 +1,9 @@
 package gocheck
 
 import (
-    "reflect"
-    "regexp"
-    "fmt"
+	"reflect"
+	"regexp"
+	"fmt"
 )
 
 
@@ -11,8 +11,8 @@ import (
 // BugInfo and Bug() helper, to attach extra information to checks.
 
 type bugInfo struct {
-    format string
-    args   []interface{}
+	format string
+	args   []interface{}
 }
 
 // Function to attach some information to an Assert() or Check() call.
@@ -24,17 +24,17 @@ type bugInfo struct {
 // fmt.Sprintf(), and will be presented next to the logged failure. Note
 // that it must be the last argument provided.
 func Bug(format string, args ...interface{}) BugInfo {
-    return &bugInfo{format, args}
+	return &bugInfo{format, args}
 }
 
 // Interface which must be supported for attaching extra information to
 // checks.  See the Bug() function.
 type BugInfo interface {
-    GetBugInfo() string
+	GetBugInfo() string
 }
 
 func (bug *bugInfo) GetBugInfo() string {
-    return fmt.Sprintf(bug.format, bug.args...)
+	return fmt.Sprintf(bug.format, bug.args...)
 }
 
 
@@ -45,10 +45,10 @@ func (bug *bugInfo) GetBugInfo() string {
 // must have this interface.  See the CheckerType type for an understanding
 // of how the individual methods must work.
 type Checker interface {
-    Name() string
-    VarNames() (obtained, expected string)
-    NeedsExpectedValue() bool
-    Check(obtained, expected interface{}) (result bool, error string)
+	Name() string
+	VarNames() (obtained, expected string)
+	NeedsExpectedValue() bool
+	Check(obtained, expected interface{}) (result bool, error string)
 }
 
 // Sample checker type with some sane defaults.
@@ -60,28 +60,28 @@ var _ Checker = (*CheckerType)(nil)
 
 // The function name used to build the matcher. E.g. "IsNil".
 func (checker *CheckerType) Name() string {
-    return "Checker"
+	return "Checker"
 }
 
 // Method must return true if the given matcher needs to be informed
 // of an expected value in addition to the actual value obtained to
 // verify its expectations. E.g. false for IsNil.
 func (checker *CheckerType) NeedsExpectedValue() bool {
-    return true
+	return true
 }
 
 // Variable names to be used for the obtained and expected values when
 // reporting a failure in the expectations established. E.g.
 // "obtained" and "expected".
 func (checker *CheckerType) VarNames() (obtained, expected string) {
-    return "obtained", "expected"
+	return "obtained", "expected"
 }
 
 // Method must return true if the obtained value succeeds the
 // expectations established by the given matcher.  If an error is
 // returned, it means the provided parameters are somehow invalid.
 func (checker *CheckerType) Check(obtained, expected interface{}) (result bool, error string) {
-    return false, ""
+	return false, ""
 }
 
 
@@ -92,30 +92,30 @@ func (checker *CheckerType) Check(obtained, expected interface{}) (result bool, 
 // succeed where the original one failed, and vice versa.  E.g.
 // Assert(a, Not(Equals), b)
 func Not(checker Checker) Checker {
-    return &notChecker{checker}
+	return &notChecker{checker}
 }
 
 type notChecker struct {
-    sub Checker
+	sub Checker
 }
 
 func (checker *notChecker) Name() string {
-    return "Not(" + checker.sub.Name() + ")"
+	return "Not(" + checker.sub.Name() + ")"
 }
 
 func (checker *notChecker) NeedsExpectedValue() bool {
-    return checker.sub.NeedsExpectedValue()
+	return checker.sub.NeedsExpectedValue()
 }
 
 func (checker *notChecker) VarNames() (obtained, expected string) {
-    obtained, expected = checker.sub.VarNames()
-    return
+	obtained, expected = checker.sub.VarNames()
+	return
 }
 
 func (checker *notChecker) Check(obtained, expected interface{}) (result bool, error string) {
-    result, error = checker.sub.Check(obtained, expected)
-    result = !result // So much for so little. :-)
-    return
+	result, error = checker.sub.Check(obtained, expected)
+	result = !result // So much for so little. :-)
+	return
 }
 
 
@@ -126,38 +126,38 @@ func (checker *notChecker) Check(obtained, expected interface{}) (result bool, e
 var IsNil Checker = &isNilChecker{}
 
 type isNilChecker struct {
-    CheckerType
+	CheckerType
 }
 
 func (checker *isNilChecker) Name() string {
-    return "IsNil"
+	return "IsNil"
 }
 
 func (checker *isNilChecker) NeedsExpectedValue() bool {
-    return false
+	return false
 }
 
 func (checker *isNilChecker) VarNames() (obtained, expected string) {
-    return "value", ""
+	return "value", ""
 }
 
 func (checker *isNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
-    return isNil(obtained), ""
+	return isNil(obtained), ""
 }
 
 type hasIsNil interface {
-    IsNil() bool
+	IsNil() bool
 }
 
 func isNil(obtained interface{}) (result bool) {
-    if obtained == nil {
-        result = true
-    } else {
-        if v, ok := reflect.NewValue(obtained).(hasIsNil); ok {
-            result = v.IsNil()
-        }
-    }
-    return
+	if obtained == nil {
+		result = true
+	} else {
+		if v, ok := reflect.NewValue(obtained).(hasIsNil); ok {
+			result = v.IsNil()
+		}
+	}
+	return
 }
 
 
@@ -169,15 +169,15 @@ func isNil(obtained interface{}) (result bool) {
 var NotNil Checker = &notNilChecker{}
 
 type notNilChecker struct {
-    isNilChecker
+	isNilChecker
 }
 
 func (checker *notNilChecker) Name() string {
-    return "NotNil"
+	return "NotNil"
 }
 
 func (checker *notNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
-    return !isNil(obtained), ""
+	return !isNil(obtained), ""
 }
 
 
@@ -191,15 +191,15 @@ func (checker *notNilChecker) Check(obtained, expected interface{}) (result bool
 var Equals Checker = &equalsChecker{}
 
 type equalsChecker struct {
-    CheckerType
+	CheckerType
 }
 
 func (checker *equalsChecker) Name() string {
-    return "Equals"
+	return "Equals"
 }
 
 func (checker *equalsChecker) Check(obtained, expected interface{}) (result bool, error string) {
-    return reflect.DeepEqual(obtained, expected), ""
+	return reflect.DeepEqual(obtained, expected), ""
 }
 
 
@@ -214,34 +214,34 @@ func (checker *equalsChecker) Check(obtained, expected interface{}) (result bool
 var Matches Checker = &matchesChecker{}
 
 type matchesChecker struct {
-    CheckerType
+	CheckerType
 }
 
 func (checker *matchesChecker) Name() string {
-    return "Matches"
+	return "Matches"
 }
 
 func (checker *matchesChecker) VarNames() (obtained, expected string) {
-    return "value", "regex"
+	return "value", "regex"
 }
 
 func (checker *matchesChecker) Check(value, re interface{}) (bool, string) {
-    reStr, ok := re.(string)
-    if !ok {
-        return false, "Regex must be a string"
-    }
-    valueStr, valueIsStr := value.(string)
-    if !valueIsStr {
-        if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
-            valueStr, valueIsStr = valueWithStr.String(), true
-        }
-    }
-    if valueIsStr {
-        matches, err := regexp.MatchString("^"+reStr+"$", valueStr)
-        if err != nil {
-            return false, "Can't compile regex: " + err.String()
-        }
-        return matches, ""
-    }
-    return false, "Obtained value is not a string and has no .String()"
+	reStr, ok := re.(string)
+	if !ok {
+		return false, "Regex must be a string"
+	}
+	valueStr, valueIsStr := value.(string)
+	if !valueIsStr {
+		if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
+			valueStr, valueIsStr = valueWithStr.String(), true
+		}
+	}
+	if valueIsStr {
+		matches, err := regexp.MatchString("^"+reStr+"$", valueStr)
+		if err != nil {
+			return false, "Can't compile regex: " + err.String()
+		}
+		return matches, ""
+	}
+	return false, "Obtained value is not a string and has no .String()"
 }

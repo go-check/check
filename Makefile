@@ -1,7 +1,6 @@
 include $(GOROOT)/src/Make.inc
 
 TARG=launchpad.net/gocheck
-GOFMT=gofmt -spaces=true -tabindent=false -tabwidth=4
 
 GOFILES=\
 	gocheck.go\
@@ -12,7 +11,7 @@ GOFILES=\
 
 include $(GOROOT)/src/Make.pkg
 
-GOFMT=gofmt -spaces=true -tabwidth=4 -tabindent=false
+GOFMT=gofmt
 
 BADFMT=$(shell $(GOFMT) -l $(GOFILES) $(filter-out printer_test.go,$(wildcard *_test.go)))
 
