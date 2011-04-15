@@ -39,7 +39,7 @@ const (
 type funcStatus int
 
 type C struct {
-	method   *reflect.FuncValue
+	method   reflect.Value
 	kind     funcKind
 	status   funcStatus
 	logb     *bytes.Buffer
@@ -50,8 +50,7 @@ type C struct {
 	tempDir  *tempDir
 }
 
-func newC(method *reflect.FuncValue, kind funcKind,
-logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
+func newC(method reflect.Value, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
 	if logb == nil {
 		logb = bytes.NewBuffer(nil)
 	}
@@ -180,7 +179,7 @@ func (c *C) logCaller(skip int) {
 	}
 	var testFile string
 	var testLine int
-	testFunc := runtime.FuncForPC(c.method.Get())
+	testFunc := runtime.FuncForPC(c.method.Pointer())
 	if runtime.FuncForPC(pc) != testFunc {
 		for {
 			skip += 1
@@ -224,8 +223,7 @@ func (c *C) logPanic(skip int, value interface{}) {
 				c.logf("... Panic: %s (PC=0x%X)\n", value, pc)
 			}
 			name := niceFuncName(pc)
-			if name == "reflect.FuncValue.Call" ||
-				name == "gocheck.forkTest" {
+			if name == "reflect.Value.Call" || name == "gocheck.forkTest" {
 				break
 			}
 			c.logf("%s:%d\n  in %s", nicePath(file), line, name)
@@ -240,9 +238,9 @@ func (c *C) logSoftPanic(issue string) {
 	c.log("... Panic: ", issue)
 }
 
-func (c *C) logArgPanic(funcValue *reflect.FuncValue, expectedType string) {
+func (c *C) logArgPanic(funcValue reflect.Value, expectedType string) {
 	c.logf("... Panic: %s argument should be %s",
-		niceFuncName(funcValue.Get()), expectedType)
+		niceFuncName(funcValue.Pointer()), expectedType)
 }
 
 
@@ -394,9 +392,9 @@ func (tracker *resultTracker) _loopRoutine() {
 
 type suiteRunner struct {
 	suite                     interface{}
-	setUpSuite, tearDownSuite *reflect.FuncValue
-	setUpTest, tearDownTest   *reflect.FuncValue
-	tests                     []*reflect.FuncValue
+	setUpSuite, tearDownSuite reflect.Value
+	setUpTest, tearDownTest   reflect.Value
+	tests                     []reflect.Value
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	output                    *outputWriter
@@ -434,7 +432,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	runner := &suiteRunner{suite: suite,
 		output:  newOutputWriter(writer, stream, verbose),
 		tracker: newResultTracker()}
-	runner.tests = make([]*reflect.FuncValue, suiteNumMethods)
+	runner.tests = make([]reflect.Value, suiteNumMethods)
 	runner.tempDir = new(tempDir)
 	testsLen := 0
 
@@ -462,7 +460,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 	for i := 0; i != suiteNumMethods; i++ {
 		funcValue := suiteValue.Method(i)
-		funcPC := funcValue.Get()
+		funcPC := funcValue.Pointer()
 		if _, found := seen[funcPC]; found {
 			continue
 		}
@@ -535,7 +533,7 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method reflect.Value, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
@@ -551,7 +549,7 @@ func (runner *suiteRunner) forkCall(method *reflect.FuncValue, kind funcKind, lo
 }
 
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runFunc(method *reflect.FuncValue, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) runFunc(method reflect.Value, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
 	c := runner.forkCall(method, kind, logb, dispatcher)
 	<-c.done
 	return c
@@ -594,8 +592,8 @@ func (runner *suiteRunner) callDone(c *C) {
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *reflect.FuncValue, logb *bytes.Buffer) *C {
-	if method != nil {
+func (runner *suiteRunner) runFixture(method reflect.Value, logb *bytes.Buffer) *C {
+	if method.IsValid() {
 		c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
 			c.method.Call([]reflect.Value{reflect.NewValue(c)})
 		})
@@ -607,7 +605,7 @@ func (runner *suiteRunner) runFixture(method *reflect.FuncValue, logb *bytes.Buf
 // Run the fixture method with runFixture(), but panic with a fixturePanic{}
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
-func (runner *suiteRunner) runFixtureWithPanic(method *reflect.FuncValue, logb *bytes.Buffer, skipped *bool) *C {
+func (runner *suiteRunner) runFixtureWithPanic(method reflect.Value, logb *bytes.Buffer, skipped *bool) *C {
 	if *skipped {
 		return nil
 	}
@@ -621,17 +619,17 @@ func (runner *suiteRunner) runFixtureWithPanic(method *reflect.FuncValue, logb *
 
 type fixturePanic struct {
 	status funcStatus
-	method *reflect.FuncValue
+	method reflect.Value
 }
 
 // Run the suite test method, together with the test-specific fixture,
 // asynchronously.
-func (runner *suiteRunner) forkTest(method *reflect.FuncValue) *C {
+func (runner *suiteRunner) forkTest(method reflect.Value) *C {
 	return runner.forkCall(method, testKd, nil, func(c *C) {
 		var skipped bool
 		defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
 		runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
-		methodType := c.method.Type().(*reflect.FuncType)
+		methodType := c.method.Type()
 		if methodType.In(1) == reflect.Typeof(c) && methodType.NumIn() == 2 {
 			c.method.Call([]reflect.Value{reflect.NewValue(c)})
 		} else {
@@ -644,7 +642,7 @@ func (runner *suiteRunner) forkTest(method *reflect.FuncValue) *C {
 }
 
 // Same as forkTest(), but wait for the test to finish before returning.
-func (runner *suiteRunner) runTest(method *reflect.FuncValue) *C {
+func (runner *suiteRunner) runTest(method reflect.Value) *C {
 	c := runner.forkTest(method)
 	<-c.done
 	return c
@@ -653,7 +651,7 @@ func (runner *suiteRunner) runTest(method *reflect.FuncValue) *C {
 // Helper to mark tests as skipped or missed.  A bit heavy for what
 // it does, but it enables homogeneous handling of tracking, including
 // nice verbose output.
-func (runner *suiteRunner) skipTests(status funcStatus, methods []*reflect.FuncValue) {
+func (runner *suiteRunner) skipTests(status funcStatus, methods []reflect.Value) {
 	for _, method := range methods {
 		runner.runFunc(method, testKd, nil, func(c *C) {
 			c.status = status
@@ -666,12 +664,9 @@ func (runner *suiteRunner) skipTests(status funcStatus, methods []*reflect.FuncV
 func (runner *suiteRunner) checkFixtureArgs() bool {
 	succeeded := true
 	argType := reflect.Typeof(&C{})
-	for _, fv := range []*reflect.FuncValue{runner.setUpSuite,
-		runner.tearDownSuite,
-		runner.setUpTest,
-		runner.tearDownTest} {
-		if fv != nil {
-			fvType := fv.Type().(*reflect.FuncType)
+	for _, fv := range []reflect.Value{runner.setUpSuite, runner.tearDownSuite, runner.setUpTest, runner.tearDownTest} {
+		if fv.IsValid() {
+			fvType := fv.Type()
 			if fvType.In(1) != argType || fvType.NumIn() != 2 {
 				succeeded = false
 				runner.runFunc(fv, fixtureKd, nil, func(c *C) {
@@ -787,7 +782,7 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 }
 
 func renderCallHeader(label string, c *C, prefix, suffix string) string {
-	pc := c.method.Get()
+	pc := c.method.Pointer()
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }

@@ -145,16 +145,13 @@ func (checker *isNilChecker) Check(obtained, expected interface{}) (result bool,
 	return isNil(obtained), ""
 }
 
-type hasIsNil interface {
-	IsNil() bool
-}
-
 func isNil(obtained interface{}) (result bool) {
 	if obtained == nil {
 		result = true
 	} else {
-		if v, ok := reflect.NewValue(obtained).(hasIsNil); ok {
-			result = v.IsNil()
+		switch v := reflect.NewValue(obtained); v.Kind() {
+		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
+			return v.IsNil()
 		}
 	}
 	return
