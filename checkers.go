@@ -15,20 +15,21 @@ type bugInfo struct {
 	args   []interface{}
 }
 
-// Function to attach some information to an Assert() or Check() call.
-// This should be used as, for instance:
+// Bug enables attaching some information to Assert() or Check() calls.
+// If the checker test fails, the provided arguments will be passed to
+// fmt.Sprintf(), and will be presented next to the logged failure.
 //
-//  Assert(a, Equals, 8192, Bug("Buffer size is incorrect, bug #123"))
+// For example:
 //
-// If the matching fails, the provided arguments will be passed to
-// fmt.Sprintf(), and will be presented next to the logged failure. Note
-// that it must be the last argument provided.
+//     c.Assert(l, Equals, 8192, Bug("Buffer size is incorrect, bug #123"))
+//     c.Assert(v, Equals, 42, Bug("Iteration #%d", i))
+//
 func Bug(format string, args ...interface{}) BugInfo {
 	return &bugInfo{format, args}
 }
 
-// Interface which must be supported for attaching extra information to
-// checks.  See the Bug() function.
+// BugInfo is the interface which must be supported for attaching extra
+// information to checks.  See the Bug() function for details.
 type BugInfo interface {
 	GetBugInfo() string
 }
@@ -39,58 +40,36 @@ func (bug *bugInfo) GetBugInfo() string {
 
 
 // -----------------------------------------------------------------------
-// A useful Checker template.
+// The Checker interface.
 
-// Checkers used with the c.Assert() and c.Check() verification methods
-// must have this interface.  See the CheckerType type for an understanding
-// of how the individual methods must work.
+// The Checker interface must be provided by checkers used with
+// the c.Assert() and c.Check() verification methods.
 type Checker interface {
-	Name() string
-	VarNames() (obtained, expected string)
-	NeedsExpectedValue() bool
-	Check(obtained, expected interface{}) (result bool, error string)
+	Info() *CheckerInfo
+	Check(params []interface{}, names []string) (result bool, error string)
 }
 
-// Sample checker type with some sane defaults.
-type CheckerType struct{}
-
-// Trick to ensure it matchers the desired interface.
-var _ Checker = (*CheckerType)(nil)
-
-
-// The function name used to build the matcher. E.g. "IsNil".
-func (checker *CheckerType) Name() string {
-	return "Checker"
+// See the Checker interface.
+type CheckerInfo struct {
+	Name string
+	Params []string
 }
 
-// Method must return true if the given matcher needs to be informed
-// of an expected value in addition to the actual value obtained to
-// verify its expectations. E.g. false for IsNil.
-func (checker *CheckerType) NeedsExpectedValue() bool {
-	return true
+func (info *CheckerInfo) Info() *CheckerInfo {
+	return info
 }
-
-// Variable names to be used for the obtained and expected values when
-// reporting a failure in the expectations established. E.g.
-// "obtained" and "expected".
-func (checker *CheckerType) VarNames() (obtained, expected string) {
-	return "obtained", "expected"
-}
-
-// Method must return true if the obtained value succeeds the
-// expectations established by the given matcher.  If an error is
-// returned, it means the provided parameters are somehow invalid.
-func (checker *CheckerType) Check(obtained, expected interface{}) (result bool, error string) {
-	return false, ""
-}
-
 
 // -----------------------------------------------------------------------
 // Not() checker logic inverter.
 
-// Invert the logic of the provided checker.  The resulting checker will
-// succeed where the original one failed, and vice versa.  E.g.
-// Assert(a, Not(Equals), b)
+// The Not() checker inverts the logic of the provided checker.  The
+// resulting checker will succeed where the original one failed, and
+// vice-versa.
+//
+// For example:
+//
+//     c.Assert(a, Not(Equals), b)
+//
 func Not(checker Checker) Checker {
 	return &notChecker{checker}
 }
@@ -99,22 +78,15 @@ type notChecker struct {
 	sub Checker
 }
 
-func (checker *notChecker) Name() string {
-	return "Not(" + checker.sub.Name() + ")"
+func (checker *notChecker) Info() *CheckerInfo {
+	info := *checker.sub.Info()
+	info.Name = "Not(" + info.Name + ")"
+	return &info
 }
 
-func (checker *notChecker) NeedsExpectedValue() bool {
-	return checker.sub.NeedsExpectedValue()
-}
-
-func (checker *notChecker) VarNames() (obtained, expected string) {
-	obtained, expected = checker.sub.VarNames()
-	return
-}
-
-func (checker *notChecker) Check(obtained, expected interface{}) (result bool, error string) {
-	result, error = checker.sub.Check(obtained, expected)
-	result = !result // So much for so little. :-)
+func (checker *notChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	result, error = checker.sub.Check(params, names)
+	result = !result
 	return
 }
 
@@ -122,34 +94,30 @@ func (checker *notChecker) Check(obtained, expected interface{}) (result bool, e
 // -----------------------------------------------------------------------
 // IsNil checker.
 
-// Check if the obtained value is nil. E.g. Assert(err, IsNil).
-var IsNil Checker = &isNilChecker{}
-
-type isNilChecker struct {
-	CheckerType
+type isNilChecker struct{
+	*CheckerInfo
 }
 
-func (checker *isNilChecker) Name() string {
-	return "IsNil"
+// The IsNil checker tests whether the obtained value is nil.
+//
+// For example:
+//
+//    c.Assert(err, IsNil)
+//
+var IsNil Checker = &isNilChecker{
+	&CheckerInfo{Name: "IsNil", Params: []string{"value"}},
 }
 
-func (checker *isNilChecker) NeedsExpectedValue() bool {
-	return false
-}
 
-func (checker *isNilChecker) VarNames() (obtained, expected string) {
-	return "value", ""
-}
-
-func (checker *isNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
-	return isNil(obtained), ""
+func (checker *isNilChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return isNil(params[0]), ""
 }
 
 func isNil(obtained interface{}) (result bool) {
 	if obtained == nil {
 		result = true
 	} else {
-		switch v := reflect.NewValue(obtained); v.Kind() {
+		switch v := reflect.ValueOf(obtained); v.Kind() {
 		case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Ptr, reflect.Slice:
 			return v.IsNil()
 		}
@@ -161,69 +129,79 @@ func isNil(obtained interface{}) (result bool) {
 // -----------------------------------------------------------------------
 // NotNil checker. Alias for Not(IsNil), since it's so common.
 
-// Check if the obtained value is not nil. E.g. Assert(iface, NotNil).
-// This is an Alias for Not(IsNil), since it's a fairly common check.
-var NotNil Checker = &notNilChecker{}
-
-type notNilChecker struct {
-	isNilChecker
+type notNilChecker struct{
+	*CheckerInfo
 }
 
-func (checker *notNilChecker) Name() string {
-	return "NotNil"
+// The NotNil checker verifies that the obtained value is not nil.
+//
+// For example:
+//
+//     c.Assert(iface, NotNil)
+//
+// This is an alias for Not(IsNil), made available since it's a
+// fairly common check.
+//
+var NotNil Checker = &notNilChecker{
+	&CheckerInfo{Name: "NotNil", Params: []string{"value"}},
 }
 
-func (checker *notNilChecker) Check(obtained, expected interface{}) (result bool, error string) {
-	return !isNil(obtained), ""
+func (checker *notNilChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return !isNil(params[0]), ""
 }
 
 
 // -----------------------------------------------------------------------
 // Equals checker.
 
-// Check that the obtained value is equal to the expected value.  The
-// check will work correctly even when facing arrays, interfaces, and
-// values of different types (which always fails the test). E.g.
-// Assert(value, Equals, 42).
-var Equals Checker = &equalsChecker{}
-
-type equalsChecker struct {
-	CheckerType
+type equalsChecker struct{
+	*CheckerInfo
 }
 
-func (checker *equalsChecker) Name() string {
-	return "Equals"
+// The Equals checker verifies that the obtained value is deep-equal to
+// the expected value.  The check will work correctly even when facing
+// arrays, interfaces, and values of different types (which always fail
+// the test).
+//
+// For example:
+//
+//     c.Assert(value, Equals, 42)
+//     c.Assert(array, Equals, []string{"hi", "there"})
+//
+var Equals Checker = &equalsChecker{
+	&CheckerInfo{Name: "Equals", Params: []string{"obtained", "expected"}},
 }
 
-func (checker *equalsChecker) Check(obtained, expected interface{}) (result bool, error string) {
-	return reflect.DeepEqual(obtained, expected), ""
+func (checker *equalsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return reflect.DeepEqual(params[0], params[1]), ""
 }
 
 
 // -----------------------------------------------------------------------
 // Matches checker.
 
-// Check that the string provided as the obtained value (or the result of
-// its .String() method, in case the value is not a string) matches the
-// regular expression provided.  Note that, given the interface os.Error
-// commonly used for errors, this checker will correctly verify its
-// string representation. E.g. Assert(err, Matches, "perm.*denied")
-var Matches Checker = &matchesChecker{}
-
-type matchesChecker struct {
-	CheckerType
+type matchesChecker struct{
+	*CheckerInfo
 }
 
-func (checker *matchesChecker) Name() string {
-	return "Matches"
+// The Matches checker verifies that the string provided as the obtained
+// value (or the string resulting from obtained.String()) matches the
+// regular expression provided.
+//
+// For example:
+//
+//     c.Assert(err, Matches, "perm.*denied")
+//
+var Matches Checker = &matchesChecker{
+	&CheckerInfo{Name: "Matches", Params: []string{"value", "regex"}},
 }
 
-func (checker *matchesChecker) VarNames() (obtained, expected string) {
-	return "value", "regex"
+func (checker *matchesChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return matches(params[0], params[1])
 }
 
-func (checker *matchesChecker) Check(value, re interface{}) (bool, string) {
-	reStr, ok := re.(string)
+func matches(value, regex interface{}) (result bool, error string) {
+	reStr, ok := regex.(string)
 	if !ok {
 		return false, "Regex must be a string"
 	}
@@ -241,4 +219,111 @@ func (checker *matchesChecker) Check(value, re interface{}) (bool, string) {
 		return matches, ""
 	}
 	return false, "Obtained value is not a string and has no .String()"
+}
+
+// -----------------------------------------------------------------------
+// Panics checker.
+
+type panicsChecker struct{
+	*CheckerInfo
+}
+
+// The Panics checker verifies that calling the provided zero-argument
+// function will cause a panic which is deep-equal to the provided value.
+//
+// For example:
+//
+//     c.Assert(func() { f(1, 2) }, Panics, os.NewError("BOOM")).
+//
+// If the provided value is a plain string, it will also be attempted
+// to be matched as a regular expression against the String() value of
+// the panic.
+//
+var Panics Checker = &panicsChecker{
+	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
+}
+
+func (checker *panicsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	f := reflect.ValueOf(params[0])
+	if f.Kind() != reflect.Func || f.Type().NumIn() != 0 {
+		return false, "Function must take zero arguments"
+	}
+	defer func() {
+		obtained := recover()
+		expected := params[1]
+		result = reflect.DeepEqual(obtained, expected)
+		if _, ok := expected.(string); !result && ok {
+			result, _ = matches(obtained, expected)
+		}
+		params[0] = obtained
+		names[0] = "panic"
+	}()
+	f.Call(nil)
+	return false, "Function has not panicked"
+}
+
+
+// -----------------------------------------------------------------------
+// FitsTypeOf checker.
+
+type fitsTypeChecker struct{
+	*CheckerInfo
+}
+
+// The FitsTypeOf checker verifies that the obtained value is
+// assignable to a variable with the same type as the provided
+// sample value.
+//
+// For example:
+//
+//     c.Assert(value, FitsTypeOf, int64(0))
+//     c.Assert(value, FitsTypeOf, os.Error(nil))
+//
+var FitsTypeOf Checker = &fitsTypeChecker{
+	&CheckerInfo{Name: "FitsTypeOf", Params: []string{"obtained", "sample"}},
+}
+
+func (checker *fitsTypeChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained := reflect.ValueOf(params[0])
+	sample := reflect.ValueOf(params[1])
+	if !obtained.IsValid() {
+		return false, ""
+	}
+	if !sample.IsValid() {
+		return false, "Invalid sample value"
+	}
+	return obtained.Type().AssignableTo(sample.Type()), ""
+}
+
+
+// -----------------------------------------------------------------------
+// Implements checker.
+
+type implementsChecker struct{
+	*CheckerInfo
+}
+
+// The Implements checker verifies that the obtained value
+// implements the interface specified via a pointer to an interface
+// variable.
+//
+// For example:
+//
+//     var e os.Error
+//     c.Assert(err, Implements, &e)
+//
+var Implements Checker = &implementsChecker{
+	&CheckerInfo{Name: "Implements", Params: []string{"obtained", "ifaceptr"}},
+}
+
+func (checker *implementsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained := reflect.ValueOf(params[0])
+	ifaceptr := reflect.ValueOf(params[1])
+	if !obtained.IsValid() {
+		return false, ""
+	}
+	if !ifaceptr.IsValid() || ifaceptr.Kind() != reflect.Ptr || ifaceptr.Elem().Kind() != reflect.Interface {
+		return false, "ifaceptr should be a pointer to an interface variable"
+	}
+	return obtained.Type().Implements(ifaceptr.Elem().Type()), ""
 }

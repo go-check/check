@@ -24,8 +24,7 @@ var suitesRun int = 0
 
 func Test(t *testing.T) {
 	gocheck.TestingT(t)
-	if suitesRun != suitesRunExpected &&
-		flag.Lookup("f").Value.String() == "" {
+	if suitesRun != suitesRunExpected && flag.Lookup("gocheck.f").Value.String() == "" {
 		critical(fmt.Sprintf("Expected %d suites to run rather than %d",
 			suitesRunExpected, suitesRun))
 	}

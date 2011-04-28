@@ -3,6 +3,7 @@ package gocheck
 
 import (
 	"fmt"
+	"strings"
 )
 
 
@@ -175,35 +176,26 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 		}
 	}
 
-	// Ensure we got the needed number of arguments in expected.  Note that
-	// this logic is a bit more complex than it ought to be, mainly because
-	// it's leaving the door open to multiple expected values.
-	var expectedWanted int
-	var expected interface{}
-	if checker.NeedsExpectedValue() {
-		expectedWanted = 1
-	}
-	if len(args) == expectedWanted {
-		if expectedWanted > 0 {
-			expected = args[0]
-		}
-	} else {
-		obtainedName, expectedName := checker.VarNames()
+	params := append([]interface{}{obtained}, args...)
+	info := checker.Info()
+
+	if len(params) != len(info.Params) {
+		names := append([]string{info.Params[0], info.Name}, info.Params[1:]...)
 		c.logCaller(2)
-		c.logString(fmt.Sprintf("%s(%s, %s, >%s<):", funcName, obtainedName, checker.Name(), expectedName))
-		c.logString(fmt.Sprintf("Wrong number of %s args for %s: want %d, got %d",
-			expectedName, checker.Name(), expectedWanted, len(args)))
+		c.logString(fmt.Sprintf("%s(%s):", funcName, strings.Join(names, ", ")))
+		c.logString(fmt.Sprintf("Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1))
 		goto fail
 	}
 
+	// Copy since it may be mutated by Check.
+	names := append([]string{}, info.Params...)
+
 	// Do the actual check.
-	result, error := checker.Check(obtained, expected)
+	result, error := checker.Check(params, names)
 	if !result || error != "" {
-		obtainedName, expectedName := checker.VarNames()
 		c.logCaller(2)
-		c.logValue(obtainedName, obtained)
-		if expectedWanted > 0 {
-			c.logValue(expectedName, expected)
+		for i := 0; i != len(params); i++ {
+			c.logValue(names[i], params[i])
 		}
 		if bug != nil {
 			c.logString(bug.GetBugInfo())
