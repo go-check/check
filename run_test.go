@@ -265,7 +265,7 @@ func (s *RunS) TestFilterError(c *C) {
 	runConf := RunConf{Output: &output, Filter: "]["}
 	result := Run(&helper, &runConf)
 	c.Check(result.String(), Equals,
-		"ERROR: Bad filter expression: unmatched ']'")
+		"ERROR: Bad filter expression: regexp: unmatched ']'")
 	c.Check(helper.n, Equals, 0)
 }
 

@@ -164,7 +164,9 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 		c.logCaller(2)
 		c.logString(fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
 		c.logString("Oops.. you've provided a nil checker!")
-		goto fail
+		c.logNewLine()
+		c.Fail()
+		return false
 	}
 
 	// If the last argument is a bug info, extract it out.
@@ -184,7 +186,9 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 		c.logCaller(2)
 		c.logString(fmt.Sprintf("%s(%s):", funcName, strings.Join(names, ", ")))
 		c.logString(fmt.Sprintf("Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1))
-		goto fail
+		c.logNewLine()
+		c.Fail()
+		return false
 	}
 
 	// Copy since it may be mutated by Check.
@@ -203,12 +207,9 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 		if error != "" {
 			c.logString(error)
 		}
-		goto fail
+		c.logNewLine()
+		c.Fail()
+		return false
 	}
 	return true
-
-fail:
-	c.logNewLine()
-	c.Fail()
-	return false
 }

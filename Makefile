@@ -9,6 +9,10 @@ GOFILES=\
 	checkers.go\
 	printer.go\
 
+#TARGDIR=$(GOPATH)/pkg/$(GOOS)_$(GOARCH)
+#GCIMPORTS=$(patsubst %,-I %/pkg/$(GOOS)_$(GOARCH),$(subst :, ,$(GOPATH)))
+#LDIMPORTS=$(patsubst %,-L %/pkg/$(GOOS)_$(GOARCH),$(subst :, ,$(GOPATH)))
+
 include $(GOROOT)/src/Make.pkg
 
 GOFMT=gofmt

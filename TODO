@@ -1,3 +1,5 @@
+- Assert(slice, Contains, item)
+
 - GoTest prefix support, for running parallel tests
 - Benchmark support
 - Improved logging of multiline strings:

@@ -126,7 +126,7 @@ func (s *CheckersS) TestMatches(c *gocheck.C) {
 
 	// Some error conditions.
 	testCheck(c, gocheck.Matches, false, "Obtained value is not a string and has no .String()", 1, "a.c")
-	testCheck(c, gocheck.Matches, false, "Can't compile regex: unmatched '['", "abc", "a[c")
+	testCheck(c, gocheck.Matches, false, "Can't compile regex: regexp: unmatched '['", "abc", "a[c")
 }
 
 func (s *CheckersS) TestPanics(c *gocheck.C) {
