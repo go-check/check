@@ -260,10 +260,16 @@ func (c *C) logArgPanic(method *methodType, expectedType string) {
 
 var initWD, initWDErr = os.Getwd()
 
+func init() {
+	if initWDErr == nil {
+		initWD = strings.Replace(initWD, "\\", "/", -1) + "/"
+	}
+}
+
 func nicePath(path string) string {
 	if initWDErr == nil {
-		if strings.HasPrefix(path, initWD+"/") {
-			return path[len(initWD)+1:]
+		if strings.HasPrefix(path, initWD) {
+			return path[len(initWD):]
 		}
 	}
 	return path
@@ -796,3 +802,4 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }
+
