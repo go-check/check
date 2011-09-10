@@ -282,8 +282,13 @@ func niceFuncName(pc uintptr) string {
 	function := runtime.FuncForPC(pc)
 	if function != nil {
 		name := path.Base(function.Name())
-		if strings.HasPrefix(name, "_xtest_.*") {
-			name = name[9:]
+		if strings.HasPrefix(name, "_xtest_.") {
+			name = name[8:]
+		}
+		if strings.HasPrefix(name, "(*") {
+			if i := strings.Index(name, ")"); i > 0 {
+				name = name[2:i] + name[i+1:]
+			}
 		}
 		if i := strings.LastIndex(name, ".*"); i != -1 {
 			name = name[0:i] + "." + name[i+2:]
