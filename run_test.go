@@ -265,7 +265,7 @@ func (s *RunS) TestFilterError(c *C) {
 	runConf := RunConf{Output: &output, Filter: "]["}
 	result := Run(&helper, &runConf)
 	c.Check(result.String(), Equals,
-		"ERROR: Bad filter expression: regexp: unmatched ']'")
+		"ERROR: Bad filter expression: error parsing regexp: missing closing ]: `[`")
 	c.Check(helper.n, Equals, 0)
 }
 
@@ -291,7 +291,7 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 	runConf := RunConf{Output: &output, Verbose: true}
 	Run(&helper, &runConf)
 
-	expected := ".*PANIC.*\n-+\n" + // Should have an extra line.
+	expected := "(?s).*PANIC.*\n-+\n" + // Should have an extra line.
 		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
 
 	c.Assert(output.value, Matches, expected)

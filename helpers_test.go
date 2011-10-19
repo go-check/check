@@ -100,7 +100,7 @@ func (s *HelpersS) TestCheckSucceedWithoutExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
 	checker := &MyChecker{result: false}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, 2\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n\n"
@@ -112,7 +112,7 @@ func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckFailWithExpectedAndBugInfo(c *gocheck.C) {
 	checker := &MyChecker{result: false}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, 2, myBug\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
@@ -125,7 +125,7 @@ func (s *HelpersS) TestCheckFailWithExpectedAndBugInfo(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker\\)\n" +
 		"\\.+ myvalue int = 1\n\n"
 	testHelperFailure(c, "Check(1, checker)", false, false, log,
@@ -136,7 +136,7 @@ func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckFailWithoutExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, myBug\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myvalue int = 1\n" +
 		"\\.+ Hello world!\n\n"
@@ -148,7 +148,7 @@ func (s *HelpersS) TestCheckFailWithoutExpectedAndMessage(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckWithMissingExpected(c *gocheck.C) {
 	checker := &MyChecker{result: true}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker\\)\n" +
 		"\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
 		"\\.+ Wrong number of parameters for MyChecker: " +
@@ -161,7 +161,7 @@ func (s *HelpersS) TestCheckWithMissingExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckWithTooManyExpected(c *gocheck.C) {
 	checker := &MyChecker{result: true}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, 2, 3\\)\n" +
 		"\\.+ Check\\(myobtained, MyChecker, myexpected\\):\n" +
 		"\\.+ Wrong number of parameters for MyChecker: " +
@@ -174,7 +174,7 @@ func (s *HelpersS) TestCheckWithTooManyExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckWithError(c *gocheck.C) {
 	checker := &MyChecker{result: false, error: "Some not so cool data provided!"}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, 2\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
@@ -186,7 +186,7 @@ func (s *HelpersS) TestCheckWithError(c *gocheck.C) {
 }
 
 func (s *HelpersS) TestCheckWithNilChecker(c *gocheck.C) {
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, nil\\)\n" +
 		"\\.+ Check\\(obtained, nil!\\?, \\.\\.\\.\\):\n" +
 		"\\.+ Oops\\.\\. you've provided a nil checker!\n\n"
@@ -198,7 +198,7 @@ func (s *HelpersS) TestCheckWithNilChecker(c *gocheck.C) {
 
 func (s *HelpersS) TestCheckWithParamsAndNamesMutation(c *gocheck.C) {
 	checker := &MyChecker{result: false, params: []interface{}{3, 4}, names: []string{"newobtained", "newexpected"}}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    return c\\.Check\\(1, checker, 2\\)\n" +
 		"\\.+ newobtained int = 3\n" +
 		"\\.+ newexpected int = 4\n\n"
@@ -236,7 +236,7 @@ func (s *HelpersS) TestAssertSucceedWithoutExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
 	checker := &MyChecker{result: false}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker, 2\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n\n"
@@ -249,7 +249,7 @@ func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker, 2, myBug\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
@@ -263,7 +263,7 @@ func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker\\)\n" +
 		"\\.+ myvalue int = 1\n\n"
 	testHelperFailure(c, "Assert(1, checker)", nil, true, log,
@@ -275,7 +275,7 @@ func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker, myBug\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myvalue int = 1\n" +
 		"\\.+ Hello world!\n\n"
@@ -288,7 +288,7 @@ func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertWithMissingExpected(c *gocheck.C) {
 	checker := &MyChecker{result: true}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker\\)\n" +
 		"\\.+ Assert\\(myobtained, MyChecker, myexpected\\):\n" +
 		"\\.+ Wrong number of parameters for MyChecker: " +
@@ -302,7 +302,7 @@ func (s *HelpersS) TestAssertWithMissingExpected(c *gocheck.C) {
 
 func (s *HelpersS) TestAssertWithError(c *gocheck.C) {
 	checker := &MyChecker{result: false, error: "Some not so cool data provided!"}
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, checker, 2\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
@@ -315,7 +315,7 @@ func (s *HelpersS) TestAssertWithError(c *gocheck.C) {
 }
 
 func (s *HelpersS) TestAssertWithNilChecker(c *gocheck.C) {
-	log := "helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
+	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
 		"    c\\.Assert\\(1, nil\\)\n" +
 		"\\.+ Assert\\(obtained, nil!\\?, \\.\\.\\.\\):\n" +
 		"\\.+ Oops\\.\\. you've provided a nil checker!\n\n"
@@ -332,7 +332,7 @@ func (s *HelpersS) TestAssertWithNilChecker(c *gocheck.C) {
 
 func (s *HelpersS) TestValueLoggingWithArrays(c *gocheck.C) {
 	checker := &MyChecker{result: false}
-	log := "helpers_test.go:[0-9]+:.*\nhelpers_test.go:[0-9]+:\n" +
+	log := "(?s)helpers_test.go:[0-9]+:.*\nhelpers_test.go:[0-9]+:\n" +
 		"    return c\\.Check\\(\\[\\]byte{1, 2}, checker, \\[\\]byte{1, 3}\\)\n" +
 		"\\.+ myobtained \\[\\]uint8 = \\[\\]byte{0x1, 0x2}\n" +
 		"\\.+ myexpected \\[\\]uint8 = \\[\\]byte{0x1, 0x3}\n\n"
