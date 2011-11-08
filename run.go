@@ -19,7 +19,6 @@ func Suite(suite interface{}) interface{} {
 	return suite
 }
 
-
 // -----------------------------------------------------------------------
 // Public running interface.
 
@@ -29,7 +28,6 @@ var verboseFlag = flag.Bool("gocheck.v", false,
 	"Verbose mode")
 var streamFlag = flag.Bool("gocheck.vv", false,
 	"Super verbose mode (disables output caching)")
-
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
@@ -58,7 +56,6 @@ func Run(suite interface{}, runConf *RunConf) *Result {
 	return runner.run()
 }
 
-
 // -----------------------------------------------------------------------
 // Result methods.
 
@@ -79,7 +76,7 @@ func (r *Result) Passed() bool {
 
 func (r *Result) String() string {
 	if r.RunError != nil {
-		return "ERROR: " + r.RunError.String()
+		return "ERROR: " + r.RunError.Error()
 	}
 
 	var value string

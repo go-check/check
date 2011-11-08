@@ -13,7 +13,6 @@ import (
 	"fmt"
 )
 
-
 // -----------------------------------------------------------------------
 // Foundation test suite.
 
@@ -150,7 +149,6 @@ func (s *FoundationS) TestFatalf(c *gocheck.C) {
 	c.Log("Fatalf() didn't stop the test")
 }
 
-
 func (s *FoundationS) TestCallerLoggingInsideTest(c *gocheck.C) {
 	log := fmt.Sprintf(""+
 		"foundation_test.go:%d:\n"+
@@ -253,7 +251,6 @@ func (s *FoundationS) TestExpectFailureSucceedVerbose(c *gocheck.C) {
 
 	c.Assert(result.ExpectedFailures, gocheck.Equals, 1)
 }
-
 
 // -----------------------------------------------------------------------
 // Skip() allows stopping a test without positive/negative results.

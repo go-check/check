@@ -3,11 +3,10 @@
 package gocheck_test
 
 import (
+	"errors"
 	. "launchpad.net/gocheck"
 	"sync"
-	"os"
 )
-
 
 var runnerS = Suite(&RunS{})
 
@@ -16,7 +15,6 @@ type RunS struct{}
 func (s *RunS) TestCountSuite(c *C) {
 	suitesRun += 1
 }
-
 
 // -----------------------------------------------------------------------
 // Tests ensuring result counting works properly.
@@ -96,7 +94,6 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 	c.Check(result.RunError, IsNil)
 }
 
-
 // -----------------------------------------------------------------------
 // Check result aggregation.
 
@@ -114,7 +111,6 @@ func (s *RunS) TestAdd(c *C) {
 	c.Check(result.RunError, IsNil)
 }
 
-
 // -----------------------------------------------------------------------
 // Check the Passed() method.
 
@@ -126,7 +122,7 @@ func (s *RunS) TestPassed(c *C) {
 	c.Assert((&Result{Panicked: 1}).Passed(), Equals, false)
 	c.Assert((&Result{FixturePanicked: 1}).Passed(), Equals, false)
 	c.Assert((&Result{Missed: 1}).Passed(), Equals, false)
-	c.Assert((&Result{RunError: os.NewError("!")}).Passed(), Equals, false)
+	c.Assert((&Result{RunError: errors.New("!")}).Passed(), Equals, false)
 }
 
 // -----------------------------------------------------------------------
@@ -177,10 +173,9 @@ func (s *RunS) TestPrintAll(c *C) {
 
 func (s *RunS) TestPrintRunError(c *C) {
 	result := &Result{Succeeded: 1, Failed: 1,
-		RunError: os.NewError("Kaboom!")}
+		RunError: errors.New("Kaboom!")}
 	c.Check(result.String(), Equals, "ERROR: Kaboom!")
 }
-
 
 // -----------------------------------------------------------------------
 // Verify that the method pattern flag works correctly.
@@ -269,7 +264,6 @@ func (s *RunS) TestFilterError(c *C) {
 	c.Check(helper.n, Equals, 0)
 }
 
-
 // -----------------------------------------------------------------------
 // Verify that verbose mode prints tests which pass as well. 
 
@@ -296,7 +290,6 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 
 	c.Assert(output.value, Matches, expected)
 }
-
 
 // -----------------------------------------------------------------------
 // Verify the stream output mode.  In this mode there's no output caching.
@@ -328,7 +321,6 @@ func (s *StreamHelper) Test2(c *C) {
 	c.Fail()
 	c.Log("4")
 }
-
 
 func (s *RunS) TestStreamMode(c *C) {
 	helper := &StreamHelper{}

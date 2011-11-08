@@ -2,11 +2,9 @@
 
 package gocheck_test
 
-
 import (
 	. "launchpad.net/gocheck"
 )
-
 
 // -----------------------------------------------------------------------
 // Fixture test suite.
@@ -18,7 +16,6 @@ var fixtureS = Suite(&FixtureS{})
 func (s *FixtureS) TestCountSuite(c *C) {
 	suitesRun += 1
 }
-
 
 // -----------------------------------------------------------------------
 // Basic fixture ordering verification.
@@ -36,7 +33,6 @@ func (s *FixtureS) TestOrder(c *C) {
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
 	c.Check(helper.n, Equals, 8)
 }
-
 
 // -----------------------------------------------------------------------
 // Check the behavior when panics occur within tests and fixtures.
@@ -177,7 +173,6 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
 	c.Check(output.value, Matches, expected)
 }
 
-
 // -----------------------------------------------------------------------
 // A wrong argument on a test or fixture will produce a nice error.
 
@@ -234,7 +229,6 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *C) {
 
 	c.Check(output.value, Matches, expected)
 }
-
 
 // -----------------------------------------------------------------------
 // Nice errors also when tests or fixture have wrong arg count.
@@ -293,7 +287,6 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *C) {
 	c.Check(output.value, Matches, expected)
 }
 
-
 // -----------------------------------------------------------------------
 // Helper test suites with wrong function arguments.
 
@@ -339,7 +332,6 @@ type WrongSetUpSuiteArgCountHelper struct {
 func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(c *C, i int) {
 }
 
-
 // -----------------------------------------------------------------------
 // Ensure fixture doesn't run without tests.
 
@@ -361,7 +353,6 @@ func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *C) {
 	Run(&helper, &RunConf{Output: &output})
 	c.Check(helper.hasRun, Equals, false)
 }
-
 
 // -----------------------------------------------------------------------
 // Verify that checks and assertions work correctly inside the fixture.
@@ -425,7 +416,6 @@ func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
 	c.Assert(helper.completed, Equals, false)
 }
 
-
 // -----------------------------------------------------------------------
 // Verify that logging within SetUpTest() persists within the test log itself.
 
@@ -459,7 +449,6 @@ func (s *FixtureS) TestFixtureLogging(c *C) {
 			"FixtureLogHelper\\.Test\n\n"+
 			"1\n2\n3\n4\n5\n")
 }
-
 
 // -----------------------------------------------------------------------
 // Skip() within fixture methods.

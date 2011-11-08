@@ -1,11 +1,9 @@
 package gocheck
 
-
 import (
 	"fmt"
 	"strings"
 )
-
 
 // -----------------------------------------------------------------------
 // Basic succeeding/failing logic.
@@ -70,7 +68,6 @@ func (c *C) Skip(reason string) {
 	c.stopNow()
 }
 
-
 // -----------------------------------------------------------------------
 // Basic logging.
 
@@ -130,7 +127,6 @@ func (c *C) Fatalf(format string, args ...interface{}) {
 	c.logNewLine()
 	c.FailNow()
 }
-
 
 // -----------------------------------------------------------------------
 // Generic checks and assertions based on checkers.
