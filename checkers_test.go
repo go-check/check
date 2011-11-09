@@ -162,6 +162,10 @@ func (s *CheckersS) TestPanics(c *gocheck.C) {
 	params, names := testCheck(c, gocheck.Panics, false, "", func() { panic(errors.New("KABOOM")) }, errors.New("BOOM"))
 	c.Assert(params[0], gocheck.ErrorMatches, "KABOOM")
 	c.Assert(names[0], gocheck.Equals, "panic")
+
+	// Verify a nil panic
+	testCheck(c, gocheck.Panics, true, "", func() { panic(nil) }, nil)
+	testCheck(c, gocheck.Panics, false, "", func() { panic(nil) }, "NOPE")
 }
 
 func (s *CheckersS) TestPanicMatches(c *gocheck.C) {
@@ -179,6 +183,9 @@ func (s *CheckersS) TestPanicMatches(c *gocheck.C) {
 	params, names := testCheck(c, gocheck.PanicMatches, false, "", func() { panic(errors.New("KABOOM")) }, "BOOM")
 	c.Assert(params[0], gocheck.ErrorMatches, "KABOOM")
 	c.Assert(names[0], gocheck.Equals, "panic")
+
+	// Verify a nil panic
+	testCheck(c, gocheck.PanicMatches, false, "Panic value is not an error", func() { panic(nil) }, "")
 }
 
 func (s *CheckersS) TestFitsTypeOf(c *gocheck.C) {

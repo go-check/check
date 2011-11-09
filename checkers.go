@@ -182,7 +182,7 @@ type errorMatchesChecker struct {
 //
 // For example:
 //
-//     c.Assert(err, Matches, "perm.*denied")
+//     c.Assert(err, ErrorMatches, "perm.*denied")
 //
 var ErrorMatches Checker = errorMatchesChecker{
 	&CheckerInfo{Name: "ErrorMatches", Params: []string{"value", "regex"}},
@@ -266,7 +266,7 @@ var Panics Checker = &panicsChecker{
 	},
 }
 
-// The Panics checker verifies that calling the provided zero-argument
+// The PanicMatches checker verifies that calling the provided zero-argument
 // function will cause a panic with an error value matching
 // the regular expression provided.
 //
@@ -292,11 +292,11 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		return false, "Function must take zero arguments"
 	}
 	defer func() {
-		obtained := recover()
-		if obtained == nil {
-			error = "Function has not panicked"
+		// If the function has not panicked, then don't do the check.
+		if error != "" {
 			return
 		}
+		obtained := recover()
 		expected := params[1]
 		params[0] = obtained
 		names[0] = "panic"
@@ -304,7 +304,7 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		result, error = checker.check(obtained, expected)
 	}()
 	f.Call(nil)
-	return
+	return false, "Function has not panicked"
 }
 
 // -----------------------------------------------------------------------
