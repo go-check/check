@@ -196,7 +196,9 @@ func (checker errorMatchesChecker) Check(params []interface{}, names []string) (
 	if !ok {
 		return false, "Value is not an error"
 	}
-	return matches(err.Error(), params[1])
+	params[0] = err.Error()
+	names[0] = "error"
+	return matches(params[0], params[1])
 }
 
 // -----------------------------------------------------------------------
@@ -248,7 +250,6 @@ func matches(value, regex interface{}) (result bool, error string) {
 
 type panicsChecker struct {
 	*CheckerInfo
-	check func(obtained, expected interface{}) (bool, string)
 }
 
 // The Panics checker verifies that calling the provided zero-argument
@@ -261,29 +262,6 @@ type panicsChecker struct {
 //
 var Panics Checker = &panicsChecker{
 	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
-	func(obtained, expected interface{}) (bool, string) {
-		return reflect.DeepEqual(obtained, expected), ""
-	},
-}
-
-// The PanicMatches checker verifies that calling the provided zero-argument
-// function will cause a panic with an error value matching
-// the regular expression provided.
-//
-// For example:
-//
-//     c.Assert(func() { f(1, 2) }, PanicMatches, `open.*: no such file or directory`).
-//
-//
-var PanicMatches Checker = &panicsChecker{
-	&CheckerInfo{Name: "PanicMatches", Params: []string{"function", "expected"}},
-	func(obtained, expected interface{}) (bool, string) {
-		v, ok := obtained.(error)
-		if !ok {
-			return false, "Panic value is not an error"
-		}
-		return matches(v.Error(), expected)
-	},
 }
 
 func (checker *panicsChecker) Check(params []interface{}, names []string) (result bool, error string) {
@@ -296,12 +274,52 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		if error != "" {
 			return
 		}
-		obtained := recover()
-		expected := params[1]
-		params[0] = obtained
+		params[0] = recover()
 		names[0] = "panic"
+		result = reflect.DeepEqual(params[0], params[1])
+	}()
+	f.Call(nil)
+	return false, "Function has not panicked"
+}
 
-		result, error = checker.check(obtained, expected)
+type panicMatchesChecker struct {
+	*CheckerInfo
+}
+
+// The PanicMatches checker verifies that calling the provided zero-argument
+// function will cause a panic with an error value matching
+// the regular expression provided.
+//
+// For example:
+//
+//     c.Assert(func() { f(1, 2) }, PanicMatches, `open.*: no such file or directory`).
+//
+//
+var PanicMatches Checker = &panicMatchesChecker{
+	&CheckerInfo{Name: "PanicMatches", Params: []string{"function", "expected"}},
+}
+
+func (checker *panicMatchesChecker) Check(params []interface{}, names []string) (result bool, errmsg string) {
+	f := reflect.ValueOf(params[0])
+	if f.Kind() != reflect.Func || f.Type().NumIn() != 0 {
+		return false, "Function must take zero arguments"
+	}
+	defer func() {
+		// If the function has not panicked, then don't do the check.
+		if errmsg != "" {
+			return
+		}
+		obtained := recover()
+		names[0] = "panic"
+		if e, ok := obtained.(error); ok {
+			params[0] = e.Error()
+		} else if _, ok := obtained.(string); ok {
+			params[0] = obtained
+		} else {
+			errmsg = "Panic value is not a string or an error"
+			return
+		}
+		result, errmsg = matches(params[0], params[1])
 	}()
 	f.Call(nil)
 	return false, "Function has not panicked"

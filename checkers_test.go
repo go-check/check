@@ -116,6 +116,11 @@ func (s *CheckersS) TestErrorMatches(c *gocheck.C) {
 	testCheck(c, gocheck.ErrorMatches, false, "Value is not an error", 1, "some error")
 	testCheck(c, gocheck.ErrorMatches, true, "", errors.New("some error"), "some error")
 	testCheck(c, gocheck.ErrorMatches, true, "", errors.New("some error"), "so.*or")
+
+	// Verify params mutation
+	params, names := testCheck(c, gocheck.ErrorMatches, false, "", errors.New("some error"), "other error")
+	c.Assert(params[0], gocheck.Equals, "some error")
+	c.Assert(names[0], gocheck.Equals, "error")
 }
 
 func (s *CheckersS) TestMatches(c *gocheck.C) {
@@ -179,13 +184,18 @@ func (s *CheckersS) TestPanicMatches(c *gocheck.C) {
 	testCheck(c, gocheck.PanicMatches, false, "Function has not panicked", func() bool { return false }, "BOOM")
 	testCheck(c, gocheck.PanicMatches, false, "Function must take zero arguments", 1, "BOOM")
 
+	// Plain strings.
+	testCheck(c, gocheck.PanicMatches, true, "", func() { panic("BOOM") }, "BO.M")
+	testCheck(c, gocheck.PanicMatches, false, "", func() { panic("KABOOM") }, "BOOM")
+	testCheck(c, gocheck.PanicMatches, true, "", func() bool { panic("BOOM") }, "BO.M")
+
 	// Verify params/names mutation
 	params, names := testCheck(c, gocheck.PanicMatches, false, "", func() { panic(errors.New("KABOOM")) }, "BOOM")
-	c.Assert(params[0], gocheck.ErrorMatches, "KABOOM")
+	c.Assert(params[0], gocheck.Equals, "KABOOM")
 	c.Assert(names[0], gocheck.Equals, "panic")
 
 	// Verify a nil panic
-	testCheck(c, gocheck.PanicMatches, false, "Panic value is not an error", func() { panic(nil) }, "")
+	testCheck(c, gocheck.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
 }
 
 func (s *CheckersS) TestFitsTypeOf(c *gocheck.C) {
