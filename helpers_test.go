@@ -9,7 +9,6 @@ import (
 	"reflect"
 )
 
-
 var helpersS = gocheck.Suite(&HelpersS{})
 
 type HelpersS struct{}
@@ -18,16 +17,15 @@ func (s *HelpersS) TestCountSuite(c *gocheck.C) {
 	suitesRun += 1
 }
 
-
 // -----------------------------------------------------------------------
 // Fake checker and bug info to verify the behavior of Assert() and Check().
 
 type MyChecker struct {
-	info *gocheck.CheckerInfo
+	info   *gocheck.CheckerInfo
 	params []interface{}
-	names []string
+	names  []string
 	result bool
-	error string
+	error  string
 }
 
 func (checker *MyChecker) Info() *gocheck.CheckerInfo {
@@ -51,7 +49,6 @@ func (checker *MyChecker) Check(params []interface{}, names []string) (bool, str
 	return checker.result, checker.error
 }
 
-
 type myBugInfo struct {
 	info string
 }
@@ -64,7 +61,6 @@ func myBug(info string) *myBugInfo {
 	return &myBugInfo{info}
 }
 
-
 // -----------------------------------------------------------------------
 // Ensure a real checker actually works fine.
 
@@ -73,7 +69,6 @@ func (s *HelpersS) TestCheckerInterface(c *gocheck.C) {
 		return c.Check(1, gocheck.Equals, 1)
 	})
 }
-
 
 // -----------------------------------------------------------------------
 // Tests for Check(), mostly the same as for Assert() following these.
@@ -208,7 +203,6 @@ func (s *HelpersS) TestCheckWithParamsAndNamesMutation(c *gocheck.C) {
 		})
 }
 
-
 // -----------------------------------------------------------------------
 // Tests for Assert(), mostly the same as for Check() above.
 
@@ -326,7 +320,6 @@ func (s *HelpersS) TestAssertWithNilChecker(c *gocheck.C) {
 		})
 }
 
-
 // -----------------------------------------------------------------------
 // Ensure that values logged work properly in some interesting cases.
 
@@ -341,7 +334,6 @@ func (s *HelpersS) TestValueLoggingWithArrays(c *gocheck.C) {
 			return c.Check([]byte{1, 2}, checker, []byte{1, 3})
 		})
 }
-
 
 // -----------------------------------------------------------------------
 // MakeDir() tests.
@@ -370,7 +362,6 @@ func (s *MkDirHelper) TearDownSuite(c *gocheck.C) {
 	s.isDir4 = isDir(s.path2)
 }
 
-
 func (s *HelpersS) TestMkDir(c *gocheck.C) {
 	helper := MkDirHelper{}
 	output := String{}
@@ -392,7 +383,6 @@ func isDir(path string) bool {
 	}
 	return false
 }
-
 
 // -----------------------------------------------------------------------
 // A couple of helper functions to test helper functions. :-)

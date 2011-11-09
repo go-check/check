@@ -26,7 +26,7 @@ func indent(s, with string) (r string) {
 	return s
 }
 
-func printLine(filename string, line int) (string, os.Error) {
+func printLine(filename string, line int) (string, error) {
 	fset := token.NewFileSet()
 	file, err := os.Open(filename)
 	if err != nil {

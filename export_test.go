@@ -1,10 +1,6 @@
 package gocheck
 
-import (
-	"os"
-)
-
-func PrintLine(filename string, line int) (string, os.Error) {
+func PrintLine(filename string, line int) (string, error) {
 	return printLine(filename, line)
 }
 

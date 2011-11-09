@@ -3,7 +3,6 @@
 
 package gocheck_test
 
-
 import (
 	"launchpad.net/gocheck"
 	"testing"
@@ -13,7 +12,6 @@ import (
 	"fmt"
 	"os"
 )
-
 
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
@@ -30,7 +28,6 @@ func Test(t *testing.T) {
 	}
 }
 
-
 // -----------------------------------------------------------------------
 // Helper functions.
 
@@ -41,7 +38,6 @@ func critical(error string) {
 	os.Exit(1)
 }
 
-
 // Return the file line where it's called.
 func getMyLine() int {
 	if _, _, line, ok := runtime.Caller(1); ok {
@@ -49,7 +45,6 @@ func getMyLine() int {
 	}
 	return -1
 }
-
 
 // -----------------------------------------------------------------------
 // Helper type implementing a basic io.Writer for testing output.
@@ -61,7 +56,7 @@ type String struct {
 
 // The only function required by the io.Writer interface.  Will append
 // written data to the String.value string.
-func (s *String) Write(p []byte) (n int, err os.Error) {
+func (s *String) Write(p []byte) (n int, err error) {
 	s.value += string(p)
 	return len(p), nil
 }
@@ -71,7 +66,6 @@ func (s *String) Write(p []byte) (n int, err os.Error) {
 func checkEqualWrapper(c *gocheck.C, obtained, expected interface{}) (result bool, line int) {
 	return c.Check(obtained, gocheck.Equals, expected), getMyLine()
 }
-
 
 // -----------------------------------------------------------------------
 // Helper suite for testing basic fail behavior.
@@ -86,7 +80,6 @@ func (s *FailHelper) TestLogAndFail(c *gocheck.C) {
 	c.Fail()
 }
 
-
 // -----------------------------------------------------------------------
 // Helper suite for testing basic success behavior.
 
@@ -95,7 +88,6 @@ type SuccessHelper struct{}
 func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
 	c.Log("Expected success!")
 }
-
 
 // -----------------------------------------------------------------------
 // Helper suite for testing ordering and behavior of fixture.
@@ -143,7 +135,6 @@ func (s *FixtureHelper) Test1(c *gocheck.C) {
 func (s *FixtureHelper) Test2(c *gocheck.C) {
 	s.trace("Test2", c)
 }
-
 
 // -----------------------------------------------------------------------
 // Helper which checks the state of the test and ensures that it matches

@@ -6,7 +6,6 @@ import (
 	"fmt"
 )
 
-
 // -----------------------------------------------------------------------
 // BugInfo and Bug() helper, to attach extra information to checks.
 
@@ -38,7 +37,6 @@ func (bug *bugInfo) GetBugInfo() string {
 	return fmt.Sprintf(bug.format, bug.args...)
 }
 
-
 // -----------------------------------------------------------------------
 // The Checker interface.
 
@@ -51,7 +49,7 @@ type Checker interface {
 
 // See the Checker interface.
 type CheckerInfo struct {
-	Name string
+	Name   string
 	Params []string
 }
 
@@ -90,11 +88,10 @@ func (checker *notChecker) Check(params []interface{}, names []string) (result b
 	return
 }
 
-
 // -----------------------------------------------------------------------
 // IsNil checker.
 
-type isNilChecker struct{
+type isNilChecker struct {
 	*CheckerInfo
 }
 
@@ -107,7 +104,6 @@ type isNilChecker struct{
 var IsNil Checker = &isNilChecker{
 	&CheckerInfo{Name: "IsNil", Params: []string{"value"}},
 }
-
 
 func (checker *isNilChecker) Check(params []interface{}, names []string) (result bool, error string) {
 	return isNil(params[0]), ""
@@ -125,11 +121,10 @@ func isNil(obtained interface{}) (result bool) {
 	return
 }
 
-
 // -----------------------------------------------------------------------
 // NotNil checker. Alias for Not(IsNil), since it's so common.
 
-type notNilChecker struct{
+type notNilChecker struct {
 	*CheckerInfo
 }
 
@@ -150,11 +145,10 @@ func (checker *notNilChecker) Check(params []interface{}, names []string) (resul
 	return !isNil(params[0]), ""
 }
 
-
 // -----------------------------------------------------------------------
 // Equals checker.
 
-type equalsChecker struct{
+type equalsChecker struct {
 	*CheckerInfo
 }
 
@@ -176,11 +170,39 @@ func (checker *equalsChecker) Check(params []interface{}, names []string) (resul
 	return reflect.DeepEqual(params[0], params[1]), ""
 }
 
+// -----------------------------------------------------------------------
+// ErrorMatches checker.
+
+type errorMatchesChecker struct {
+	*CheckerInfo
+}
+
+// The ErrorMatches checker verifies that the error value
+// is non nil and matches the regular expression provided.
+//
+// For example:
+//
+//     c.Assert(err, ErrorMatches, "perm.*denied")
+//
+var ErrorMatches Checker = errorMatchesChecker{
+	&CheckerInfo{Name: "ErrorMatches", Params: []string{"value", "regex"}},
+}
+
+func (checker errorMatchesChecker) Check(params []interface{}, names []string) (result bool, errStr string) {
+	if params[0] == nil {
+		return false, "Error value is nil"
+	}
+	err, ok := params[0].(error)
+	if !ok {
+		return false, "Value is not an error"
+	}
+	return matches(err.Error(), params[1])
+}
 
 // -----------------------------------------------------------------------
 // Matches checker.
 
-type matchesChecker struct{
+type matchesChecker struct {
 	*CheckerInfo
 }
 
@@ -214,7 +236,7 @@ func matches(value, regex interface{}) (result bool, error string) {
 	if valueIsStr {
 		matches, err := regexp.MatchString("^"+reStr+"$", valueStr)
 		if err != nil {
-			return false, "Can't compile regex: " + err.String()
+			return false, "Can't compile regex: " + err.Error()
 		}
 		return matches, ""
 	}
@@ -224,8 +246,9 @@ func matches(value, regex interface{}) (result bool, error string) {
 // -----------------------------------------------------------------------
 // Panics checker.
 
-type panicsChecker struct{
+type panicsChecker struct {
 	*CheckerInfo
+	check func(obtained, expected interface{}) (bool, string)
 }
 
 // The Panics checker verifies that calling the provided zero-argument
@@ -233,14 +256,34 @@ type panicsChecker struct{
 //
 // For example:
 //
-//     c.Assert(func() { f(1, 2) }, Panics, os.NewError("BOOM")).
+//     c.Assert(func() { f(1, 2) }, Panics, &SomeErrorType{"BOOM"}).
 //
-// If the provided value is a plain string, it will also be attempted
-// to be matched as a regular expression against the String() value of
-// the panic.
 //
 var Panics Checker = &panicsChecker{
 	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
+	func(obtained, expected interface{}) (bool, string) {
+		return reflect.DeepEqual(obtained, expected), ""
+	},
+}
+
+// The PanicMatches checker verifies that calling the provided zero-argument
+// function will cause a panic with an error value matching
+// the regular expression provided.
+//
+// For example:
+//
+//     c.Assert(func() { f(1, 2) }, PanicMatches, `open.*: no such file or directory`).
+//
+//
+var PanicMatches Checker = &panicsChecker{
+	&CheckerInfo{Name: "PanicMatches", Params: []string{"function", "expected"}},
+	func(obtained, expected interface{}) (bool, string) {
+		v, ok := obtained.(error)
+		if !ok {
+			return false, "Panic value is not an error"
+		}
+		return matches(v.Error(), expected)
+	},
 }
 
 func (checker *panicsChecker) Check(params []interface{}, names []string) (result bool, error string) {
@@ -249,24 +292,25 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		return false, "Function must take zero arguments"
 	}
 	defer func() {
+		// If the function has not panicked, then don't do the check.
+		if error != "" {
+			return
+		}
 		obtained := recover()
 		expected := params[1]
-		result = reflect.DeepEqual(obtained, expected)
-		if _, ok := expected.(string); !result && ok {
-			result, _ = matches(obtained, expected)
-		}
 		params[0] = obtained
 		names[0] = "panic"
+
+		result, error = checker.check(obtained, expected)
 	}()
 	f.Call(nil)
 	return false, "Function has not panicked"
 }
 
-
 // -----------------------------------------------------------------------
 // FitsTypeOf checker.
 
-type fitsTypeChecker struct{
+type fitsTypeChecker struct {
 	*CheckerInfo
 }
 
@@ -295,11 +339,10 @@ func (checker *fitsTypeChecker) Check(params []interface{}, names []string) (res
 	return obtained.Type().AssignableTo(sample.Type()), ""
 }
 
-
 // -----------------------------------------------------------------------
 // Implements checker.
 
-type implementsChecker struct{
+type implementsChecker struct {
 	*CheckerInfo
 }
 

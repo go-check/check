@@ -12,13 +12,11 @@
 
 package gocheck_test
 
-
 import (
 	"launchpad.net/gocheck"
 	"strings"
 	"fmt"
 )
-
 
 type BootstrapS struct{}
 
