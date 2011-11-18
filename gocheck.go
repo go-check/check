@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"math/rand"
 	"os"
 	"path"
-	"rand"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -149,29 +149,38 @@ func (c *C) writeLog(content string) {
 	}
 }
 
-type hasString interface {
+type stringer interface {
 	String() string
+}
+
+func hasStringOrError(x interface{}) (ok bool) {
+	_, ok = x.(stringer)
+	if ok {
+		return
+	}
+	_, ok = x.(error)
+	return
 }
 
 func (c *C) logValue(label string, value interface{}) {
 	if label == "" {
-		if v, ok := value.(hasString); ok {
-			c.logf("... %#v (%q)", value, v.String())
+		if hasStringOrError(value) {
+			c.logf("... %#v (%q)", value, value)
 		} else {
 			c.logf("... %#v", value)
 		}
 	} else if value == nil {
 		c.logf("... %s = nil", label)
 	} else {
-		if v, ok := value.(hasString); ok {
+		if hasStringOrError(value) {
 			fv := fmt.Sprintf("%#v", value)
-			qv := fmt.Sprintf("%q", v.String())
+			qv := fmt.Sprintf("%q", value)
 			if fv != qv {
-				c.logf("... %s %s = %s (%s)", label, reflect.TypeOf(value).String(), fv, qv)
+				c.logf("... %s %s = %s (%s)", label, reflect.TypeOf(value), fv, qv)
 				return
 			}
 		}
-		c.logf("... %s %s = %#v", label, reflect.TypeOf(value).String(), value)
+		c.logf("... %s %s = %#v", label, reflect.TypeOf(value), value)
 	}
 }
 
