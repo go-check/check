@@ -149,12 +149,8 @@ func (c *C) writeLog(content string) {
 	}
 }
 
-type stringer interface {
-	String() string
-}
-
 func hasStringOrError(x interface{}) (ok bool) {
-	_, ok = x.(stringer)
+	_, ok = x.(fmt.Stringer)
 	if ok {
 		return
 	}
