@@ -379,7 +379,7 @@ func (s *HelpersS) TestMkDir(c *gocheck.C) {
 
 func isDir(path string) bool {
 	if stat, err := os.Stat(path); err == nil {
-		return stat.IsDirectory()
+		return stat.IsDir()
 	}
 	return false
 }

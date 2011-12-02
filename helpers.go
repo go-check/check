@@ -92,7 +92,7 @@ func (c *C) Logf(format string, args ...interface{}) {
 // Output enables *C to be used as a logger in functions that require only
 // the minimum interface of *log.Logger.
 func (c *C) Output(calldepth int, s string) error {
-	ns := time.Nanoseconds()
+	ns := time.Now().Sub(time.Time{}).Nanoseconds()
 	t := float64(ns%100e9) / 1e9
 	c.Logf("[LOG] %.05f %s", t, s)
 	return nil

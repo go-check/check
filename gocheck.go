@@ -232,7 +232,7 @@ func (c *C) logPanic(skip int, value interface{}) {
 				c.logf("... Panic: %s (PC=0x%X)\n", value, pc)
 			}
 			name := niceFuncName(pc)
-			if name == "reflect.internalValue.call" || name == "gocheck.forkTest" {
+			if name == "reflect.Value.call" || name == "gocheck.forkTest" {
 				break
 			}
 			c.logf("%s:%d\n  in %s", nicePath(file), line, name)
