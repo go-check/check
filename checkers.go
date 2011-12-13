@@ -231,7 +231,7 @@ func matches(value, regex interface{}) (result bool, error string) {
 	}
 	valueStr, valueIsStr := value.(string)
 	if !valueIsStr {
-		if valueWithStr, valueHasStr := value.(hasString); valueHasStr {
+		if valueWithStr, valueHasStr := value.(fmt.Stringer); valueHasStr {
 			valueStr, valueIsStr = valueWithStr.String(), true
 		}
 	}
