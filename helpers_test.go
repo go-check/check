@@ -335,6 +335,27 @@ func (s *HelpersS) TestValueLoggingWithArrays(c *gocheck.C) {
 		})
 }
 
+func (s *HelpersS) TestValueLoggingWithMultiLine(c *gocheck.C) {
+	checker := &MyChecker{result: false}
+	log := "(?s)helpers_test.go:[0-9]+:.*\nhelpers_test.go:[0-9]+:\n" +
+		"    return c\\.Check\\(\"a\\\\nb\\\\n\", checker, \"a\\\\nb\\\\nc\"\\)\n" +
+		"\\.+ myobtained string =\n" +
+		"\\.+ \\| a\n" +
+		"\\.+ \\| b\n" +
+		"\\.+ \\| \n" +
+		"\\.+ \n" +
+		"\\.+ myexpected string =\n" +
+		"\\.+ \\| a\n" +
+		"\\.+ \\| b\n" +
+		"\\.+ \\| c\n" +
+		"\\.+ \n\n"
+	testHelperFailure(c, `Check("a\nb\n", chk, "a\nb\nc")`, false, false, log,
+		func() interface{} {
+			return c.Check("a\nb\n", checker, "a\nb\nc")
+		})
+}
+
+
 // -----------------------------------------------------------------------
 // MakeDir() tests.
 

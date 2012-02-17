@@ -8,6 +8,7 @@ import (
 	"math/rand"
 	"os"
 	"path"
+	"path/filepath"
 	"reflect"
 	"regexp"
 	"runtime"
@@ -130,22 +131,21 @@ func (c *C) MkDir() string {
 // Low-level logging functions.
 
 func (c *C) log(args ...interface{}) {
-	c.writeLog(fmt.Sprint(args...) + "\n")
+	c.writeLog([]byte(fmt.Sprint(args...) + "\n"))
 }
 
 func (c *C) logf(format string, args ...interface{}) {
-	c.writeLog(fmt.Sprintf(format+"\n", args...))
+	c.writeLog([]byte(fmt.Sprintf(format+"\n", args...)))
 }
 
 func (c *C) logNewLine() {
-	c.writeLog("\n")
+	c.writeLog([]byte{'\n'})
 }
 
-func (c *C) writeLog(content string) {
-	contentb := []byte(content)
-	c.logb.Write(contentb)
+func (c *C) writeLog(buf []byte) {
+	c.logb.Write(buf)
 	if c.logw != nil {
-		c.logw.Write(contentb)
+		c.logw.Write(buf)
 	}
 }
 
@@ -176,8 +176,46 @@ func (c *C) logValue(label string, value interface{}) {
 				return
 			}
 		}
-		c.logf("... %s %s = %#v", label, reflect.TypeOf(value), value)
+		if s, ok := value.(string); ok && isMultiLine(s) {
+			c.logf("... %s %s =", label, reflect.TypeOf(value))
+			c.logMultiLine(s)
+		} else {
+			c.logf("... %s %s = %#v", label, reflect.TypeOf(value), value)
+		}
 	}
+}
+
+func (c *C) logMultiLine(s string) {
+	b := make([]byte, 0, len(s) + (strings.Count(s, "\n")+1)*6)
+	for i, c := range []byte(s) {
+		if i == 0 {
+			b = append(b, "... | "...)
+		}
+		b = append(b, c)
+		if c == '\n' {
+			b = append(b, "... | "...)
+		}
+	}
+	c.writeLog(b)
+	c.logNewLine()
+	c.writeLog([]byte("... \n"))
+}
+
+func isMultiLine(s string) bool {
+	newlines := false
+	last := len(s)-1
+	for i, c := range s {
+		if c == '\n' {
+			if i < last {
+				newlines = true
+			}
+			continue
+		}
+		if c < 0x20 || c > 0x7e {
+			return false
+		}
+	}
+	return newlines
 }
 
 func (c *C) logString(issue string) {
@@ -228,6 +266,8 @@ func (c *C) logCode(path string, line int) {
 	c.log(indent(code, "    "))
 }
 
+var valueGo = filepath.Join("reflect", "value.go")
+
 func (c *C) logPanic(skip int, value interface{}) {
 	skip += 1 // Our own frame.
 	initialSkip := skip
@@ -237,7 +277,8 @@ func (c *C) logPanic(skip int, value interface{}) {
 				c.logf("... Panic: %s (PC=0x%X)\n", value, pc)
 			}
 			name := niceFuncName(pc)
-			if name == "reflect.Value.call" || name == "gocheck.forkTest" {
+			path := nicePath(file)
+			if name == "Value.call" && strings.HasSuffix(path, valueGo) {
 				break
 			}
 			c.logf("%s:%d\n  in %s", nicePath(file), line, name)
@@ -284,8 +325,8 @@ func niceFuncName(pc uintptr) string {
 	function := runtime.FuncForPC(pc)
 	if function != nil {
 		name := path.Base(function.Name())
-		if strings.HasPrefix(name, "_xtest_.") {
-			name = name[8:]
+		if i := strings.Index(name, "."); i > 0 {
+			name = name[i+1:]
 		}
 		if strings.HasPrefix(name, "(*") {
 			if i := strings.Index(name, ")"); i > 0 {
@@ -293,10 +334,10 @@ func niceFuncName(pc uintptr) string {
 			}
 		}
 		if i := strings.LastIndex(name, ".*"); i != -1 {
-			name = name[0:i] + "." + name[i+2:]
+			name = name[:i] + "." + name[i+2:]
 		}
 		if i := strings.LastIndex(name, "·"); i != -1 {
-			name = name[0:i] + "." + name[i+2:]
+			name = name[:i] + "." + name[i+2:]
 		}
 		return name
 	}

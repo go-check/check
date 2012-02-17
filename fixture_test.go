@@ -55,7 +55,7 @@ func (s *FixtureS) TestPanicOnTest(c *C) {
 		"PANIC: gocheck_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
 		"\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
-		"  in runtime.panic\n" +
+		"  in panic\n" +
 		".*gocheck_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*gocheck_test.go:[0-9]+\n" +
@@ -79,7 +79,7 @@ func (s *FixtureS) TestPanicOnSetUpTest(c *C) {
 		"FixtureHelper\\.SetUpTest\n\n" +
 		"\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
-		"  in runtime.panic\n" +
+		"  in panic\n" +
 		".*gocheck_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*gocheck_test.go:[0-9]+\n" +
@@ -109,7 +109,7 @@ func (s *FixtureS) TestPanicOnTearDownTest(c *C) {
 		"FixtureHelper.TearDownTest\n\n" +
 		"\\.\\.\\. Panic: TearDownTest \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
-		"  in runtime.panic\n" +
+		"  in panic\n" +
 		".*gocheck_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*gocheck_test.go:[0-9]+\n" +
@@ -136,7 +136,7 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
 		"FixtureHelper.SetUpSuite\n\n" +
 		"\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
-		"  in runtime.panic\n" +
+		"  in panic\n" +
 		".*gocheck_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*gocheck_test.go:[0-9]+\n" +
@@ -164,7 +164,7 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
 		"FixtureHelper.TearDownSuite\n\n" +
 		"\\.\\.\\. Panic: TearDownSuite \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
-		"  in runtime.panic\n" +
+		"  in panic\n" +
 		".*gocheck_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*gocheck_test.go:[0-9]+\n" +

@@ -160,7 +160,7 @@ func checkState(c *gocheck.C, result interface{}, expected *expectedState) {
 		c.Errorf("Error in matching expression used in testing %s",
 			expected.name)
 	} else if !matched {
-		c.Errorf("%s logged %#v which doesn't match %#v",
+		c.Errorf("%s logged:\n----------\n%s----------\n\nExpected:\n----------\n%s\n----------",
 			expected.name, log, expected.log)
 	}
 	if result != expected.result {
