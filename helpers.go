@@ -176,10 +176,10 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 	}
 
 	// If the last argument is a bug info, extract it out.
-	var bug BugInfo
+	var comment CommentInterface
 	if len(args) > 0 {
-		if gotBug, hasBug := args[len(args)-1].(BugInfo); hasBug {
-			bug = gotBug
+		if c, ok := args[len(args)-1].(CommentInterface); ok {
+			comment = c
 			args = args[:len(args)-1]
 		}
 	}
@@ -207,8 +207,8 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 		for i := 0; i != len(params); i++ {
 			c.logValue(names[i], params[i])
 		}
-		if bug != nil {
-			c.logString(bug.GetBugInfo())
+		if comment != nil {
+			c.logString(comment.CheckCommentString())
 		}
 		if error != "" {
 			c.logString(error)

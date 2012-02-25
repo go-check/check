@@ -7,41 +7,45 @@ import (
 )
 
 // -----------------------------------------------------------------------
-// BugInfo and Bug() helper, to attach extra information to checks.
+// CommentInterface and Commentf helper, to attach extra information to checks.
 
-type bugInfo struct {
+type comment struct {
 	format string
 	args   []interface{}
 }
 
-// Bug enables attaching some information to Assert() or Check() calls.
+// Commentf returns an infomational value to use with Assert or Check calls.
 // If the checker test fails, the provided arguments will be passed to
-// fmt.Sprintf(), and will be presented next to the logged failure.
+// fmt.Sprintf, and will be presented next to the logged failure.
 //
 // For example:
 //
-//     c.Assert(l, Equals, 8192, Bug("Buffer size is incorrect, bug #123"))
-//     c.Assert(v, Equals, 42, Bug("Iteration #%d", i))
+//     c.Assert(v, Equals, 42, Commentf("Iteration #%d failed.", i))
 //
-func Bug(format string, args ...interface{}) BugInfo {
-	return &bugInfo{format, args}
+// Note that if the comment is constant, a better option is to
+// simply use a normal comment next to the line:
+//
+//     c.Assert(l, Equals, 8192) // Ensure buffer size is correct (bug #123)
+//
+func Commentf(format string, args ...interface{}) CommentInterface {
+	return &comment{format, args}
 }
 
-// BugInfo is the interface which must be supported for attaching extra
-// information to checks.  See the Bug() function for details.
-type BugInfo interface {
-	GetBugInfo() string
+// CommentInterface must be implemented by types that attach extra
+// information to failed checks. See the Commentf function for details.
+type CommentInterface interface {
+	CheckCommentString() string
 }
 
-func (bug *bugInfo) GetBugInfo() string {
-	return fmt.Sprintf(bug.format, bug.args...)
+func (c *comment) CheckCommentString() string {
+	return fmt.Sprintf(c.format, c.args...)
 }
 
 // -----------------------------------------------------------------------
 // The Checker interface.
 
 // The Checker interface must be provided by checkers used with
-// the c.Assert() and c.Check() verification methods.
+// the Assert and Check verification methods.
 type Checker interface {
 	Info() *CheckerInfo
 	Check(params []interface{}, names []string) (result bool, error string)
@@ -58,9 +62,9 @@ func (info *CheckerInfo) Info() *CheckerInfo {
 }
 
 // -----------------------------------------------------------------------
-// Not() checker logic inverter.
+// Not checker logic inverter.
 
-// The Not() checker inverts the logic of the provided checker.  The
+// The Not checker inverts the logic of the provided checker.  The
 // resulting checker will succeed where the original one failed, and
 // vice-versa.
 //

@@ -49,16 +49,14 @@ func (checker *MyChecker) Check(params []interface{}, names []string) (bool, str
 	return checker.result, checker.error
 }
 
-type myBugInfo struct {
-	info string
+type myCommentType string
+
+func (c myCommentType) CheckCommentString() string {
+	return string(c)
 }
 
-func (bug *myBugInfo) GetBugInfo() string {
-	return bug.info
-}
-
-func myBug(info string) *myBugInfo {
-	return &myBugInfo{info}
+func myComment(s string) myCommentType {
+	return myCommentType(s)
 }
 
 // -----------------------------------------------------------------------
@@ -108,13 +106,13 @@ func (s *HelpersS) TestCheckFailWithExpected(c *gocheck.C) {
 func (s *HelpersS) TestCheckFailWithExpectedAndBugInfo(c *gocheck.C) {
 	checker := &MyChecker{result: false}
 	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
-		"    return c\\.Check\\(1, checker, 2, myBug\\(\"Hello world!\"\\)\\)\n" +
+		"    return c\\.Check\\(1, checker, 2, myComment\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
 		"\\.+ Hello world!\n\n"
 	testHelperFailure(c, "Check(1, checker, 2, msg)", false, false, log,
 		func() interface{} {
-			return c.Check(1, checker, 2, myBug("Hello world!"))
+			return c.Check(1, checker, 2, myComment("Hello world!"))
 		})
 }
 
@@ -132,12 +130,12 @@ func (s *HelpersS) TestCheckFailWithoutExpected(c *gocheck.C) {
 func (s *HelpersS) TestCheckFailWithoutExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
 	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
-		"    return c\\.Check\\(1, checker, myBug\\(\"Hello world!\"\\)\\)\n" +
+		"    return c\\.Check\\(1, checker, myComment\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myvalue int = 1\n" +
 		"\\.+ Hello world!\n\n"
 	testHelperFailure(c, "Check(1, checker, msg)", false, false, log,
 		func() interface{} {
-			return c.Check(1, checker, myBug("Hello world!"))
+			return c.Check(1, checker, myComment("Hello world!"))
 		})
 }
 
@@ -244,13 +242,13 @@ func (s *HelpersS) TestAssertFailWithExpected(c *gocheck.C) {
 func (s *HelpersS) TestAssertFailWithExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false}
 	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
-		"    c\\.Assert\\(1, checker, 2, myBug\\(\"Hello world!\"\\)\\)\n" +
+		"    c\\.Assert\\(1, checker, 2, myComment\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myobtained int = 1\n" +
 		"\\.+ myexpected int = 2\n" +
 		"\\.+ Hello world!\n\n"
 	testHelperFailure(c, "Assert(1, checker, 2, msg)", nil, true, log,
 		func() interface{} {
-			c.Assert(1, checker, 2, myBug("Hello world!"))
+			c.Assert(1, checker, 2, myComment("Hello world!"))
 			return nil
 		})
 }
@@ -270,12 +268,12 @@ func (s *HelpersS) TestAssertFailWithoutExpected(c *gocheck.C) {
 func (s *HelpersS) TestAssertFailWithoutExpectedAndMessage(c *gocheck.C) {
 	checker := &MyChecker{result: false, info: &gocheck.CheckerInfo{Params: []string{"myvalue"}}}
 	log := "(?s)helpers_test\\.go:[0-9]+:.*\nhelpers_test\\.go:[0-9]+:\n" +
-		"    c\\.Assert\\(1, checker, myBug\\(\"Hello world!\"\\)\\)\n" +
+		"    c\\.Assert\\(1, checker, myComment\\(\"Hello world!\"\\)\\)\n" +
 		"\\.+ myvalue int = 1\n" +
 		"\\.+ Hello world!\n\n"
 	testHelperFailure(c, "Assert(1, checker, msg)", nil, true, log,
 		func() interface{} {
-			c.Assert(1, checker, myBug("Hello world!"))
+			c.Assert(1, checker, myComment("Hello world!"))
 			return nil
 		})
 }

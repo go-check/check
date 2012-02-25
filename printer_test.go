@@ -19,15 +19,15 @@ func init() {
 }
 
 func printTestFunc() {
-    println(1)
-    if 2 == 2 {
-        println(3)
+    println(1)           // Comment1
+    if 2 == 2 {          // Comment2
+        println(3)       // Comment3
     }
     switch 5 {
-    case 6: println(6)
+    case 6: println(6)   // Comment6
         println(7)
     }
-    switch interface{}(9).(type) {
+    switch interface{}(9).(type) {// Comment9
     case int: println(10)
         println(11)
     }
@@ -51,13 +51,13 @@ var printLineTests = []struct {
     line   int
     output string
 }{
-    {1, "println(1)"},
-    {2, "if 2 == 2 {\n    ...\n}"},
-    {3, "println(3)"},
+    {1, "println(1) // Comment1"},
+    {2, "if 2 == 2 { // Comment2\n    ...\n}"},
+    {3, "println(3) // Comment3"},
     {5, "switch 5 {\n...\n}"},
-    {6, "case 6:\n    println(6)\n    ..."},
+    {6, "case 6:\n    println(6) // Comment6\n    ..."},
     {7, "println(7)"},
-    {9, "switch interface{}(9).(type) {\n...\n}"},
+    {9, "switch interface{}(9).(type) { // Comment9\n...\n}"},
     {10, "case int:\n    println(10)\n    ..."},
     {14, "case <-(chan bool)(nil):\n    println(14)\n    ..."},
     {15, "println(15)"},

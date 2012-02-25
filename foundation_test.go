@@ -335,8 +335,6 @@ func (s *EmbeddedInternalS) TestMethod(c *gocheck.C) {
 
 func (s *EmbeddedS) TestMethod(c *gocheck.C) {
 	// http://code.google.com/p/go/issues/detail?id=906
-	c.Check(s.called, gocheck.Equals, false,
-		gocheck.Bug("The bug described in issue 906 is "+
-			"affecting the runner"))
+	c.Check(s.called, gocheck.Equals, false) // Go issue 906 is affecting the runner?
 	s.called = true
 }

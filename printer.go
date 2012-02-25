@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"go/ast"
 	"go/parser"
-	"go/token"
 	"go/printer"
+	"go/token"
 	"os"
 )
 
@@ -32,19 +32,26 @@ func printLine(filename string, line int) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	fnode, err := parser.ParseFile(fset, filename, file, 0)
+	fnode, err := parser.ParseFile(fset, filename, file, parser.ParseComments)
 	if err != nil {
 		return "", err
 	}
 	config := &printer.Config{Mode: printer.UseSpaces, Tabwidth: 4}
-	lp := &linePrinter{fset: fset, line: line, config: config}
+	lp := &linePrinter{fset: fset, fnode: fnode, line: line, config: config}
 	ast.Walk(lp, fnode)
-	return lp.output.String(), nil
+	result := lp.output.Bytes()
+	// Comments leave \n at the end.
+	n := len(result)
+	for n > 0 && result[n-1] == '\n' {
+		n--
+	}
+	return string(result[:n]), nil
 }
 
 type linePrinter struct {
 	config *printer.Config
 	fset   *token.FileSet
+	fnode  *ast.File
 	line   int
 	output bytes.Buffer
 	stmt   ast.Stmt
@@ -53,11 +60,23 @@ type linePrinter struct {
 func (lp *linePrinter) emit() bool {
 	if lp.stmt != nil {
 		lp.trim(lp.stmt)
-		lp.config.Fprint(&lp.output, lp.fset, lp.stmt)
+		lp.config.Fprint(&lp.output, lp.fset, lp.commentedNode(lp.stmt))
 		lp.stmt = nil
 		return true
 	}
 	return false
+}
+
+func (lp *linePrinter) commentedNode(n ast.Node) *printer.CommentedNode {
+	first := lp.fset.Position(n.Pos()).Line
+	last := lp.fset.Position(n.End()).Line
+	for _, g := range lp.fnode.Comments {
+		line := lp.fset.Position(g.Pos()).Line
+		if line >= first && line <= last && n.End() <= g.List[0].Slash {
+			g.List[0].Slash = n.End() - 1
+		}
+	}
+	return &printer.CommentedNode{n, lp.fnode.Comments}
 }
 
 func (lp *linePrinter) Visit(n ast.Node) (w ast.Visitor) {

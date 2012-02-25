@@ -35,11 +35,11 @@ func testCheck(c *gocheck.C, checker gocheck.Checker, result bool, error string,
 	return params, names
 }
 
-func (s *CheckersS) TestBug(c *gocheck.C) {
-	bug := gocheck.Bug("a %d bc", 42)
-	info := bug.GetBugInfo()
-	if info != "a 42 bc" {
-		c.Fatalf("Bug() returned %#v", info)
+func (s *CheckersS) TestComment(c *gocheck.C) {
+	bug := gocheck.Commentf("a %d bc", 42)
+	comment := bug.CheckCommentString()
+	if comment != "a 42 bc" {
+		c.Fatalf("Commentf returned %#v", comment)
 	}
 }
 
