@@ -134,6 +134,17 @@ func (s *CheckersS) TestDeepEquals(c *gocheck.C) {
 	testCheck(c, gocheck.DeepEquals, false, "", &simpleStruct{1}, &simpleStruct{2})
 }
 
+func (s *CheckersS) TestHasLen(c *gocheck.C) {
+	testInfo(c, gocheck.HasLen, "HasLen", []string{"obtained", "n"})
+
+	testCheck(c, gocheck.HasLen, true, "", "abcd", 4)
+	testCheck(c, gocheck.HasLen, true, "", []int{1, 2}, 2)
+	testCheck(c, gocheck.HasLen, false, "", []int{1, 2}, 3)
+
+	testCheck(c, gocheck.HasLen, false, "n must be an int", []int{1, 2}, "2")
+	testCheck(c, gocheck.HasLen, false, "obtained value type has no length", nil, 2)
+}
+
 func (s *CheckersS) TestErrorMatches(c *gocheck.C) {
 	testInfo(c, gocheck.ErrorMatches, "ErrorMatches", []string{"value", "regex"})
 

@@ -23,7 +23,8 @@ type comment struct {
 //     c.Assert(v, Equals, 42, Commentf("Iteration #%d failed.", i))
 //
 // Note that if the comment is constant, a better option is to
-// simply use a normal comment next to the line:
+// simply use a normal comment right above or next to the line, as
+// it will also get printed with any errors:
 //
 //     c.Assert(l, Equals, 8192) // Ensure buffer size is correct (bug #123)
 //
@@ -201,6 +202,42 @@ var DeepEquals Checker = &deepEqualsChecker{
 func (checker *deepEqualsChecker) Check(params []interface{}, names []string) (result bool, error string) {
 	return reflect.DeepEqual(params[0], params[1]), ""
 }
+
+// -----------------------------------------------------------------------
+// HasLen checker.
+
+type hasLenChecker struct {
+	*CheckerInfo
+}
+
+// The HasLen checker verifies that the obtained value has the
+// provided length. In many cases this is superior to using Equals
+// in conjuction with the len function because in case the check
+// fails the value itself will be printed, instead of its length,
+// providing more details for figuring the problem.
+//
+// For example:
+//
+//     c.Assert(list, HasLen, 5)
+//
+var HasLen Checker = &hasLenChecker{
+	&CheckerInfo{Name: "HasLen", Params: []string{"obtained", "n"}},
+}
+
+func (checker *hasLenChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	n, ok := params[1].(int)
+	if !ok {
+		return false, "n must be an int"
+	}
+	value := reflect.ValueOf(params[0])
+	switch value.Kind() {
+	case reflect.Map, reflect.Array, reflect.Slice, reflect.Chan, reflect.String:
+	default:
+		return false, "obtained value type has no length"
+	}
+	return value.Len() == n, ""
+}
+
 
 // -----------------------------------------------------------------------
 // ErrorMatches checker.
