@@ -98,16 +98,31 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 // Check result aggregation.
 
 func (s *RunS) TestAdd(c *C) {
-	result := &Result{Succeeded: 1, Skipped: 2, Failed: 3, Panicked: 4,
-		FixturePanicked: 5, Missed: 6}
-	result.Add(&Result{Succeeded: 10, Skipped: 20, Failed: 30,
-		Panicked: 40, FixturePanicked: 50, Missed: 60})
+	result := &Result{
+		Succeeded: 1,
+		Skipped: 2,
+		Failed: 3,
+		Panicked: 4,
+		FixturePanicked: 5,
+		Missed: 6,
+		ExpectedFailures: 7,
+	}
+	result.Add(&Result{
+		Succeeded: 10,
+		Skipped: 20,
+		Failed: 30,
+		Panicked: 40,
+		FixturePanicked: 50,
+		Missed: 60,
+		ExpectedFailures: 70,
+	})
 	c.Check(result.Succeeded, Equals, 11)
 	c.Check(result.Skipped, Equals, 22)
 	c.Check(result.Failed, Equals, 33)
 	c.Check(result.Panicked, Equals, 44)
 	c.Check(result.FixturePanicked, Equals, 55)
 	c.Check(result.Missed, Equals, 66)
+	c.Check(result.ExpectedFailures, Equals, 77)
 	c.Check(result.RunError, IsNil)
 }
 

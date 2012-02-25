@@ -65,6 +65,7 @@ func (r *Result) Add(other *Result) {
 	r.Failed += other.Failed
 	r.Panicked += other.Panicked
 	r.FixturePanicked += other.FixturePanicked
+	r.ExpectedFailures += other.ExpectedFailures
 	r.Missed += other.Missed
 }
 

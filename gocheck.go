@@ -112,7 +112,7 @@ func (td *tempDir) removeAll() {
 	if td._path != "" {
 		err := os.RemoveAll(td._path)
 		if err != nil {
-			println("WARNING: Error cleaning up temporaries: " + err.Error())
+			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: " + err.Error())
 		}
 	}
 }
@@ -186,7 +186,7 @@ func (c *C) logValue(label string, value interface{}) {
 }
 
 func (c *C) logMultiLine(s string) {
-	b := make([]byte, 0, len(s) + (strings.Count(s, "\n")+1)*6)
+	b := make([]byte, 0, len(s)+(strings.Count(s, "\n")+1)*6)
 	for i, c := range []byte(s) {
 		if i == 0 {
 			b = append(b, "... | "...)
@@ -203,7 +203,7 @@ func (c *C) logMultiLine(s string) {
 
 func isMultiLine(s string) bool {
 	newlines := false
-	last := len(s)-1
+	last := len(s) - 1
 	for i, c := range s {
 		if c == '\n' {
 			if i < last {
@@ -486,9 +486,11 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
 
-	runner := &suiteRunner{suite: suite,
+	runner := &suiteRunner{
+		suite:   suite,
 		output:  newOutputWriter(writer, stream, verbose),
-		tracker: newResultTracker()}
+		tracker: newResultTracker(),
+	}
 	runner.tests = make([]*methodType, suiteNumMethods)
 	runner.tempDir = new(tempDir)
 	testsLen := 0
