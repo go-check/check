@@ -351,19 +351,31 @@ func (s *HelpersS) TestValueLoggingWithMultiLine(c *gocheck.C) {
 	checker := &MyChecker{result: false}
 	log := "(?s)helpers_test.go:[0-9]+:.*\nhelpers_test.go:[0-9]+:\n" +
 		"    return c\\.Check\\(\"a\\\\nb\\\\n\", checker, \"a\\\\nb\\\\nc\"\\)\n" +
-		"\\.+ myobtained string =\n" +
-		"\\.+ \\| a\n" +
-		"\\.+ \\| b\n" +
-		"\\.+ \\| \n" +
-		"\\.+ \n" +
-		"\\.+ myexpected string =\n" +
-		"\\.+ \\| a\n" +
-		"\\.+ \\| b\n" +
-		"\\.+ \\| c\n" +
-		"\\.+ \n\n"
+		"\\.+ myobtained string = \"\" \\+\n" +
+		"\\.+     \"a\\\\n\" \\+\n" +
+		"\\.+     \"b\\\\n\"\n" +
+		"\\.+ myexpected string = \"\" \\+\n" +
+		"\\.+     \"a\\\\n\" \\+\n" +
+		"\\.+     \"b\\\\n\" \\+\n" +
+		"\\.+     \"c\"\n\n"
 	testHelperFailure(c, `Check("a\nb\n", chk, "a\nb\nc")`, false, false, log,
 		func() interface{} {
 			return c.Check("a\nb\n", checker, "a\nb\nc")
+		})
+}
+
+func (s *HelpersS) TestValueLoggingWithMultiLineException(c *gocheck.C) {
+	// If the newline is at the end of the string, don't log as multi-line.
+	checker := &MyChecker{result: false}
+	log := "(?s)helpers_test.go:[0-9]+:.*\nhelpers_test.go:[0-9]+:\n" +
+		"    return c\\.Check\\(\"a b\\\\n\", checker, \"a\\\\nb\"\\)\n" +
+		"\\.+ myobtained string = \"a b\\\\n\"\n" +
+		"\\.+ myexpected string = \"\" \\+\n" +
+		"\\.+     \"a\\\\n\" \\+\n" +
+		"\\.+     \"b\"\n\n"
+	testHelperFailure(c, `Check("a b\n", chk, "a\nb")`, false, false, log,
+		func() interface{} {
+			return c.Check("a b\n", checker, "a\nb")
 		})
 }
 

@@ -177,7 +177,7 @@ func (c *C) logValue(label string, value interface{}) {
 			}
 		}
 		if s, ok := value.(string); ok && isMultiLine(s) {
-			c.logf("... %s %s =", label, reflect.TypeOf(value))
+			c.logf(`... %s %s = "" +`, label, reflect.TypeOf(value))
 			c.logMultiLine(s)
 		} else {
 			c.logf("... %s %s = %#v", label, reflect.TypeOf(value), value)
@@ -186,36 +186,32 @@ func (c *C) logValue(label string, value interface{}) {
 }
 
 func (c *C) logMultiLine(s string) {
-	b := make([]byte, 0, len(s)+(strings.Count(s, "\n")+1)*6)
-	for i, c := range []byte(s) {
-		if i == 0 {
-			b = append(b, "... | "...)
+	b := make([]byte, 0, len(s)*2)
+	i := 0
+	n := len(s)
+	for i < n {
+		j := i+1
+		for j < n && s[j-1] != '\n' {
+			j++
 		}
-		b = append(b, c)
-		if c == '\n' {
-			b = append(b, "... | "...)
+		b = append(b, "...     "...)
+		b = strconv.AppendQuote(b, s[i:j])
+		if j < n {
+			b = append(b, " +"...)
 		}
+		b = append(b, '\n')
+		i = j
 	}
 	c.writeLog(b)
-	c.logNewLine()
-	c.writeLog([]byte("... \n"))
 }
 
 func isMultiLine(s string) bool {
-	newlines := false
-	last := len(s) - 1
-	for i, c := range s {
-		if c == '\n' {
-			if i < last {
-				newlines = true
-			}
-			continue
-		}
-		if c < 0x20 || c > 0x7e {
-			return false
+	for i := 0; i+1 < len(s); i++ {
+		if s[i] == '\n' {
+			return true
 		}
 	}
-	return newlines
+	return false
 }
 
 func (c *C) logString(issue string) {
