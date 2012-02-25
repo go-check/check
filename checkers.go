@@ -152,21 +152,49 @@ type equalsChecker struct {
 	*CheckerInfo
 }
 
-// The Equals checker verifies that the obtained value is deep-equal to
-// the expected value.  The check will work correctly even when facing
-// arrays, interfaces, and values of different types (which always fail
-// the test).
+// The Equals checker verifies that the obtained value is equal to
+// the expected value, according to usual Go semantics for ==.
 //
 // For example:
 //
 //     c.Assert(value, Equals, 42)
-//     c.Assert(array, Equals, []string{"hi", "there"})
 //
 var Equals Checker = &equalsChecker{
 	&CheckerInfo{Name: "Equals", Params: []string{"obtained", "expected"}},
 }
 
 func (checker *equalsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	defer func() {
+		if v := recover(); v != nil {
+			result = false
+			error = fmt.Sprint(v)
+		}
+	}()
+	return params[0] == params[1], ""
+}
+
+// -----------------------------------------------------------------------
+// DeepEquals checker.
+
+type deepEqualsChecker struct {
+	*CheckerInfo
+}
+
+// The DeepEquals checker verifies that the obtained value is deep-equal to
+// the expected value.  The check will work correctly even when facing
+// slices, interfaces, and values of different types (which always fail
+// the test).
+//
+// For example:
+//
+//     c.Assert(value, DeepEquals, 42)
+//     c.Assert(array, DeepEquals, []string{"hi", "there"})
+//
+var DeepEquals Checker = &deepEqualsChecker{
+	&CheckerInfo{Name: "DeepEquals", Params: []string{"obtained", "expected"}},
+}
+
+func (checker *deepEqualsChecker) Check(params []interface{}, names []string) (result bool, error string) {
 	return reflect.DeepEqual(params[0], params[1]), ""
 }
 

@@ -96,17 +96,42 @@ func (s *CheckersS) TestEquals(c *gocheck.C) {
 	// With nil.
 	testCheck(c, gocheck.Equals, false, "", 42, nil)
 
-	// Arrays
-	testCheck(c, gocheck.Equals, true, "", []byte{1, 2}, []byte{1, 2})
-	testCheck(c, gocheck.Equals, false, "", []byte{1, 2}, []byte{1, 3})
+	// Slices
+	testCheck(c, gocheck.Equals, false, "runtime error: comparing uncomparable type []uint8", []byte{1, 2}, []byte{1, 2})
 
 	// Struct values
 	testCheck(c, gocheck.Equals, true, "", simpleStruct{1}, simpleStruct{1})
 	testCheck(c, gocheck.Equals, false, "", simpleStruct{1}, simpleStruct{2})
 
 	// Struct pointers
-	testCheck(c, gocheck.Equals, true, "", &simpleStruct{1}, &simpleStruct{1})
+	testCheck(c, gocheck.Equals, false, "", &simpleStruct{1}, &simpleStruct{1})
 	testCheck(c, gocheck.Equals, false, "", &simpleStruct{1}, &simpleStruct{2})
+}
+
+func (s *CheckersS) TestDeepEquals(c *gocheck.C) {
+	testInfo(c, gocheck.DeepEquals, "DeepEquals", []string{"obtained", "expected"})
+
+	// The simplest.
+	testCheck(c, gocheck.DeepEquals, true, "", 42, 42)
+	testCheck(c, gocheck.DeepEquals, false, "", 42, 43)
+
+	// Different native types.
+	testCheck(c, gocheck.DeepEquals, false, "", int32(42), int64(42))
+
+	// With nil.
+	testCheck(c, gocheck.DeepEquals, false, "", 42, nil)
+
+	// Slices
+	testCheck(c, gocheck.DeepEquals, true, "", []byte{1, 2}, []byte{1, 2})
+	testCheck(c, gocheck.DeepEquals, false, "", []byte{1, 2}, []byte{1, 3})
+
+	// Struct values
+	testCheck(c, gocheck.DeepEquals, true, "", simpleStruct{1}, simpleStruct{1})
+	testCheck(c, gocheck.DeepEquals, false, "", simpleStruct{1}, simpleStruct{2})
+
+	// Struct pointers
+	testCheck(c, gocheck.DeepEquals, true, "", &simpleStruct{1}, &simpleStruct{1})
+	testCheck(c, gocheck.DeepEquals, false, "", &simpleStruct{1}, &simpleStruct{2})
 }
 
 func (s *CheckersS) TestErrorMatches(c *gocheck.C) {
