@@ -60,23 +60,34 @@ type linePrinter struct {
 func (lp *linePrinter) emit() bool {
 	if lp.stmt != nil {
 		lp.trim(lp.stmt)
-		lp.config.Fprint(&lp.output, lp.fset, lp.commentedNode(lp.stmt))
+		lp.printWithComments(lp.stmt)
 		lp.stmt = nil
 		return true
 	}
 	return false
 }
 
-func (lp *linePrinter) commentedNode(n ast.Node) *printer.CommentedNode {
-	first := lp.fset.Position(n.Pos()).Line
-	last := lp.fset.Position(n.End()).Line
+func (lp *linePrinter) printWithComments(n ast.Node) {
+	nfirst := lp.fset.Position(n.Pos()).Line
+	nlast := lp.fset.Position(n.End()).Line
 	for _, g := range lp.fnode.Comments {
-		line := lp.fset.Position(g.Pos()).Line
-		if line >= first && line <= last && n.End() <= g.List[0].Slash {
+		cfirst := lp.fset.Position(g.Pos()).Line
+		clast := lp.fset.Position(g.End()).Line
+		if clast == nfirst-1 && lp.fset.Position(n.Pos()).Column == lp.fset.Position(g.Pos()).Column {
+			for _, c := range g.List {
+				lp.output.WriteString(c.Text)
+				lp.output.WriteByte('\n')
+			}
+		}
+		if cfirst >= nfirst && cfirst <= nlast && n.End() <= g.List[0].Slash {
+			// The printer will not include the comment if it starts past
+			// the node itself. Trick it into printing by overlapping the
+			// slash with the end of the statement.
 			g.List[0].Slash = n.End() - 1
 		}
 	}
-	return &printer.CommentedNode{n, lp.fnode.Comments}
+	node := &printer.CommentedNode{n, lp.fnode.Comments}
+	lp.config.Fprint(&lp.output, lp.fset, node)
 }
 
 func (lp *linePrinter) Visit(n ast.Node) (w ast.Visitor) {
