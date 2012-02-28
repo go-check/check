@@ -53,6 +53,12 @@ func (method *methodType) PC() uintptr {
 	return method.Info.Func.Pointer()
 }
 
+// The result of String is used as the pattern to match the
+// gocheck.run filter.
+func (method *methodType) String() string {
+	return fmt.Sprintf("%v.%s", method.Info.Type.In(0), method.Info.Name)
+}
+
 type C struct {
 	method   *methodType
 	kind     funcKind
@@ -502,24 +508,8 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		}
 	}
 
-	// This map will be used to filter out duplicated methods.  This
-	// looks like a bug in Go, described on issue 906:
-	// http://code.google.com/p/go/issues/detail?id=906
-	seen := make(map[uintptr]bool, suiteNumMethods)
-
-	// XXX Shouldn't Name() work here? Why does it return an empty string?
-	suiteName := suiteType.String()
-	if index := strings.LastIndex(suiteName, "."); index != -1 {
-		suiteName = suiteName[index+1:]
-	}
-
 	for i := 0; i != suiteNumMethods; i++ {
 		method := newMethod(suiteValue, i)
-		methodPC := method.PC()
-		if _, found := seen[methodPC]; found {
-			continue
-		}
-		seen[methodPC] = true
 		switch method.Info.Name {
 		case "SetUpSuite":
 			runner.setUpSuite = method
@@ -530,7 +520,10 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			if isWantedTest(suiteName, method.Info.Name, filterRegexp) {
+			if !strings.HasPrefix(method.Info.Name, "Test") {
+				continue
+			}
+			if filterRegexp == nil || filterRegexp.MatchString(method.String()) {
 				runner.tests[testsLen] = method
 				testsLen += 1
 			}
@@ -539,19 +532,6 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 	runner.tests = runner.tests[0:testsLen]
 	return runner
-}
-
-// Return true if the given suite name and method name should be
-// considered as a test to be run.
-func isWantedTest(suiteName, testName string, filterRegexp *regexp.Regexp) bool {
-	if !strings.HasPrefix(testName, "Test") {
-		return false
-	} else if filterRegexp == nil {
-		return true
-	}
-	return (filterRegexp.MatchString(testName) ||
-		filterRegexp.MatchString(suiteName) ||
-		filterRegexp.MatchString(suiteName+"."+testName))
 }
 
 // Run all methods in the given suite.

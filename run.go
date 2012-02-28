@@ -1,6 +1,8 @@
 package gocheck
 
 import (
+	"bufio"
+	"os"
 	"testing"
 	"flag"
 	"fmt"
@@ -22,25 +24,37 @@ func Suite(suite interface{}) interface{} {
 // -----------------------------------------------------------------------
 // Public running interface.
 
-var filterFlag = flag.String("gocheck.f", "",
-	"Regular expression selecting what to run")
+var filterFlag = flag.String("gocheck.run", "",
+	"Regular expression selecting what to run (use -gocheck.list to see what this matches against)")
 var verboseFlag = flag.Bool("gocheck.v", false,
 	"Verbose mode")
 var streamFlag = flag.Bool("gocheck.vv", false,
 	"Super verbose mode (disables output caching)")
+var listFlag = flag.Bool("gocheck.list", false,
+	"List the names of all tests that will be run")
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-	result := RunAll(&RunConf{Filter: *filterFlag, Verbose: *verboseFlag, Stream: *streamFlag})
+	conf := &RunConf{Filter: *filterFlag, Verbose: *verboseFlag, Stream: *streamFlag}
+	if *listFlag {
+		w := bufio.NewWriter(os.Stdout)
+		for _, name := range ListAll(conf) {
+			fmt.Fprintf(w, "%s\n", name)
+		}
+		w.Flush()
+		return
+	}
+	result := RunAll(conf)
 	println(result.String())
 	if !result.Passed() {
 		testingT.Fail()
 	}
 }
+	
 
-// Run all test suites registered with the Suite() function, using the
+// RunAll runs all test suites registered with the Suite() function, using the
 // given run configuration.
 func RunAll(runConf *RunConf) *Result {
 	result := Result{}
@@ -50,11 +64,34 @@ func RunAll(runConf *RunConf) *Result {
 	return &result
 }
 
-// Run the given test suite using the provided run configuration.
+// Run runs the given test suite using the provided run configuration.
 func Run(suite interface{}, runConf *RunConf) *Result {
 	runner := newSuiteRunner(suite, runConf)
 	return runner.run()
 }
+
+// ListAll returns the names of all the test functions registered with the
+// Suite function that will be run with the provided run configuration.
+func ListAll(runConf *RunConf) []string {
+	var names []string
+	for _, suite := range allSuites {
+		names = append(names, List(suite, runConf)...)
+	}
+	return names
+}
+
+// List prints the names of the test functions in the given
+// suite that will be run with the provided run configuration
+// to the given Writer.
+func List(suite interface{}, runConf *RunConf) []string {
+	var names []string
+	runner := newSuiteRunner(suite, runConf)
+	for _, t := range runner.tests {
+		names = append(names, t.String())
+	}
+	return names
+}
+
 
 // -----------------------------------------------------------------------
 // Result methods.

@@ -280,6 +280,25 @@ func (s *RunS) TestFilterError(c *C) {
 }
 
 // -----------------------------------------------------------------------
+// Verify that List works correctly.
+
+func (s *RunS) TestListFiltered(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{Filter: "1"})
+	c.Assert(names, DeepEquals, []string{
+		"*gocheck_test.FixtureHelper.Test1",
+	})
+}
+
+func (s *RunS) TestList(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{})
+	c.Assert(names, DeepEquals, []string{
+		"*gocheck_test.FixtureHelper.Test1",
+		"*gocheck_test.FixtureHelper.Test2",
+	})
+}
+	
+
+// -----------------------------------------------------------------------
 // Verify that verbose mode prints tests which pass as well. 
 
 func (s *RunS) TestVerboseMode(c *C) {
