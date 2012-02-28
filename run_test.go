@@ -285,15 +285,15 @@ func (s *RunS) TestFilterError(c *C) {
 func (s *RunS) TestListFiltered(c *C) {
 	names := List(&FixtureHelper{}, &RunConf{Filter: "1"})
 	c.Assert(names, DeepEquals, []string{
-		"*gocheck_test.FixtureHelper.Test1",
+		"FixtureHelper.Test1",
 	})
 }
 
 func (s *RunS) TestList(c *C) {
 	names := List(&FixtureHelper{}, &RunConf{})
 	c.Assert(names, DeepEquals, []string{
-		"*gocheck_test.FixtureHelper.Test1",
-		"*gocheck_test.FixtureHelper.Test2",
+		"FixtureHelper.Test1",
+		"FixtureHelper.Test2",
 	})
 }
 	

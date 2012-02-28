@@ -25,7 +25,7 @@ func Suite(suite interface{}) interface{} {
 // Public running interface.
 
 var filterFlag = flag.String("gocheck.f", "",
-	"Regular expression selecting what to run (use -gocheck.list to see what this matches against)")
+	"Regular expression selecting which tests and/or suites to run")
 var verboseFlag = flag.Bool("gocheck.v", false,
 	"Verbose mode")
 var streamFlag = flag.Bool("gocheck.vv", false,

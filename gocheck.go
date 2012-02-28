@@ -53,10 +53,22 @@ func (method *methodType) PC() uintptr {
 	return method.Info.Func.Pointer()
 }
 
-// The result of String is used as the pattern to match the
-// gocheck.run filter.
+func (method *methodType) suiteName() string {
+	t := method.Info.Type.In(0)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
+}
+
 func (method *methodType) String() string {
-	return fmt.Sprintf("%v.%s", method.Info.Type.In(0), method.Info.Name)
+	return fmt.Sprintf("%v.%s", method.suiteName(), method.Info.Name)
+}
+
+func (method *methodType) matches(re *regexp.Regexp) bool {
+	return re.MatchString(method.Info.Name) ||
+		re.MatchString(method.suiteName()) ||
+		re.MatchString(method.String())
 }
 
 type C struct {
@@ -523,7 +535,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 			if !strings.HasPrefix(method.Info.Name, "Test") {
 				continue
 			}
-			if filterRegexp == nil || filterRegexp.MatchString(method.String()) {
+			if filterRegexp == nil || method.matches(filterRegexp) {
 				runner.tests[testsLen] = method
 				testsLen += 1
 			}
