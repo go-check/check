@@ -4,13 +4,13 @@
 package gocheck_test
 
 import (
-	"launchpad.net/gocheck"
-	"testing"
-	"runtime"
-	"regexp"
 	"flag"
 	"fmt"
+	"launchpad.net/gocheck"
 	"os"
+	"regexp"
+	"runtime"
+	"testing"
 )
 
 // We count the number of suites run at least to get a vague hint that the

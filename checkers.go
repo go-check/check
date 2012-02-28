@@ -1,9 +1,9 @@
 package gocheck
 
 import (
+	"fmt"
 	"reflect"
 	"regexp"
-	"fmt"
 )
 
 // -----------------------------------------------------------------------
@@ -237,7 +237,6 @@ func (checker *hasLenChecker) Check(params []interface{}, names []string) (resul
 	}
 	return value.Len() == n, ""
 }
-
 
 // -----------------------------------------------------------------------
 // ErrorMatches checker.

@@ -2,10 +2,10 @@ package gocheck
 
 import (
 	"bufio"
-	"os"
-	"testing"
 	"flag"
 	"fmt"
+	"os"
+	"testing"
 )
 
 // -----------------------------------------------------------------------
@@ -52,7 +52,6 @@ func TestingT(testingT *testing.T) {
 		testingT.Fail()
 	}
 }
-	
 
 // RunAll runs all test suites registered with the Suite() function, using the
 // given run configuration.
@@ -91,7 +90,6 @@ func List(suite interface{}, runConf *RunConf) []string {
 	}
 	return names
 }
-
 
 // -----------------------------------------------------------------------
 // Result methods.

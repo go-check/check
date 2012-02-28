@@ -7,12 +7,12 @@
 package gocheck_test
 
 import (
-	"launchpad.net/gocheck"
-	"strings"
-	"regexp"
 	"fmt"
+	"launchpad.net/gocheck"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 )
 
 // -----------------------------------------------------------------------

@@ -130,7 +130,7 @@ func (td *tempDir) removeAll() {
 	if td._path != "" {
 		err := os.RemoveAll(td._path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: " + err.Error())
+			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: "+err.Error())
 		}
 	}
 }
@@ -208,7 +208,7 @@ func (c *C) logMultiLine(s string) {
 	i := 0
 	n := len(s)
 	for i < n {
-		j := i+1
+		j := i + 1
 		for j < n && s[j-1] != '\n' {
 			j++
 		}

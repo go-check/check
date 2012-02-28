@@ -126,7 +126,7 @@ func (s *HelpersS) TestCheckFailWithExpectedAndStaticComment(c *gocheck.C) {
 	testHelperFailure(c, "Check(1, checker, 2, msg)", false, false, log,
 		func() interface{} {
 			// Nice leading comment.
-			return c.Check(1, checker, 2)  // Hello there
+			return c.Check(1, checker, 2) // Hello there
 		})
 }
 
@@ -378,7 +378,6 @@ func (s *HelpersS) TestValueLoggingWithMultiLineException(c *gocheck.C) {
 			return c.Check("a b\n", checker, "a\nb")
 		})
 }
-
 
 // -----------------------------------------------------------------------
 // MakeDir() tests.
