@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // -----------------------------------------------------------------------
@@ -54,22 +55,31 @@ func (method *methodType) PC() uintptr {
 }
 
 type C struct {
-	method   *methodType
-	kind     funcKind
-	status   funcStatus
-	logb     *bytes.Buffer
-	logw     io.Writer
-	done     chan *C
-	reason   string
-	mustFail bool
-	tempDir  *tempDir
+	method    *methodType
+	kind      funcKind
+	status    funcStatus
+	logb      *bytes.Buffer
+	logw      io.Writer
+	done      chan *C
+	reason    string
+	mustFail  bool
+	tempDir   *tempDir
+	startTime time.Time
 }
 
 func newC(method *methodType, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
 	if logb == nil {
 		logb = bytes.NewBuffer(nil)
 	}
-	return &C{method: method, kind: kind, logb: logb, logw: logw, tempDir: tempDir, done: make(chan *C, 1)}
+	return &C{
+		method:    method,
+		kind:      kind,
+		logb:      logb,
+		logw:      logw,
+		tempDir:   tempDir,
+		done:      make(chan *C, 1),
+		startTime: time.Now(),
+	}
 }
 
 func (c *C) stopNow() {
@@ -112,7 +122,7 @@ func (td *tempDir) removeAll() {
 	if td._path != "" {
 		err := os.RemoveAll(td._path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: " + err.Error())
+			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: "+err.Error())
 		}
 	}
 }
@@ -190,7 +200,7 @@ func (c *C) logMultiLine(s string) {
 	i := 0
 	n := len(s)
 	for i < n {
-		j := i+1
+		j := i + 1
 		for j < n && s[j-1] != '\n' {
 			j++
 		}

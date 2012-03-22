@@ -99,21 +99,21 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 
 func (s *RunS) TestAdd(c *C) {
 	result := &Result{
-		Succeeded: 1,
-		Skipped: 2,
-		Failed: 3,
-		Panicked: 4,
-		FixturePanicked: 5,
-		Missed: 6,
+		Succeeded:        1,
+		Skipped:          2,
+		Failed:           3,
+		Panicked:         4,
+		FixturePanicked:  5,
+		Missed:           6,
 		ExpectedFailures: 7,
 	}
 	result.Add(&Result{
-		Succeeded: 10,
-		Skipped: 20,
-		Failed: 30,
-		Panicked: 40,
-		FixturePanicked: 50,
-		Missed: 60,
+		Succeeded:        10,
+		Skipped:          20,
+		Failed:           30,
+		Panicked:         40,
+		FixturePanicked:  50,
+		Missed:           60,
 		ExpectedFailures: 70,
 	})
 	c.Check(result.Succeeded, Equals, 11)
