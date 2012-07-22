@@ -23,7 +23,6 @@ import (
 const (
 	fixtureKd = iota
 	testKd
-	benchmarkKd
 )
 
 type funcKind int
@@ -63,9 +62,7 @@ type C struct {
 	reason   string
 	mustFail bool
 	tempDir  *tempDir
-	b        *testingB
-	bResult  testingBenchmarkResult
-	N        int
+	timer
 }
 
 func newC(method *methodType, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
@@ -649,6 +646,9 @@ func (runner *suiteRunner) callDone(c *C) {
 func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C {
 	if method != nil {
 		c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
+			c.ResetTimer()
+			c.StartTimer()
+			defer c.StopTimer()
 			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
 		})
 		return c
@@ -692,18 +692,17 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 			return
 		}
 		if strings.HasPrefix(c.method.Info.Name, "Test") {
+			c.ResetTimer()
+			c.StartTimer()
+			defer c.StopTimer()
 			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
 			return
 		}
-		if !strings.HasPrefix(c.method.Info.Name, "Benchmark") {
-			panic("unexpected method prefix: " + c.method.Info.Name)
+		if strings.HasPrefix(c.method.Info.Name, "Benchmark") {
+			benchmark(c)
+			return
 		}
-		f := func(b *testingB) {
-			c.b = b
-			c.N = b.N
-			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-		}
-		c.bResult = testingBenchmark(f)
+		panic("unexpected method prefix: " + c.method.Info.Name)
 	})
 }
 
@@ -829,8 +828,8 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 		if c.reason != "" {
 			suffix = " (" + c.reason + ")"
 		}
-		if c.b != nil {
-			suffix += "\t" + c.bResult.String()
+		if c.status == succeededSt {
+			suffix += c.timerString()
 		}
 		suffix += "\n"
 		if ow.Stream {
