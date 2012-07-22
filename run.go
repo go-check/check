@@ -1,9 +1,9 @@
 package gocheck
 
 import (
-	"testing"
 	"flag"
 	"fmt"
+	"testing"
 )
 
 // -----------------------------------------------------------------------
@@ -22,18 +22,24 @@ func Suite(suite interface{}) interface{} {
 // -----------------------------------------------------------------------
 // Public running interface.
 
-var filterFlag = flag.String("gocheck.f", "",
-	"Regular expression selecting what to run")
-var verboseFlag = flag.Bool("gocheck.v", false,
-	"Verbose mode")
-var streamFlag = flag.Bool("gocheck.vv", false,
-	"Super verbose mode (disables output caching)")
+var (
+	filterFlag  = flag.String("gocheck.f", "", "Regular expression selecting what to run")
+	verboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
+	streamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
+	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
+)
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-	result := RunAll(&RunConf{Filter: *filterFlag, Verbose: *verboseFlag, Stream: *streamFlag})
+	conf := &RunConf{
+		Filter:    *filterFlag,
+		Verbose:   *verboseFlag,
+		Stream:    *streamFlag,
+		Benchmark: *benchFlag,
+	}
+	result := RunAll(conf)
 	println(result.String())
 	if !result.Passed() {
 		testingT.Fail()

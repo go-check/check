@@ -63,6 +63,9 @@ type C struct {
 	reason   string
 	mustFail bool
 	tempDir  *tempDir
+	b        *testingB
+	bResult  testingBenchmarkResult
+	N        int
 }
 
 func newC(method *methodType, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
@@ -112,7 +115,7 @@ func (td *tempDir) removeAll() {
 	if td._path != "" {
 		err := os.RemoveAll(td._path)
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: " + err.Error())
+			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: "+err.Error())
 		}
 	}
 }
@@ -190,7 +193,7 @@ func (c *C) logMultiLine(s string) {
 	i := 0
 	n := len(s)
 	for i < n {
-		j := i+1
+		j := i + 1
 		for j < n && s[j-1] != '\n' {
 			j++
 		}
@@ -448,7 +451,6 @@ type suiteRunner struct {
 	setUpSuite, tearDownSuite *methodType
 	setUpTest, tearDownTest   *methodType
 	tests                     []*methodType
-	benchs                    []*methodType
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	output                    *outputWriter
@@ -456,27 +458,24 @@ type suiteRunner struct {
 }
 
 type RunConf struct {
-	Output  io.Writer
-	Stream  bool
-	Verbose bool
-	Filter  string
+	Output    io.Writer
+	Stream    bool
+	Verbose   bool
+	Benchmark bool
+	Filter    string
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
 func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
-	var writer io.Writer
-	var stream, verbose bool
-	var filter string
-
-	writer = os.Stdout
-
+	var conf RunConf
 	if runConf != nil {
-		if runConf.Output != nil {
-			writer = runConf.Output
-		}
-		stream = runConf.Stream
-		verbose = runConf.Verbose
-		filter = runConf.Filter
+		conf = *runConf
+	}
+	if conf.Output == nil {
+		conf.Output = os.Stdout
+	}
+	if conf.Benchmark {
+		conf.Verbose = true
 	}
 
 	suiteType := reflect.TypeOf(suite)
@@ -484,17 +483,16 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
-		suite:   suite,
-		output:  newOutputWriter(writer, stream, verbose),
-		tracker: newResultTracker(),
+		suite:         suite,
+		output:        newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		tracker:       newResultTracker(),
 	}
 	runner.tests = make([]*methodType, 0, suiteNumMethods)
-	runner.benchs = make([]*methodType, 0, suiteNumMethods)
 	runner.tempDir = new(tempDir)
 
 	var filterRegexp *regexp.Regexp
-	if filter != "" {
-		if regexp, err := regexp.Compile(filter); err != nil {
+	if conf.Filter != "" {
+		if regexp, err := regexp.Compile(conf.Filter); err != nil {
 			msg := "Bad filter expression: " + err.Error()
 			runner.tracker.result.RunError = errors.New(msg)
 			return runner
@@ -531,13 +529,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			wanted, bench := isWanted(suiteName, method.Info.Name, filterRegexp)
-			if !wanted {
-				continue
-			}
-			if bench {
-				runner.benchs = append(runner.benchs, method)
-			} else {
+			if isWanted(conf.Benchmark, suiteName, method.Info.Name, filterRegexp) {
 				runner.tests = append(runner.tests, method)
 			}
 		}
@@ -548,21 +540,20 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 // isWanted returns true if the given suite and method names should be run.
 // The bench result indicates whether the method is a benchmark rather than
 // a test.
-func isWanted(suiteName, methodName string, filterRegexp *regexp.Regexp) (wanted bool, bench bool) {
-	if strings.HasPrefix(methodName, "Test") {
-		// ok
-	} else if strings.HasPrefix(methodName, "Benchmark") {
-		bench = true
-	} else {
-		return false, false
+func isWanted(benchmark bool, suiteName, methodName string, filterRegexp *regexp.Regexp) bool {
+	prefix := "Test"
+	if benchmark {
+		prefix = "Benchmark"
+	}
+	if !strings.HasPrefix(methodName, prefix) {
+		return false
 	}
 	if filterRegexp == nil {
-		return true, bench
+		return true
 	}
-	wanted = (filterRegexp.MatchString(methodName) ||
-		  filterRegexp.MatchString(suiteName) ||
-		  filterRegexp.MatchString(suiteName+"."+methodName))
-	return wanted, bench
+	return (filterRegexp.MatchString(methodName) ||
+		filterRegexp.MatchString(suiteName) ||
+		filterRegexp.MatchString(suiteName+"."+methodName))
 }
 
 // Run all methods in the given suite.
@@ -693,14 +684,26 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 		defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
 		runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
 		mt := c.method.Type()
-		if mt.NumIn() == 1 && mt.In(0) == reflect.TypeOf(c) {
-			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-		} else {
+		if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
 			// Rather than a plain panic, provide a more helpful message when
 			// the argument type is incorrect.
 			c.status = panickedSt
 			c.logArgPanic(c.method, "*gocheck.C")
+			return
 		}
+		if strings.HasPrefix(c.method.Info.Name, "Test") {
+			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
+			return
+		}
+		if !strings.HasPrefix(c.method.Info.Name, "Benchmark") {
+			panic("unexpected method prefix: " + c.method.Info.Name)
+		}
+		f := func(b *testingB) {
+			c.b = b
+			c.N = b.N
+			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
+		}
+		c.bResult = testingBenchmark(f)
 	})
 }
 
@@ -821,9 +824,13 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 	if ow.Stream || (ow.Verbose && c.kind == testKd) {
+		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
 			suffix = " (" + c.reason + ")"
+		}
+		if c.b != nil {
+			suffix += "\t" + c.bResult.String()
 		}
 		suffix += "\n"
 		if ow.Stream {
