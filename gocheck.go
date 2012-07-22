@@ -448,6 +448,7 @@ type suiteRunner struct {
 	setUpSuite, tearDownSuite *methodType
 	setUpTest, tearDownTest   *methodType
 	tests                     []*methodType
+	benchs                    []*methodType
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	output                    *outputWriter
@@ -487,9 +488,9 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		output:  newOutputWriter(writer, stream, verbose),
 		tracker: newResultTracker(),
 	}
-	runner.tests = make([]*methodType, suiteNumMethods)
+	runner.tests = make([]*methodType, 0, suiteNumMethods)
+	runner.benchs = make([]*methodType, 0, suiteNumMethods)
 	runner.tempDir = new(tempDir)
-	testsLen := 0
 
 	var filterRegexp *regexp.Regexp
 	if filter != "" {
@@ -530,28 +531,38 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			if isWantedTest(suiteName, method.Info.Name, filterRegexp) {
-				runner.tests[testsLen] = method
-				testsLen += 1
+			wanted, bench := isWanted(suiteName, method.Info.Name, filterRegexp)
+			if !wanted {
+				continue
+			}
+			if bench {
+				runner.benchs = append(runner.benchs, method)
+			} else {
+				runner.tests = append(runner.tests, method)
 			}
 		}
 	}
-
-	runner.tests = runner.tests[0:testsLen]
 	return runner
 }
 
-// Return true if the given suite name and method name should be
-// considered as a test to be run.
-func isWantedTest(suiteName, testName string, filterRegexp *regexp.Regexp) bool {
-	if !strings.HasPrefix(testName, "Test") {
-		return false
-	} else if filterRegexp == nil {
-		return true
+// isWanted returns true if the given suite and method names should be run.
+// The bench result indicates whether the method is a benchmark rather than
+// a test.
+func isWanted(suiteName, methodName string, filterRegexp *regexp.Regexp) (wanted bool, bench bool) {
+	if strings.HasPrefix(methodName, "Test") {
+		// ok
+	} else if strings.HasPrefix(methodName, "Benchmark") {
+		bench = true
+	} else {
+		return false, false
 	}
-	return (filterRegexp.MatchString(testName) ||
-		filterRegexp.MatchString(suiteName) ||
-		filterRegexp.MatchString(suiteName+"."+testName))
+	if filterRegexp == nil {
+		return true, bench
+	}
+	wanted = (filterRegexp.MatchString(methodName) ||
+		  filterRegexp.MatchString(suiteName) ||
+		  filterRegexp.MatchString(suiteName+"."+methodName))
+	return wanted, bench
 }
 
 // Run all methods in the given suite.
