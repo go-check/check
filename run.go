@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"testing"
+	"time"
 )
 
 // -----------------------------------------------------------------------
@@ -27,6 +28,7 @@ var (
 	verboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
 	streamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
 	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
+	benchTime   = flag.Duration("gocheck.btime", 1 * time.Second, "approximate run time for each benchmark")
 )
 
 // Run all test suites registered with the Suite() function, printing
@@ -38,6 +40,7 @@ func TestingT(testingT *testing.T) {
 		Verbose:   *verboseFlag,
 		Stream:    *streamFlag,
 		Benchmark: *benchFlag,
+		BenchmarkTime: *benchTime,
 	}
 	result := RunAll(conf)
 	println(result.String())

@@ -5,23 +5,21 @@
 package gocheck
 
 import (
-	"flag"
 	"fmt"
 	"reflect"
 	"runtime"
 	"time"
 )
 
-var benchTime = flag.Float64("gocheck.btime", 1, "approximate run time for each benchmark, in seconds")
-
 // testingB is a type passed to Benchmark functions to manage benchmark
 // timing and to specify the number of iterations to run.
 type timer struct {
-	start    time.Time // Time test or benchmark started
-	duration time.Duration
-	N        int
-	bytes    int64
-	timerOn  bool
+	start     time.Time // Time test or benchmark started
+	duration  time.Duration
+	N         int
+	bytes     int64
+	timerOn   bool
+	benchTime time.Duration
 }
 
 // StartTimer starts timing a test. This function is called automatically
@@ -53,8 +51,9 @@ func (c *C) ResetTimer() {
 	c.duration = 0
 }
 
-// SetBytes records the number of bytes processed in a single operation.
-// If this is called in a benchmark it will report ns/op and MB/s.
+// SetBytes informs the number of bytes that the benchmark processes
+// on each iteration. If this is called in a benchmark it will also
+// report MB/s.
 func (c *C) SetBytes(n int64) {
 	c.bytes = n
 }
@@ -75,7 +74,7 @@ func (c *C) mbPerSec() float64 {
 
 func (c *C) timerString() string {
 	if c.N <= 0 {
-		return fmt.Sprintf("\t%10d ns", c.duration.Nanoseconds())
+		return fmt.Sprintf("%10d ns", c.duration.Nanoseconds())
 	}
 	mbs := c.mbPerSec()
 	mb := ""
@@ -158,14 +157,13 @@ func benchmark(c *C) {
 	n := 1
 	benchmarkN(c, n)
 	// Run the benchmark for at least the specified amount of time.
-	d := time.Duration(*benchTime * float64(time.Second))
-	for c.status == succeededSt && c.duration < d && n < 1e9 {
+	for c.status == succeededSt && c.duration < c.benchTime && n < 1e9 {
 		last := n
 		// Predict iterations/sec.
 		if c.nsPerOp() == 0 {
 			n = 1e9
 		} else {
-			n = int(d.Nanoseconds() / c.nsPerOp())
+			n = int(c.benchTime.Nanoseconds() / c.nsPerOp())
 		}
 		// Run more iterations than we think we'll need for a second (1.5x).
 		// Don't grow too fast in case we had timing errors previously.

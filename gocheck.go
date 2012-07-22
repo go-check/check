@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // -----------------------------------------------------------------------
@@ -63,13 +64,6 @@ type C struct {
 	mustFail bool
 	tempDir  *tempDir
 	timer
-}
-
-func newC(method *methodType, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
-	if logb == nil {
-		logb = bytes.NewBuffer(nil)
-	}
-	return &C{method: method, kind: kind, logb: logb, logw: logw, tempDir: tempDir, done: make(chan *C, 1)}
 }
 
 func (c *C) stopNow() {
@@ -452,14 +446,16 @@ type suiteRunner struct {
 	tempDir                   *tempDir
 	output                    *outputWriter
 	reportedProblemLast       bool
+	benchTime                 time.Duration
 }
 
 type RunConf struct {
-	Output    io.Writer
-	Stream    bool
-	Verbose   bool
-	Benchmark bool
-	Filter    string
+	Output        io.Writer
+	Stream        bool
+	Verbose       bool
+	Filter        string
+	Benchmark     bool
+	BenchmarkTime time.Duration // Defaults to 1 second
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -480,12 +476,16 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
-		suite:         suite,
-		output:        newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
-		tracker:       newResultTracker(),
+		suite:     suite,
+		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		tracker:   newResultTracker(),
+		benchTime: conf.BenchmarkTime,
 	}
 	runner.tests = make([]*methodType, 0, suiteNumMethods)
 	runner.tempDir = new(tempDir)
+	if runner.benchTime == 0 {
+		runner.benchTime = 1 * time.Second
+	}
 
 	var filterRegexp *regexp.Regexp
 	if conf.Filter != "" {
@@ -589,7 +589,18 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 	if runner.output.Stream {
 		logw = runner.output
 	}
-	c := newC(method, kind, logb, logw, runner.tempDir)
+	if logb == nil {
+		logb = bytes.NewBuffer(nil)
+	}
+	c := &C{
+		method:  method,
+		kind:    kind,
+		logb:    logb,
+		logw:    logw,
+		tempDir: runner.tempDir,
+		done:    make(chan *C, 1),
+		timer:   timer{benchTime: runner.benchTime},
+	}
 	runner.tracker.expectCall(c)
 	go (func() {
 		runner.reportCallStarted(c)
@@ -829,7 +840,7 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 			suffix = " (" + c.reason + ")"
 		}
 		if c.status == succeededSt {
-			suffix += c.timerString()
+			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
 		if ow.Stream {
