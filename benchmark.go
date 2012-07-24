@@ -74,7 +74,7 @@ func (c *C) mbPerSec() float64 {
 
 func (c *C) timerString() string {
 	if c.N <= 0 {
-		return fmt.Sprintf("%10d ns", c.duration.Nanoseconds())
+		return fmt.Sprintf("%3.3fs", float64(c.duration.Nanoseconds())/1e9)
 	}
 	mbs := c.mbPerSec()
 	mb := ""
