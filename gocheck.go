@@ -601,6 +601,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 		tempDir: runner.tempDir,
 		done:    make(chan *C, 1),
 		timer:   timer{benchTime: runner.benchTime},
+		startTime: time.Now(),
 	}
 	runner.tracker.expectCall(c)
 	go (func() {

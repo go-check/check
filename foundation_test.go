@@ -301,7 +301,7 @@ func (s *BootstrapS) TestMinLogger(c *gocheck.C) {
 	logger = log.New(os.Stderr, "", 0)
 	logger = c
 	logger.Output(0, "Hello there")
-	expected := `\[LOG\] [0-9]+(\.[0-9]+)?[mun]?s +Hello there\n`
+	expected := `\[LOG\] [0-9]+:[0-9][0-9]\.[0-9][0-9][0-9] +Hello there\n`
 	output := c.GetTestLog()
 	c.Assert(output, gocheck.Matches, expected)
 }
