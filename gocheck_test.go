@@ -8,15 +8,16 @@ import (
 	"fmt"
 	"launchpad.net/gocheck"
 	"os"
-	"regexp"
-	"runtime"
+	"time"
 	"testing"
+	"runtime"
+	"regexp"
 )
 
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
-const suitesRunExpected = 7
+const suitesRunExpected = 8
 
 var suitesRun int = 0
 
@@ -93,11 +94,14 @@ func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
 // Helper suite for testing ordering and behavior of fixture.
 
 type FixtureHelper struct {
-	calls   [64]string
-	n       int
-	panicOn string
-	skip    bool
-	skipOnN int
+	calls    [64]string
+	n        int
+	panicOn  string
+	skip     bool
+	skipOnN  int
+	sleepOn  string
+	sleep    time.Duration
+	bytes    int64
 }
 
 func (s *FixtureHelper) trace(name string, c *gocheck.C) {
@@ -106,6 +110,9 @@ func (s *FixtureHelper) trace(name string, c *gocheck.C) {
 	s.n += 1
 	if name == s.panicOn {
 		panic(name)
+	}
+	if s.sleep > 0 && s.sleepOn == name {
+		time.Sleep(s.sleep)
 	}
 	if s.skip && s.skipOnN == n {
 		c.Skip("skipOnN == n")
@@ -134,6 +141,21 @@ func (s *FixtureHelper) Test1(c *gocheck.C) {
 
 func (s *FixtureHelper) Test2(c *gocheck.C) {
 	s.trace("Test2", c)
+}
+
+func (s *FixtureHelper) Benchmark1(c *gocheck.C) {
+	s.trace("Benchmark1", c)
+	for i := 0; i < c.N; i++ {
+		time.Sleep(s.sleep)
+	}
+}
+
+func (s *FixtureHelper) Benchmark2(c *gocheck.C) {
+	s.trace("Benchmark2", c)
+	c.SetBytes(1024)
+	for i := 0; i < c.N; i++ {
+		time.Sleep(s.sleep)
+	}
 }
 
 // -----------------------------------------------------------------------

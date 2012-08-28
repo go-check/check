@@ -288,8 +288,8 @@ func (s *RunS) TestVerboseMode(c *C) {
 	runConf := RunConf{Output: &output, Verbose: true}
 	Run(&helper, &runConf)
 
-	expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\n" +
-		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+	expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\t *[.0-9]+s\n" +
+		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
 
 	c.Assert(output.value, Matches, expected)
 }
@@ -301,7 +301,7 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 	Run(&helper, &runConf)
 
 	expected := "(?s).*PANIC.*\n-+\n" + // Should have an extra line.
-		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\n"
+		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
 
 	c.Assert(output.value, Matches, expected)
 }
@@ -344,9 +344,9 @@ func (s *RunS) TestStreamMode(c *C) {
 	Run(helper, &runConf)
 
 	expected := "START: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n0\n" +
-		"PASS: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n\n" +
+		"PASS: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\t *[.0-9]+s\n\n" +
 		"START: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n1\n" +
-		"PASS: run_test\\.go:[0-9]+: StreamHelper\\.Test1\n\n" +
+		"PASS: run_test\\.go:[0-9]+: StreamHelper\\.Test1\t *[.0-9]+s\n\n" +
 		"START: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n2\n3\n4\n" +
 		"FAIL: run_test\\.go:[0-9]+: StreamHelper\\.Test2\n\n"
 
