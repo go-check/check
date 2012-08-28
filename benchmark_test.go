@@ -42,10 +42,10 @@ func (s *BenchmarkS) TestBenchmark(c *C) {
 	helper := FixtureHelper{sleep: 100000}
 	output := String{}
 	runConf := RunConf{
-		Output: &output,
-		Benchmark: true,
+		Output:        &output,
+		Benchmark:     true,
 		BenchmarkTime: 10000000,
-		Filter: "Benchmark1",
+		Filter:        "Benchmark1",
 	}
 	Run(&helper, &runConf)
 
@@ -57,10 +57,10 @@ func (s *BenchmarkS) TestBenchmarkBytes(c *C) {
 	helper := FixtureHelper{sleep: 100000}
 	output := String{}
 	runConf := RunConf{
-		Output: &output,
-		Benchmark: true,
+		Output:        &output,
+		Benchmark:     true,
 		BenchmarkTime: 10000000,
-		Filter: "Benchmark2",
+		Filter:        "Benchmark2",
 	}
 	Run(&helper, &runConf)
 

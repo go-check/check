@@ -54,15 +54,15 @@ func (method *methodType) PC() uintptr {
 }
 
 type C struct {
-	method   *methodType
-	kind     funcKind
-	status   funcStatus
-	logb     *bytes.Buffer
-	logw     io.Writer
-	done     chan *C
-	reason   string
-	mustFail bool
-	tempDir  *tempDir
+	method    *methodType
+	kind      funcKind
+	status    funcStatus
+	logb      *bytes.Buffer
+	logw      io.Writer
+	done      chan *C
+	reason    string
+	mustFail  bool
+	tempDir   *tempDir
 	startTime time.Time
 	timer
 }
@@ -594,13 +594,13 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 		logb = bytes.NewBuffer(nil)
 	}
 	c := &C{
-		method:  method,
-		kind:    kind,
-		logb:    logb,
-		logw:    logw,
-		tempDir: runner.tempDir,
-		done:    make(chan *C, 1),
-		timer:   timer{benchTime: runner.benchTime},
+		method:    method,
+		kind:      kind,
+		logb:      logb,
+		logw:      logw,
+		tempDir:   runner.tempDir,
+		done:      make(chan *C, 1),
+		timer:     timer{benchTime: runner.benchTime},
 		startTime: time.Now(),
 	}
 	runner.tracker.expectCall(c)

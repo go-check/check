@@ -8,10 +8,10 @@ import (
 	"fmt"
 	"launchpad.net/gocheck"
 	"os"
-	"time"
-	"testing"
-	"runtime"
 	"regexp"
+	"runtime"
+	"testing"
+	"time"
 )
 
 // We count the number of suites run at least to get a vague hint that the
@@ -94,14 +94,14 @@ func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
 // Helper suite for testing ordering and behavior of fixture.
 
 type FixtureHelper struct {
-	calls    [64]string
-	n        int
-	panicOn  string
-	skip     bool
-	skipOnN  int
-	sleepOn  string
-	sleep    time.Duration
-	bytes    int64
+	calls   [64]string
+	n       int
+	panicOn string
+	skip    bool
+	skipOnN int
+	sleepOn string
+	sleep   time.Duration
+	bytes   int64
 }
 
 func (s *FixtureHelper) trace(name string, c *gocheck.C) {

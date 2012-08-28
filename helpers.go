@@ -97,7 +97,7 @@ func (c *C) Output(calldepth int, s string) error {
 	sec := d / time.Second
 	min := d / time.Minute
 
-	c.Logf("[LOG] %d:%02d.%03d %s", min, sec % 60, msec % 1000, s)
+	c.Logf("[LOG] %d:%02d.%03d %s", min, sec%60, msec%1000, s)
 	return nil
 }
 
