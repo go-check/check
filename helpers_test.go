@@ -434,17 +434,20 @@ func isDir(path string) bool {
 // Use go test -race to detect the race in this test.
 func (s *HelpersS) TestConcurrentLogging(c *gocheck.C) {
 	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
-	var wg sync.WaitGroup
-	wg.Add(1)
-	for i, n := 0, runtime.NumCPU() * 2 ; i < n ; i++ {
+	var start, stop sync.WaitGroup
+	start.Add(1)
+	for i, n := 0, runtime.NumCPU()*2; i < n; i++ {
+		stop.Add(1)
 		go func(i int) {
-			wg.Wait()
-			for j := 0 ; j < 30 ; j++ {
-				c.Logf("Worker %d: line %d", i, j) 
+			start.Wait()
+			for j := 0; j < 30; j++ {
+				c.Logf("Worker %d: line %d", i, j)
 			}
+			stop.Done()
 		}(i)
 	}
-	wg.Done()
+	start.Done()
+	stop.Wait()
 }
 
 // -----------------------------------------------------------------------
