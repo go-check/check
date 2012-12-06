@@ -7,6 +7,8 @@ import (
 	"launchpad.net/gocheck"
 	"os"
 	"reflect"
+	"runtime"
+	"sync"
 )
 
 var helpersS = gocheck.Suite(&HelpersS{})
@@ -126,7 +128,7 @@ func (s *HelpersS) TestCheckFailWithExpectedAndStaticComment(c *gocheck.C) {
 	testHelperFailure(c, "Check(1, checker, 2, msg)", false, false, log,
 		func() interface{} {
 			// Nice leading comment.
-			return c.Check(1, checker, 2)  // Hello there
+			return c.Check(1, checker, 2) // Hello there
 		})
 }
 
@@ -379,7 +381,6 @@ func (s *HelpersS) TestValueLoggingWithMultiLineException(c *gocheck.C) {
 		})
 }
 
-
 // -----------------------------------------------------------------------
 // MakeDir() tests.
 
@@ -427,6 +428,23 @@ func isDir(path string) bool {
 		return stat.IsDir()
 	}
 	return false
+}
+
+// Concurrent logging should not corrupt the underling buffer.
+// Use go test -race to detect the race in this test.
+func (s *HelpersS) TestConcurrentLogging(c *gocheck.C) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
+	var wg sync.WaitGroup
+	wg.Add(1)
+	for i, n := 0, runtime.NumCPU() * 2 ; i < n ; i++ {
+		go func(i int) {
+			wg.Wait()
+			for j := 0 ; j < 30 ; j++ {
+				c.Logf("Worker %d: line %d", i, j) 
+			}
+		}(i)
+	}
+	wg.Done()
 }
 
 // -----------------------------------------------------------------------

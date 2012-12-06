@@ -57,7 +57,7 @@ type C struct {
 	method   *methodType
 	kind     funcKind
 	status   funcStatus
-	logb     *bytes.Buffer
+	logb     logger
 	logw     io.Writer
 	done     chan *C
 	reason   string
@@ -119,6 +119,12 @@ func (c *C) MkDir() string {
 		panic(fmt.Sprintf("Couldn't create temporary directory %s: %s", path, err.Error()))
 	}
 	return path
+}
+
+type logger interface {
+	io.Writer
+	io.WriterTo
+	fmt.Stringer
 }
 
 // -----------------------------------------------------------------------
@@ -584,13 +590,13 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
 	}
 	if logb == nil {
-		logb = bytes.NewBuffer(nil)
+		logb = &serialisedLogger{}
 	}
 	c := &C{
 		method:  method,
@@ -610,8 +616,32 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 	return c
 }
 
+// serialisedLogger serialises calls to the underlying buffer.
+type serialisedLogger struct {
+	sync.Mutex
+	b bytes.Buffer
+}
+
+func (l *serialisedLogger) Write(buf []byte) (int, error) {
+	l.Lock()
+	defer l.Unlock()
+	return l.b.Write(buf)
+}
+
+func (l *serialisedLogger) WriteTo(w io.Writer) (int64, error) {
+	l.Lock()
+	defer l.Unlock()
+	return l.b.WriteTo(w)
+}
+
+func (l *serialisedLogger) String() string {
+	l.Lock()
+	defer l.Unlock()
+	return l.b.String()
+}
+
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, logb logger, dispatcher func(c *C)) *C {
 	c := runner.forkCall(method, kind, logb, dispatcher)
 	<-c.done
 	return c
@@ -654,7 +684,7 @@ func (runner *suiteRunner) callDone(c *C) {
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C {
+func (runner *suiteRunner) runFixture(method *methodType, logb logger) *C {
 	if method != nil {
 		c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
 			c.ResetTimer()
@@ -670,7 +700,7 @@ func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C
 // Run the fixture method with runFixture(), but panic with a fixturePanic{}
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
-func (runner *suiteRunner) runFixtureWithPanic(method *methodType, logb *bytes.Buffer, skipped *bool) *C {
+func (runner *suiteRunner) runFixtureWithPanic(method *methodType, logb logger, skipped *bool) *C {
 	if *skipped {
 		return nil
 	}
