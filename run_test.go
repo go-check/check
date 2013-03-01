@@ -2,6 +2,7 @@
 
 package gocheck_test
 
+
 import (
 	"errors"
 	. "launchpad.net/gocheck"
@@ -99,21 +100,21 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 
 func (s *RunS) TestAdd(c *C) {
 	result := &Result{
-		Succeeded: 1,
-		Skipped: 2,
-		Failed: 3,
-		Panicked: 4,
-		FixturePanicked: 5,
-		Missed: 6,
+		Succeeded:        1,
+		Skipped:          2,
+		Failed:           3,
+		Panicked:         4,
+		FixturePanicked:  5,
+		Missed:           6,
 		ExpectedFailures: 7,
 	}
 	result.Add(&Result{
-		Succeeded: 10,
-		Skipped: 20,
-		Failed: 30,
-		Panicked: 40,
-		FixturePanicked: 50,
-		Missed: 60,
+		Succeeded:        10,
+		Skipped:          20,
+		Failed:           30,
+		Panicked:         40,
+		FixturePanicked:  50,
+		Missed:           60,
 		ExpectedFailures: 70,
 	})
 	c.Check(result.Succeeded, Equals, 11)
@@ -277,6 +278,24 @@ func (s *RunS) TestFilterError(c *C) {
 	c.Check(result.String(), Equals,
 		"ERROR: Bad filter expression: error parsing regexp: missing closing ]: `[`")
 	c.Check(helper.n, Equals, 0)
+}
+
+// -----------------------------------------------------------------------
+// Verify that List works correctly.
+
+func (s *RunS) TestListFiltered(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{Filter: "1"})
+	c.Assert(names, DeepEquals, []string{
+		"FixtureHelper.Test1",
+	})
+}
+
+func (s *RunS) TestList(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{})
+	c.Assert(names, DeepEquals, []string{
+		"FixtureHelper.Test1",
+		"FixtureHelper.Test2",
+	})
 }
 
 // -----------------------------------------------------------------------

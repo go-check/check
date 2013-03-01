@@ -53,6 +53,24 @@ func (method *methodType) PC() uintptr {
 	return method.Info.Func.Pointer()
 }
 
+func (method *methodType) suiteName() string {
+	t := method.Info.Type.In(0)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
+}
+
+func (method *methodType) String() string {
+	return method.suiteName()+"."+method.Info.Name
+}
+
+func (method *methodType) matches(re *regexp.Regexp) bool {
+	return (re.MatchString(method.Info.Name) ||
+		re.MatchString(method.suiteName()) ||
+		re.MatchString(method.String()))
+}
+
 type C struct {
 	method   *methodType
 	kind     funcKind
@@ -504,24 +522,8 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		}
 	}
 
-	// This map will be used to filter out duplicated methods.  This
-	// looks like a bug in Go, described on issue 906:
-	// http://code.google.com/p/go/issues/detail?id=906
-	seen := make(map[uintptr]bool, suiteNumMethods)
-
-	// XXX Shouldn't Name() work here? Why does it return an empty string?
-	suiteName := suiteType.String()
-	if index := strings.LastIndex(suiteName, "."); index != -1 {
-		suiteName = suiteName[index+1:]
-	}
-
 	for i := 0; i != suiteNumMethods; i++ {
 		method := newMethod(suiteValue, i)
-		methodPC := method.PC()
-		if _, found := seen[methodPC]; found {
-			continue
-		}
-		seen[methodPC] = true
 		switch method.Info.Name {
 		case "SetUpSuite":
 			runner.setUpSuite = method
@@ -532,31 +534,19 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			if isWanted(conf.Benchmark, suiteName, method.Info.Name, filterRegexp) {
+			prefix := "Test"
+			if conf.Benchmark {
+				prefix = "Benchmark"
+			}
+			if !strings.HasPrefix(method.Info.Name, prefix) {
+				continue
+			}
+			if filterRegexp == nil || method.matches(filterRegexp) {
 				runner.tests = append(runner.tests, method)
 			}
 		}
 	}
 	return runner
-}
-
-// isWanted returns true if the given suite and method names should be run.
-// The bench result indicates whether the method is a benchmark rather than
-// a test.
-func isWanted(benchmark bool, suiteName, methodName string, filterRegexp *regexp.Regexp) bool {
-	prefix := "Test"
-	if benchmark {
-		prefix = "Benchmark"
-	}
-	if !strings.HasPrefix(methodName, prefix) {
-		return false
-	}
-	if filterRegexp == nil {
-		return true
-	}
-	return (filterRegexp.MatchString(methodName) ||
-		filterRegexp.MatchString(suiteName) ||
-		filterRegexp.MatchString(suiteName+"."+methodName))
 }
 
 // Run all methods in the given suite.

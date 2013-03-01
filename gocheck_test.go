@@ -4,13 +4,13 @@
 package gocheck_test
 
 import (
-	"launchpad.net/gocheck"
-	"testing"
-	"runtime"
-	"regexp"
 	"flag"
 	"fmt"
+	"launchpad.net/gocheck"
 	"os"
+	"regexp"
+	"runtime"
+	"testing"
 	"time"
 )
 

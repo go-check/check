@@ -13,9 +13,9 @@
 package gocheck_test
 
 import (
+	"fmt"
 	"launchpad.net/gocheck"
 	"strings"
-	"fmt"
 )
 
 type BootstrapS struct{}
