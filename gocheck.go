@@ -75,7 +75,6 @@ type C struct {
 	method    *methodType
 	kind      funcKind
 	status    funcStatus
-	writeLock sync.Mutex // protects logb from concurrent writes
 	logb      *logger
 	logw      io.Writer
 	done      chan *C
@@ -89,7 +88,7 @@ func (c *C) stopNow() {
 	runtime.Goexit()
 }
 
-// logger concurrency safe byte.Buffer
+// logger is a concurrency safe byte.Buffer
 type logger struct {
 	sync.Mutex
 	writer bytes.Buffer
