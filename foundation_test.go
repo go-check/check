@@ -242,7 +242,7 @@ func (s *FoundationS) TestExpectFailureSucceedVerbose(c *gocheck.C) {
 
 	expected := "" +
 		"FAIL EXPECTED: foundation_test\\.go:[0-9]+:" +
-		" ExpectFailureSucceedHelper\\.TestSucceed \\(It booms!\\)\n"
+		" ExpectFailureSucceedHelper\\.TestSucceed \\(It booms!\\)\t *[.0-9]+s\n"
 
 	matched, err := regexp.MatchString(expected, output.value)
 	if err != nil {

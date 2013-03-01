@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 	"testing"
+	"time"
 )
 
 // -----------------------------------------------------------------------
@@ -24,24 +25,30 @@ func Suite(suite interface{}) interface{} {
 // -----------------------------------------------------------------------
 // Public running interface.
 
-var filterFlag = flag.String("gocheck.f", "",
-	"Regular expression selecting which tests and/or suites to run")
-var verboseFlag = flag.Bool("gocheck.v", false,
-	"Verbose mode")
-var streamFlag = flag.Bool("gocheck.vv", false,
-	"Super verbose mode (disables output caching)")
-var listFlag = flag.Bool("gocheck.list", false,
-	"List the names of all tests that will be run")
+var (
+	filterFlag  = flag.String("gocheck.f", "", "Regular expression selecting which tests and/or suites to run")
+	verboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
+	streamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
+	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
+	benchTime   = flag.Duration("gocheck.btime", 1 * time.Second, "approximate run time for each benchmark")
+	listFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
+)
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-	conf := &RunConf{Filter: *filterFlag, Verbose: *verboseFlag, Stream: *streamFlag}
+	conf := &RunConf{
+		Filter:    *filterFlag,
+		Verbose:   *verboseFlag,
+		Stream:    *streamFlag,
+		Benchmark: *benchFlag,
+		BenchmarkTime: *benchTime,
+	}
 	if *listFlag {
 		w := bufio.NewWriter(os.Stdout)
 		for _, name := range ListAll(conf) {
-			fmt.Fprintf(w, "%s\n", name)
+			fmt.Fprintln(w, name)
 		}
 		w.Flush()
 		return

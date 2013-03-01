@@ -15,6 +15,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // -----------------------------------------------------------------------
@@ -23,7 +24,6 @@ import (
 const (
 	fixtureKd = iota
 	testKd
-	benchmarkKd
 )
 
 type funcKind int
@@ -62,13 +62,13 @@ func (method *methodType) suiteName() string {
 }
 
 func (method *methodType) String() string {
-	return fmt.Sprintf("%v.%s", method.suiteName(), method.Info.Name)
+	return method.suiteName()+"."+method.Info.Name
 }
 
 func (method *methodType) matches(re *regexp.Regexp) bool {
-	return re.MatchString(method.Info.Name) ||
+	return (re.MatchString(method.Info.Name) ||
 		re.MatchString(method.suiteName()) ||
-		re.MatchString(method.String())
+		re.MatchString(method.String()))
 }
 
 type C struct {
@@ -81,13 +81,7 @@ type C struct {
 	reason   string
 	mustFail bool
 	tempDir  *tempDir
-}
-
-func newC(method *methodType, kind funcKind, logb *bytes.Buffer, logw io.Writer, tempDir *tempDir) *C {
-	if logb == nil {
-		logb = bytes.NewBuffer(nil)
-	}
-	return &C{method: method, kind: kind, logb: logb, logw: logw, tempDir: tempDir, done: make(chan *C, 1)}
+	timer
 }
 
 func (c *C) stopNow() {
@@ -317,10 +311,16 @@ func (c *C) logArgPanic(method *methodType, expectedType string) {
 
 var initWD, initWDErr = os.Getwd()
 
+func init() {
+	if initWDErr == nil {
+		initWD = strings.Replace(initWD, "\\", "/", -1) + "/"
+	}
+}
+
 func nicePath(path string) string {
 	if initWDErr == nil {
-		if strings.HasPrefix(path, initWD+"/") {
-			return path[len(initWD)+1:]
+		if strings.HasPrefix(path, initWD) {
+			return path[len(initWD):]
 		}
 	}
 	return path
@@ -470,30 +470,29 @@ type suiteRunner struct {
 	tempDir                   *tempDir
 	output                    *outputWriter
 	reportedProblemLast       bool
+	benchTime                 time.Duration
 }
 
 type RunConf struct {
-	Output  io.Writer
-	Stream  bool
-	Verbose bool
-	Filter  string
+	Output        io.Writer
+	Stream        bool
+	Verbose       bool
+	Filter        string
+	Benchmark     bool
+	BenchmarkTime time.Duration // Defaults to 1 second
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
 func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
-	var writer io.Writer
-	var stream, verbose bool
-	var filter string
-
-	writer = os.Stdout
-
+	var conf RunConf
 	if runConf != nil {
-		if runConf.Output != nil {
-			writer = runConf.Output
-		}
-		stream = runConf.Stream
-		verbose = runConf.Verbose
-		filter = runConf.Filter
+		conf = *runConf
+	}
+	if conf.Output == nil {
+		conf.Output = os.Stdout
+	}
+	if conf.Benchmark {
+		conf.Verbose = true
 	}
 
 	suiteType := reflect.TypeOf(suite)
@@ -501,17 +500,20 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
-		suite:   suite,
-		output:  newOutputWriter(writer, stream, verbose),
-		tracker: newResultTracker(),
+		suite:     suite,
+		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		tracker:   newResultTracker(),
+		benchTime: conf.BenchmarkTime,
 	}
-	runner.tests = make([]*methodType, suiteNumMethods)
+	runner.tests = make([]*methodType, 0, suiteNumMethods)
 	runner.tempDir = new(tempDir)
-	testsLen := 0
+	if runner.benchTime == 0 {
+		runner.benchTime = 1 * time.Second
+	}
 
 	var filterRegexp *regexp.Regexp
-	if filter != "" {
-		if regexp, err := regexp.Compile(filter); err != nil {
+	if conf.Filter != "" {
+		if regexp, err := regexp.Compile(conf.Filter); err != nil {
 			msg := "Bad filter expression: " + err.Error()
 			runner.tracker.result.RunError = errors.New(msg)
 			return runner
@@ -532,17 +534,18 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			if !strings.HasPrefix(method.Info.Name, "Test") {
+			prefix := "Test"
+			if conf.Benchmark {
+				prefix = "Benchmark"
+			}
+			if !strings.HasPrefix(method.Info.Name, prefix) {
 				continue
 			}
 			if filterRegexp == nil || method.matches(filterRegexp) {
-				runner.tests[testsLen] = method
-				testsLen += 1
+				runner.tests = append(runner.tests, method)
 			}
 		}
 	}
-
-	runner.tests = runner.tests[0:testsLen]
 	return runner
 }
 
@@ -582,7 +585,18 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 	if runner.output.Stream {
 		logw = runner.output
 	}
-	c := newC(method, kind, logb, logw, runner.tempDir)
+	if logb == nil {
+		logb = bytes.NewBuffer(nil)
+	}
+	c := &C{
+		method:  method,
+		kind:    kind,
+		logb:    logb,
+		logw:    logw,
+		tempDir: runner.tempDir,
+		done:    make(chan *C, 1),
+		timer:   timer{benchTime: runner.benchTime},
+	}
 	runner.tracker.expectCall(c)
 	go (func() {
 		runner.reportCallStarted(c)
@@ -639,6 +653,9 @@ func (runner *suiteRunner) callDone(c *C) {
 func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C {
 	if method != nil {
 		c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
+			c.ResetTimer()
+			c.StartTimer()
+			defer c.StopTimer()
 			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
 		})
 		return c
@@ -674,14 +691,25 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 		defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
 		runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
 		mt := c.method.Type()
-		if mt.NumIn() == 1 && mt.In(0) == reflect.TypeOf(c) {
-			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-		} else {
+		if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
 			// Rather than a plain panic, provide a more helpful message when
 			// the argument type is incorrect.
 			c.status = panickedSt
 			c.logArgPanic(c.method, "*gocheck.C")
+			return
 		}
+		if strings.HasPrefix(c.method.Info.Name, "Test") {
+			c.ResetTimer()
+			c.StartTimer()
+			defer c.StopTimer()
+			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
+			return
+		}
+		if strings.HasPrefix(c.method.Info.Name, "Benchmark") {
+			benchmark(c)
+			return
+		}
+		panic("unexpected method prefix: " + c.method.Info.Name)
 	})
 }
 
@@ -802,9 +830,13 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 	if ow.Stream || (ow.Verbose && c.kind == testKd) {
+		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
 			suffix = " (" + c.reason + ")"
+		}
+		if c.status == succeededSt {
+			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
 		if ow.Stream {
@@ -829,3 +861,4 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }
+
