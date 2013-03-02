@@ -691,12 +691,14 @@ func (runner *suiteRunner) runFixture(method *methodType, logb *logger) *C {
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
 func (runner *suiteRunner) runFixtureWithPanic(method *methodType, logb *logger, skipped *bool) *C {
-	if *skipped {
+	if skipped != nil && *skipped {
 		return nil
 	}
 	c := runner.runFixture(method, logb)
 	if c != nil && c.status != succeededSt {
-		*skipped = c.status == skippedSt
+		if skipped != nil {
+			*skipped = c.status == skippedSt
+		}
 		panic(&fixturePanic{c.status, method})
 	}
 	return c
@@ -713,27 +715,53 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 	return runner.forkCall(method, testKd, nil, func(c *C) {
 		var skipped bool
 		defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
-		runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
-		mt := c.method.Type()
-		if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
-			// Rather than a plain panic, provide a more helpful message when
-			// the argument type is incorrect.
-			c.status = panickedSt
-			c.logArgPanic(c.method, "*gocheck.C")
-			return
-		}
-		if strings.HasPrefix(c.method.Info.Name, "Test") {
+		defer c.StopTimer()
+		benchN := 1
+		for {
+			runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
+			mt := c.method.Type()
+			if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
+				// Rather than a plain panic, provide a more helpful message when
+				// the argument type is incorrect.
+				c.status = panickedSt
+				c.logArgPanic(c.method, "*gocheck.C")
+				return
+			}
+			if strings.HasPrefix(c.method.Info.Name, "Test") {
+				c.ResetTimer()
+				c.StartTimer()
+				c.method.Call([]reflect.Value{reflect.ValueOf(c)})
+				return
+			}
+			if !strings.HasPrefix(c.method.Info.Name, "Benchmark") {
+				panic("unexpected method prefix: " + c.method.Info.Name)
+			}
+
+			runtime.GC()
+			c.N = benchN
 			c.ResetTimer()
 			c.StartTimer()
-			defer c.StopTimer()
 			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-			return
+			c.StopTimer()
+			if c.status != succeededSt || c.duration >= c.benchTime || benchN >= 1e9 {
+				return
+			}
+			perOpN := int(1e9)
+			if c.nsPerOp() != 0 {
+				perOpN = int(c.benchTime.Nanoseconds() / c.nsPerOp())
+			}
+
+			// Logic taken from the stock testing package:
+			// - Run more iterations than we think we'll need for a second (1.5x).
+			// - Don't grow too fast in case we had timing errors previously.
+			// - Be sure to run at least one more than last time.
+			benchN = max(min(perOpN+perOpN/2, 100*benchN), benchN+1)
+			benchN = roundUp(benchN)
+
+			skipped = true // Don't run the deferred one if this panics.
+			runner.runFixtureWithPanic(runner.tearDownTest, nil, nil)
+			skipped = false
 		}
-		if strings.HasPrefix(c.method.Info.Name, "Benchmark") {
-			benchmark(c)
-			return
-		}
-		panic("unexpected method prefix: " + c.method.Info.Name)
 	})
 }
 

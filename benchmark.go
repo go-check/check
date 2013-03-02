@@ -6,8 +6,6 @@ package gocheck
 
 import (
 	"fmt"
-	"reflect"
-	"runtime"
 	"time"
 )
 
@@ -135,42 +133,4 @@ func roundUp(n int) int {
 		return 5 * base
 	}
 	return 10 * base
-}
-
-// benchmarkN runs a single benchmark for the specified number of iterations.
-func benchmarkN(c *C, n int) {
-	// Try to get a comparable environment for each run
-	// by clearing garbage from previous runs.
-	runtime.GC()
-	c.N = n
-	c.ResetTimer()
-	c.StartTimer()
-	c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-	c.StopTimer()
-}
-
-// benchmark runs the benchmark function.  It gradually increases the number
-// of benchmark iterations until the benchmark runs for a second in order
-// to get a reasonable measurement.
-func benchmark(c *C) {
-	// Run the benchmark for a single iteration in case it's expensive.
-	n := 1
-	benchmarkN(c, n)
-	// Run the benchmark for at least the specified amount of time.
-	for c.status == succeededSt && c.duration < c.benchTime && n < 1e9 {
-		last := n
-		// Predict iterations/sec.
-		if c.nsPerOp() == 0 {
-			n = 1e9
-		} else {
-			n = int(c.benchTime.Nanoseconds() / c.nsPerOp())
-		}
-		// Run more iterations than we think we'll need for a second (1.5x).
-		// Don't grow too fast in case we had timing errors previously.
-		// Be sure to run at least one more than last time.
-		n = max(min(n+n/2, 100*last), last+1)
-		// Round up to something easy to read.
-		n = roundUp(n)
-		benchmarkN(c, n)
-	}
 }

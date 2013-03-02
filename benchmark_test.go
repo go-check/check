@@ -36,8 +36,6 @@ func (s *BenchmarkS) TestStreamTestTiming(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-// Quite unfortunate that these two tests alone account for most of the 
-
 func (s *BenchmarkS) TestBenchmark(c *C) {
 	helper := FixtureHelper{sleep: 100000}
 	output := String{}
@@ -48,6 +46,14 @@ func (s *BenchmarkS) TestBenchmark(c *C) {
 		Filter: "Benchmark1",
 	}
 	Run(&helper, &runConf)
+	c.Check(helper.calls[0], Equals, "SetUpSuite")
+	c.Check(helper.calls[1], Equals, "SetUpTest")
+	c.Check(helper.calls[2], Equals, "Benchmark1")
+	c.Check(helper.calls[3], Equals, "TearDownTest")
+	c.Check(helper.calls[4], Equals, "SetUpTest")
+	c.Check(helper.calls[5], Equals, "Benchmark1")
+	c.Check(helper.calls[6], Equals, "TearDownTest")
+	// ... and more.
 
 	expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Benchmark1\t *100\t *[12][0-9]{5} ns/op\n"
 	c.Assert(output.value, Matches, expected)
