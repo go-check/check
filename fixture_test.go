@@ -51,7 +51,7 @@ func (s *FixtureS) TestPanicOnTest(c *C) {
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
 	c.Check(len(helper.calls), Equals, 8)
 
-	expected := "^\n-+\n" +
+	expected := "\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
 		"\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
 		".+:[0-9]+\n" +
