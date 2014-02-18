@@ -62,7 +62,7 @@ func (method *methodType) suiteName() string {
 }
 
 func (method *methodType) String() string {
-	return method.suiteName()+"."+method.Info.Name
+	return method.suiteName() + "." + method.Info.Name
 }
 
 func (method *methodType) matches(re *regexp.Regexp) bool {
@@ -915,4 +915,3 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }
-
