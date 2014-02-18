@@ -94,27 +94,24 @@ func (s *SuccessHelper) TestLogAndSucceed(c *gocheck.C) {
 // Helper suite for testing ordering and behavior of fixture.
 
 type FixtureHelper struct {
-	calls   [64]string
-	n       int
-	panicOn string
-	skip    bool
-	skipOnN int
-	sleepOn string
-	sleep   time.Duration
-	bytes   int64
+	calls    []string
+	panicOn  string
+	skip     bool
+	skipOnN  int
+	sleepOn  string
+	sleep    time.Duration
+	bytes    int64
 }
 
 func (s *FixtureHelper) trace(name string, c *gocheck.C) {
-	n := s.n
-	s.calls[n] = name
-	s.n += 1
+	s.calls = append(s.calls, name)
 	if name == s.panicOn {
 		panic(name)
 	}
 	if s.sleep > 0 && s.sleepOn == name {
 		time.Sleep(s.sleep)
 	}
-	if s.skip && s.skipOnN == n {
+	if s.skip && s.skipOnN == len(s.calls)-1 {
 		c.Skip("skipOnN == n")
 	}
 }

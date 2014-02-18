@@ -7,6 +7,8 @@ import (
 	"launchpad.net/gocheck"
 	"os"
 	"reflect"
+	"runtime"
+	"sync"
 )
 
 var helpersS = gocheck.Suite(&HelpersS{})
@@ -426,6 +428,26 @@ func isDir(path string) bool {
 		return stat.IsDir()
 	}
 	return false
+}
+
+// Concurrent logging should not corrupt the underling buffer.
+// Use go test -race to detect the race in this test.
+func (s *HelpersS) TestConcurrentLogging(c *gocheck.C) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(runtime.NumCPU()))
+	var start, stop sync.WaitGroup
+	start.Add(1)
+	for i, n := 0, runtime.NumCPU()*2; i < n; i++ {
+		stop.Add(1)
+		go func(i int) {
+			start.Wait()
+			for j := 0; j < 30; j++ {
+				c.Logf("Worker %d: line %d", i, j)
+			}
+			stop.Done()
+		}(i)
+	}
+	start.Done()
+	stop.Wait()
 }
 
 // -----------------------------------------------------------------------

@@ -2,6 +2,7 @@
 
 package gocheck_test
 
+
 import (
 	"errors"
 	. "launchpad.net/gocheck"
@@ -205,7 +206,7 @@ func (s *RunS) TestFilterTestName(c *C) {
 	c.Check(helper.calls[2], Equals, "Test1")
 	c.Check(helper.calls[3], Equals, "TearDownTest")
 	c.Check(helper.calls[4], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 5)
+	c.Check(len(helper.calls), Equals, 5)
 }
 
 func (s *RunS) TestFilterTestNameWithAll(c *C) {
@@ -221,7 +222,7 @@ func (s *RunS) TestFilterTestNameWithAll(c *C) {
 	c.Check(helper.calls[5], Equals, "Test2")
 	c.Check(helper.calls[6], Equals, "TearDownTest")
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 }
 
 func (s *RunS) TestFilterSuiteName(c *C) {
@@ -237,7 +238,7 @@ func (s *RunS) TestFilterSuiteName(c *C) {
 	c.Check(helper.calls[5], Equals, "Test2")
 	c.Check(helper.calls[6], Equals, "TearDownTest")
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 }
 
 func (s *RunS) TestFilterSuiteNameAndTestName(c *C) {
@@ -250,7 +251,7 @@ func (s *RunS) TestFilterSuiteNameAndTestName(c *C) {
 	c.Check(helper.calls[2], Equals, "Test2")
 	c.Check(helper.calls[3], Equals, "TearDownTest")
 	c.Check(helper.calls[4], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 5)
+	c.Check(len(helper.calls), Equals, 5)
 }
 
 func (s *RunS) TestFilterAllOut(c *C) {
@@ -258,7 +259,7 @@ func (s *RunS) TestFilterAllOut(c *C) {
 	output := String{}
 	runConf := RunConf{Output: &output, Filter: "NotFound"}
 	Run(&helper, &runConf)
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
 }
 
 func (s *RunS) TestRequirePartialMatch(c *C) {
@@ -266,7 +267,7 @@ func (s *RunS) TestRequirePartialMatch(c *C) {
 	output := String{}
 	runConf := RunConf{Output: &output, Filter: "est"}
 	Run(&helper, &runConf)
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 }
 
 func (s *RunS) TestFilterError(c *C) {
@@ -276,7 +277,25 @@ func (s *RunS) TestFilterError(c *C) {
 	result := Run(&helper, &runConf)
 	c.Check(result.String(), Equals,
 		"ERROR: Bad filter expression: error parsing regexp: missing closing ]: `[`")
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
+}
+
+// -----------------------------------------------------------------------
+// Verify that List works correctly.
+
+func (s *RunS) TestListFiltered(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{Filter: "1"})
+	c.Assert(names, DeepEquals, []string{
+		"FixtureHelper.Test1",
+	})
+}
+
+func (s *RunS) TestList(c *C) {
+	names := List(&FixtureHelper{}, &RunConf{})
+	c.Assert(names, DeepEquals, []string{
+		"FixtureHelper.Test1",
+		"FixtureHelper.Test2",
+	})
 }
 
 // -----------------------------------------------------------------------

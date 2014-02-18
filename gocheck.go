@@ -53,11 +53,29 @@ func (method *methodType) PC() uintptr {
 	return method.Info.Func.Pointer()
 }
 
+func (method *methodType) suiteName() string {
+	t := method.Info.Type.In(0)
+	if t.Kind() == reflect.Ptr {
+		t = t.Elem()
+	}
+	return t.Name()
+}
+
+func (method *methodType) String() string {
+	return method.suiteName()+"."+method.Info.Name
+}
+
+func (method *methodType) matches(re *regexp.Regexp) bool {
+	return (re.MatchString(method.Info.Name) ||
+		re.MatchString(method.suiteName()) ||
+		re.MatchString(method.String()))
+}
+
 type C struct {
 	method    *methodType
 	kind      funcKind
 	status    funcStatus
-	logb      *bytes.Buffer
+	logb      *logger
 	logw      io.Writer
 	done      chan *C
 	reason    string
@@ -69,6 +87,30 @@ type C struct {
 
 func (c *C) stopNow() {
 	runtime.Goexit()
+}
+
+// logger is a concurrency safe byte.Buffer
+type logger struct {
+	sync.Mutex
+	writer bytes.Buffer
+}
+
+func (l *logger) Write(buf []byte) (int, error) {
+	l.Lock()
+	defer l.Unlock()
+	return l.writer.Write(buf)
+}
+
+func (l *logger) WriteTo(w io.Writer) (int64, error) {
+	l.Lock()
+	defer l.Unlock()
+	return l.writer.WriteTo(w)
+}
+
+func (l *logger) String() string {
+	l.Lock()
+	defer l.Unlock()
+	return l.writer.String()
 }
 
 // -----------------------------------------------------------------------
@@ -294,10 +336,16 @@ func (c *C) logArgPanic(method *methodType, expectedType string) {
 
 var initWD, initWDErr = os.Getwd()
 
+func init() {
+	if initWDErr == nil {
+		initWD = strings.Replace(initWD, "\\", "/", -1) + "/"
+	}
+}
+
 func nicePath(path string) string {
 	if initWDErr == nil {
-		if strings.HasPrefix(path, initWD+"/") {
-			return path[len(initWD)+1:]
+		if strings.HasPrefix(path, initWD) {
+			return path[len(initWD):]
 		}
 	}
 	return path
@@ -499,24 +547,8 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		}
 	}
 
-	// This map will be used to filter out duplicated methods.  This
-	// looks like a bug in Go, described on issue 906:
-	// http://code.google.com/p/go/issues/detail?id=906
-	seen := make(map[uintptr]bool, suiteNumMethods)
-
-	// XXX Shouldn't Name() work here? Why does it return an empty string?
-	suiteName := suiteType.String()
-	if index := strings.LastIndex(suiteName, "."); index != -1 {
-		suiteName = suiteName[index+1:]
-	}
-
 	for i := 0; i != suiteNumMethods; i++ {
 		method := newMethod(suiteValue, i)
-		methodPC := method.PC()
-		if _, found := seen[methodPC]; found {
-			continue
-		}
-		seen[methodPC] = true
 		switch method.Info.Name {
 		case "SetUpSuite":
 			runner.setUpSuite = method
@@ -527,31 +559,19 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		case "TearDownTest":
 			runner.tearDownTest = method
 		default:
-			if isWanted(conf.Benchmark, suiteName, method.Info.Name, filterRegexp) {
+			prefix := "Test"
+			if conf.Benchmark {
+				prefix = "Benchmark"
+			}
+			if !strings.HasPrefix(method.Info.Name, prefix) {
+				continue
+			}
+			if filterRegexp == nil || method.matches(filterRegexp) {
 				runner.tests = append(runner.tests, method)
 			}
 		}
 	}
 	return runner
-}
-
-// isWanted returns true if the given suite and method names should be run.
-// The bench result indicates whether the method is a benchmark rather than
-// a test.
-func isWanted(benchmark bool, suiteName, methodName string, filterRegexp *regexp.Regexp) bool {
-	prefix := "Test"
-	if benchmark {
-		prefix = "Benchmark"
-	}
-	if !strings.HasPrefix(methodName, prefix) {
-		return false
-	}
-	if filterRegexp == nil {
-		return true
-	}
-	return (filterRegexp.MatchString(methodName) ||
-		filterRegexp.MatchString(suiteName) ||
-		filterRegexp.MatchString(suiteName+"."+methodName))
 }
 
 // Run all methods in the given suite.
@@ -585,13 +605,13 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
 	}
 	if logb == nil {
-		logb = bytes.NewBuffer(nil)
+		logb = new(logger)
 	}
 	c := &C{
 		method:    method,
@@ -613,7 +633,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *byt
 }
 
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, logb *bytes.Buffer, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, logb *logger, dispatcher func(c *C)) *C {
 	c := runner.forkCall(method, kind, logb, dispatcher)
 	<-c.done
 	return c
@@ -656,7 +676,7 @@ func (runner *suiteRunner) callDone(c *C) {
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C {
+func (runner *suiteRunner) runFixture(method *methodType, logb *logger) *C {
 	if method != nil {
 		c := runner.runFunc(method, fixtureKd, logb, func(c *C) {
 			c.ResetTimer()
@@ -672,13 +692,15 @@ func (runner *suiteRunner) runFixture(method *methodType, logb *bytes.Buffer) *C
 // Run the fixture method with runFixture(), but panic with a fixturePanic{}
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
-func (runner *suiteRunner) runFixtureWithPanic(method *methodType, logb *bytes.Buffer, skipped *bool) *C {
-	if *skipped {
+func (runner *suiteRunner) runFixtureWithPanic(method *methodType, logb *logger, skipped *bool) *C {
+	if skipped != nil && *skipped {
 		return nil
 	}
 	c := runner.runFixture(method, logb)
 	if c != nil && c.status != succeededSt {
-		*skipped = c.status == skippedSt
+		if skipped != nil {
+			*skipped = c.status == skippedSt
+		}
 		panic(&fixturePanic{c.status, method})
 	}
 	return c
@@ -695,27 +717,53 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 	return runner.forkCall(method, testKd, nil, func(c *C) {
 		var skipped bool
 		defer runner.runFixtureWithPanic(runner.tearDownTest, nil, &skipped)
-		runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
-		mt := c.method.Type()
-		if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
-			// Rather than a plain panic, provide a more helpful message when
-			// the argument type is incorrect.
-			c.status = panickedSt
-			c.logArgPanic(c.method, "*gocheck.C")
-			return
-		}
-		if strings.HasPrefix(c.method.Info.Name, "Test") {
+		defer c.StopTimer()
+		benchN := 1
+		for {
+			runner.runFixtureWithPanic(runner.setUpTest, c.logb, &skipped)
+			mt := c.method.Type()
+			if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
+				// Rather than a plain panic, provide a more helpful message when
+				// the argument type is incorrect.
+				c.status = panickedSt
+				c.logArgPanic(c.method, "*gocheck.C")
+				return
+			}
+			if strings.HasPrefix(c.method.Info.Name, "Test") {
+				c.ResetTimer()
+				c.StartTimer()
+				c.method.Call([]reflect.Value{reflect.ValueOf(c)})
+				return
+			}
+			if !strings.HasPrefix(c.method.Info.Name, "Benchmark") {
+				panic("unexpected method prefix: " + c.method.Info.Name)
+			}
+
+			runtime.GC()
+			c.N = benchN
 			c.ResetTimer()
 			c.StartTimer()
-			defer c.StopTimer()
 			c.method.Call([]reflect.Value{reflect.ValueOf(c)})
-			return
+			c.StopTimer()
+			if c.status != succeededSt || c.duration >= c.benchTime || benchN >= 1e9 {
+				return
+			}
+			perOpN := int(1e9)
+			if c.nsPerOp() != 0 {
+				perOpN = int(c.benchTime.Nanoseconds() / c.nsPerOp())
+			}
+
+			// Logic taken from the stock testing package:
+			// - Run more iterations than we think we'll need for a second (1.5x).
+			// - Don't grow too fast in case we had timing errors previously.
+			// - Be sure to run at least one more than last time.
+			benchN = max(min(perOpN+perOpN/2, 100*benchN), benchN+1)
+			benchN = roundUp(benchN)
+
+			skipped = true // Don't run the deferred one if this panics.
+			runner.runFixtureWithPanic(runner.tearDownTest, nil, nil)
+			skipped = false
 		}
-		if strings.HasPrefix(c.method.Info.Name, "Benchmark") {
-			benchmark(c)
-			return
-		}
-		panic("unexpected method prefix: " + c.method.Info.Name)
 	})
 }
 
@@ -867,3 +915,4 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }
+

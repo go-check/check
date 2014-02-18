@@ -31,7 +31,7 @@ func (s *FixtureS) TestOrder(c *C) {
 	c.Check(helper.calls[5], Equals, "Test2")
 	c.Check(helper.calls[6], Equals, "TearDownTest")
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 }
 
 // -----------------------------------------------------------------------
@@ -49,7 +49,7 @@ func (s *FixtureS) TestPanicOnTest(c *C) {
 	c.Check(helper.calls[5], Equals, "Test2")
 	c.Check(helper.calls[6], Equals, "TearDownTest")
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 
 	expected := "^\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
@@ -72,7 +72,7 @@ func (s *FixtureS) TestPanicOnSetUpTest(c *C) {
 	c.Check(helper.calls[1], Equals, "SetUpTest")
 	c.Check(helper.calls[2], Equals, "TearDownTest")
 	c.Check(helper.calls[3], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 4)
+	c.Check(len(helper.calls), Equals, 4)
 
 	expected := "^\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -102,7 +102,7 @@ func (s *FixtureS) TestPanicOnTearDownTest(c *C) {
 	c.Check(helper.calls[2], Equals, "Test1")
 	c.Check(helper.calls[3], Equals, "TearDownTest")
 	c.Check(helper.calls[4], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 5)
+	c.Check(len(helper.calls), Equals, 5)
 
 	expected := "^\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -129,7 +129,7 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
 	Run(&helper, &RunConf{Output: &output})
 	c.Check(helper.calls[0], Equals, "SetUpSuite")
 	c.Check(helper.calls[1], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 2)
+	c.Check(len(helper.calls), Equals, 2)
 
 	expected := "^\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -157,7 +157,7 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
 	c.Check(helper.calls[5], Equals, "Test2")
 	c.Check(helper.calls[6], Equals, "TearDownTest")
 	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 8)
+	c.Check(len(helper.calls), Equals, 8)
 
 	expected := "^\n-+\n" +
 		"PANIC: gocheck_test\\.go:[0-9]+: " +
@@ -187,7 +187,7 @@ func (s *FixtureS) TestPanicOnWrongTestArg(c *C) {
 	c.Check(helper.calls[4], Equals, "Test2")
 	c.Check(helper.calls[5], Equals, "TearDownTest")
 	c.Check(helper.calls[6], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 7)
+	c.Check(len(helper.calls), Equals, 7)
 
 	expected := "^\n-+\n" +
 		"PANIC: fixture_test\\.go:[0-9]+: " +
@@ -202,7 +202,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *C) {
 	helper := WrongSetUpTestArgHelper{}
 	output := String{}
 	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
 
 	expected :=
 		"^\n-+\n" +
@@ -218,7 +218,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *C) {
 	helper := WrongSetUpSuiteArgHelper{}
 	output := String{}
 	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
 
 	expected :=
 		"^\n-+\n" +
@@ -244,7 +244,7 @@ func (s *FixtureS) TestPanicOnWrongTestArgCount(c *C) {
 	c.Check(helper.calls[4], Equals, "Test2")
 	c.Check(helper.calls[5], Equals, "TearDownTest")
 	c.Check(helper.calls[6], Equals, "TearDownSuite")
-	c.Check(helper.n, Equals, 7)
+	c.Check(len(helper.calls), Equals, 7)
 
 	expected := "^\n-+\n" +
 		"PANIC: fixture_test\\.go:[0-9]+: " +
@@ -259,7 +259,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *C) {
 	helper := WrongSetUpTestArgCountHelper{}
 	output := String{}
 	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
 
 	expected :=
 		"^\n-+\n" +
@@ -275,7 +275,7 @@ func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *C) {
 	helper := WrongSetUpSuiteArgCountHelper{}
 	output := String{}
 	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.n, Equals, 0)
+	c.Check(len(helper.calls), Equals, 0)
 
 	expected :=
 		"^\n-+\n" +
@@ -460,7 +460,7 @@ func (s *FixtureS) TestSkipSuite(c *C) {
 	c.Assert(output.value, Equals, "")
 	c.Assert(helper.calls[0], Equals, "SetUpSuite")
 	c.Assert(helper.calls[1], Equals, "TearDownSuite")
-	c.Assert(helper.n, Equals, 2)
+	c.Assert(len(helper.calls), Equals, 2)
 	c.Assert(result.Skipped, Equals, 2)
 }
 
@@ -474,6 +474,6 @@ func (s *FixtureS) TestSkipTest(c *C) {
 	c.Assert(helper.calls[3], Equals, "Test2")
 	c.Assert(helper.calls[4], Equals, "TearDownTest")
 	c.Assert(helper.calls[5], Equals, "TearDownSuite")
-	c.Assert(helper.n, Equals, 6)
+	c.Assert(len(helper.calls), Equals, 6)
 	c.Assert(result.Skipped, Equals, 1)
 }
