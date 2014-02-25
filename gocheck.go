@@ -62,7 +62,7 @@ func (method *methodType) suiteName() string {
 }
 
 func (method *methodType) String() string {
-	return method.suiteName()+"."+method.Info.Name
+	return method.suiteName() + "." + method.Info.Name
 }
 
 func (method *methodType) matches(re *regexp.Regexp) bool {
@@ -81,6 +81,7 @@ type C struct {
 	reason    string
 	mustFail  bool
 	tempDir   *tempDir
+	startTime time.Time
 	timer
 }
 
@@ -613,13 +614,14 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *log
 		logb = new(logger)
 	}
 	c := &C{
-		method:  method,
-		kind:    kind,
-		logb:    logb,
-		logw:    logw,
-		tempDir: runner.tempDir,
-		done:    make(chan *C, 1),
-		timer:   timer{benchTime: runner.benchTime},
+		method:    method,
+		kind:      kind,
+		logb:      logb,
+		logw:      logw,
+		tempDir:   runner.tempDir,
+		done:      make(chan *C, 1),
+		timer:     timer{benchTime: runner.benchTime},
+		startTime: time.Now(),
 	}
 	runner.tracker.expectCall(c)
 	go (func() {
@@ -913,4 +915,3 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
 		niceFuncName(pc), suffix)
 }
-
