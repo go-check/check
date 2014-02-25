@@ -299,6 +299,7 @@ func (c *C) logCode(path string, line int) {
 }
 
 var valueGo = filepath.Join("reflect", "value.go")
+var asmGo = filepath.Join("runtime", "asm_")
 
 func (c *C) logPanic(skip int, value interface{}) {
 	skip += 1 // Our own frame.
@@ -311,6 +312,9 @@ func (c *C) logPanic(skip int, value interface{}) {
 			name := niceFuncName(pc)
 			path := nicePath(file)
 			if name == "Value.call" && strings.HasSuffix(path, valueGo) {
+				break
+			}
+			if name == "call16" && strings.Contains(path, asmGo) {
 				break
 			}
 			c.logf("%s:%d\n  in %s", nicePath(file), line, name)
