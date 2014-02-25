@@ -6,6 +6,7 @@ package gocheck_test
 import (
 	"errors"
 	. "launchpad.net/gocheck"
+	"os"
 	"sync"
 )
 
@@ -395,4 +396,25 @@ func (s *RunS) TestStreamModeWithMiss(c *C) {
 		"MISS: run_test\\.go:[0-9]+: StreamMissHelper\\.Test1\n\n"
 
 	c.Assert(output.value, Matches, expected)
+}
+
+// -----------------------------------------------------------------------
+// Verify that that the keep work dir request indeed does so.
+
+type WorkDirSuite struct {}
+
+func (s *WorkDirSuite) Test(c *C) {
+	c.MkDir()
+}
+
+func (s *RunS) TestKeepWorkDir(c *C) {
+	output := String{}
+	runConf := RunConf{Output: &output, Verbose: true, KeepWorkDir: true}
+	result := Run(&WorkDirSuite{}, &runConf)
+
+	c.Assert(result.String(), Matches, ".*\nWORK=" + result.WorkDir)
+
+	stat, err := os.Stat(result.WorkDir)
+	c.Assert(err, IsNil)
+	c.Assert(stat.IsDir(), Equals, true)
 }

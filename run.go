@@ -32,6 +32,7 @@ var (
 	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
 	benchTime   = flag.Duration("gocheck.btime", 1 * time.Second, "approximate run time for each benchmark")
 	listFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
+	workFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory") 
 )
 
 // Run all test suites registered with the Suite() function, printing
@@ -44,6 +45,7 @@ func TestingT(testingT *testing.T) {
 		Stream:    *streamFlag,
 		Benchmark: *benchFlag,
 		BenchmarkTime: *benchTime,
+		KeepWorkDir:   *workFlag,
 	}
 	if *listFlag {
 		w := bufio.NewWriter(os.Stdout)
@@ -86,9 +88,8 @@ func ListAll(runConf *RunConf) []string {
 	return names
 }
 
-// List prints the names of the test functions in the given
-// suite that will be run with the provided run configuration
-// to the given Writer.
+// List returns the names of the test functions in the given
+// suite that will be run with the provided run configuration.
 func List(suite interface{}, runConf *RunConf) []string {
 	var names []string
 	runner := newSuiteRunner(suite, runConf)
@@ -109,6 +110,11 @@ func (r *Result) Add(other *Result) {
 	r.FixturePanicked += other.FixturePanicked
 	r.ExpectedFailures += other.ExpectedFailures
 	r.Missed += other.Missed
+	if r.WorkDir != "" && other.WorkDir != "" {
+		r.WorkDir += ":" + other.WorkDir
+	} else if other.WorkDir != "" {
+		r.WorkDir = other.WorkDir
+	}
 }
 
 func (r *Result) Passed() bool {
@@ -147,6 +153,9 @@ func (r *Result) String() string {
 	}
 	if r.Missed != 0 {
 		value += fmt.Sprintf(", %d MISSED", r.Missed)
+	}
+	if r.WorkDir != "" {
+		value += "\nWORK=" + r.WorkDir
 	}
 	return value
 }

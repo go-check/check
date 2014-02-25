@@ -117,36 +117,36 @@ func (l *logger) String() string {
 
 type tempDir struct {
 	sync.Mutex
-	_path    string
-	_counter int
+	path    string
+	counter int
 }
 
 func (td *tempDir) newPath() string {
 	td.Lock()
 	defer td.Unlock()
-	if td._path == "" {
+	if td.path == "" {
 		var err error
 		for i := 0; i != 100; i++ {
 			path := fmt.Sprintf("%s/gocheck-%d", os.TempDir(), rand.Int())
 			if err = os.Mkdir(path, 0700); err == nil {
-				td._path = path
+				td.path = path
 				break
 			}
 		}
-		if td._path == "" {
+		if td.path == "" {
 			panic("Couldn't create temporary directory: " + err.Error())
 		}
 	}
-	result := path.Join(td._path, strconv.Itoa(td._counter))
-	td._counter += 1
+	result := path.Join(td.path, strconv.Itoa(td.counter))
+	td.counter += 1
 	return result
 }
 
 func (td *tempDir) removeAll() {
 	td.Lock()
 	defer td.Unlock()
-	if td._path != "" {
-		err := os.RemoveAll(td._path)
+	if td.path != "" {
+		err := os.RemoveAll(td.path)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: "+err.Error())
 		}
@@ -392,8 +392,9 @@ type Result struct {
 	Panicked         int
 	FixturePanicked  int
 	ExpectedFailures int
-	Missed           int   // Not even tried to run, related to a panic in the fixture.
-	RunError         error // Houston, we've got a problem.
+	Missed           int    // Not even tried to run, related to a panic in the fixture.
+	RunError         error  // Houston, we've got a problem.
+	WorkDir          string // If KeepWorkDir is true
 }
 
 type resultTracker struct {
@@ -492,6 +493,7 @@ type suiteRunner struct {
 	tests                     []*methodType
 	tracker                   *resultTracker
 	tempDir                   *tempDir
+	keepDir                   bool
 	output                    *outputWriter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
@@ -504,6 +506,7 @@ type RunConf struct {
 	Filter        string
 	Benchmark     bool
 	BenchmarkTime time.Duration // Defaults to 1 second
+	KeepWorkDir   bool
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -528,9 +531,10 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
+		tempDir:   &tempDir{},
+		keepDir:   conf.KeepWorkDir,
+		tests:     make([]*methodType, 0, suiteNumMethods),
 	}
-	runner.tests = make([]*methodType, 0, suiteNumMethods)
-	runner.tempDir = new(tempDir)
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
 	}
@@ -597,7 +601,11 @@ func (runner *suiteRunner) run() *Result {
 			runner.skipTests(missedSt, runner.tests)
 		}
 		runner.tracker.waitAndStop()
-		runner.tempDir.removeAll()
+		if runner.keepDir {
+			runner.tracker.result.WorkDir = runner.tempDir.path
+		} else {
+			runner.tempDir.removeAll()
+		}
 	}
 	return &runner.tracker.result
 }
