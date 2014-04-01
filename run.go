@@ -30,7 +30,7 @@ var (
 	verboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
 	streamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
 	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
-	benchTime   = flag.Duration("gocheck.btime", 1 * time.Second, "approximate run time for each benchmark")
+	benchTime   = flag.Duration("gocheck.btime", 1*time.Second, "approximate run time for each benchmark")
 	listFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
 	workFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory") 
 )
@@ -40,10 +40,10 @@ var (
 // module.
 func TestingT(testingT *testing.T) {
 	conf := &RunConf{
-		Filter:    *filterFlag,
-		Verbose:   *verboseFlag,
-		Stream:    *streamFlag,
-		Benchmark: *benchFlag,
+		Filter:        *filterFlag,
+		Verbose:       *verboseFlag,
+		Stream:        *streamFlag,
+		Benchmark:     *benchFlag,
 		BenchmarkTime: *benchTime,
 		KeepWorkDir:   *workFlag,
 	}
