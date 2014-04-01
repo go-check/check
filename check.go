@@ -87,6 +87,7 @@ type C struct {
 	reason    string
 	mustFail  bool
 	tempDir   *tempDir
+	benchMem  bool
 	startTime time.Time
 	timer
 }
@@ -508,6 +509,7 @@ type suiteRunner struct {
 	output                    *outputWriter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
+	benchMem                  bool
 }
 
 type RunConf struct {
@@ -517,6 +519,7 @@ type RunConf struct {
 	Filter        string
 	Benchmark     bool
 	BenchmarkTime time.Duration // Defaults to 1 second
+	BenchmarkMem  bool
 	KeepWorkDir   bool
 }
 
@@ -542,6 +545,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
+		benchMem:  conf.BenchmarkMem,
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
@@ -640,6 +644,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, logb *log
 		done:      make(chan *C, 1),
 		timer:     timer{benchTime: runner.benchTime},
 		startTime: time.Now(),
+		benchMem:  runner.benchMem,
 	}
 	runner.tracker.expectCall(c)
 	go (func() {
