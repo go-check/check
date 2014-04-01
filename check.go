@@ -1,4 +1,4 @@
-package gocheck
+package check
 
 import (
 	"bytes"
@@ -128,7 +128,7 @@ func (td *tempDir) newPath() string {
 	if td.path == "" {
 		var err error
 		for i := 0; i != 100; i++ {
-			path := fmt.Sprintf("%s/gocheck-%d", os.TempDir(), rand.Int())
+			path := fmt.Sprintf("%s/check-%d", os.TempDir(), rand.Int())
 			if err = os.Mkdir(path, 0700); err == nil {
 				td.path = path
 				break
@@ -738,7 +738,7 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 				// Rather than a plain panic, provide a more helpful message when
 				// the argument type is incorrect.
 				c.status = panickedSt
-				c.logArgPanic(c.method, "*gocheck.C")
+				c.logArgPanic(c.method, "*check.C")
 				return
 			}
 			if strings.HasPrefix(c.method.Info.Name, "Test") {
@@ -797,7 +797,7 @@ func (runner *suiteRunner) skipTests(status funcStatus, methods []*methodType) {
 	}
 }
 
-// Verify if the fixture arguments are *gocheck.C.  In case of errors,
+// Verify if the fixture arguments are *check.C.  In case of errors,
 // log the error as a panic in the fixture method call, and return false.
 func (runner *suiteRunner) checkFixtureArgs() bool {
 	succeeded := true
@@ -808,7 +808,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 			if mt.NumIn() != 1 || mt.In(0) != argType {
 				succeeded = false
 				runner.runFunc(method, fixtureKd, nil, func(c *C) {
-					c.logArgPanic(method, "*gocheck.C")
+					c.logArgPanic(method, "*check.C")
 					c.status = panickedSt
 				})
 			}

@@ -1,4 +1,4 @@
-package gocheck
+package check
 
 import (
 	"bufio"
@@ -26,28 +26,40 @@ func Suite(suite interface{}) interface{} {
 // Public running interface.
 
 var (
-	filterFlag  = flag.String("gocheck.f", "", "Regular expression selecting which tests and/or suites to run")
-	verboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
-	streamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
-	benchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
-	benchTime   = flag.Duration("gocheck.btime", 1*time.Second, "approximate run time for each benchmark")
-	listFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
-	workFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory") 
+	oldFilterFlag  = flag.String("gocheck.f", "", "Regular expression selecting which tests and/or suites to run")
+	oldVerboseFlag = flag.Bool("gocheck.v", false, "Verbose mode")
+	oldStreamFlag  = flag.Bool("gocheck.vv", false, "Super verbose mode (disables output caching)")
+	oldBenchFlag   = flag.Bool("gocheck.b", false, "Run benchmarks")
+	oldBenchTime   = flag.Duration("gocheck.btime", 1*time.Second, "approximate run time for each benchmark")
+	oldListFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
+	oldWorkFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory") 
+
+	newFilterFlag  = flag.String("check.f", "", "Regular expression selecting which tests and/or suites to run")
+	newVerboseFlag = flag.Bool("check.v", false, "Verbose mode")
+	newStreamFlag  = flag.Bool("check.vv", false, "Super verbose mode (disables output caching)")
+	newBenchFlag   = flag.Bool("check.b", false, "Run benchmarks")
+	newBenchTime   = flag.Duration("check.btime", 1*time.Second, "approximate run time for each benchmark")
+	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
+	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory") 
 )
 
 // Run all test suites registered with the Suite() function, printing
 // results to stdout, and reporting any failures back to the 'testing'
 // module.
 func TestingT(testingT *testing.T) {
-	conf := &RunConf{
-		Filter:        *filterFlag,
-		Verbose:       *verboseFlag,
-		Stream:        *streamFlag,
-		Benchmark:     *benchFlag,
-		BenchmarkTime: *benchTime,
-		KeepWorkDir:   *workFlag,
+	benchTime := *newBenchTime
+	if benchTime == 1*time.Second {
+		benchTime = *oldBenchTime
 	}
-	if *listFlag {
+	conf := &RunConf{
+		Filter:        *oldFilterFlag + *newFilterFlag,
+		Verbose:       *oldVerboseFlag || *newVerboseFlag,
+		Stream:        *oldStreamFlag || *newStreamFlag,
+		Benchmark:     *oldBenchFlag || *newBenchFlag,
+		BenchmarkTime: benchTime,
+		KeepWorkDir:   *oldWorkFlag || *newWorkFlag,
+	}
+	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)
 		for _, name := range ListAll(conf) {
 			fmt.Fprintln(w, name)

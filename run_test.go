@@ -1,10 +1,10 @@
 // These tests verify the test running logic.
 
-package gocheck_test
+package check_test
 
 import (
 	"errors"
-	. "launchpad.net/gocheck"
+	. "gopkg.in/check.v1"
 	"os"
 	"sync"
 )
@@ -307,8 +307,8 @@ func (s *RunS) TestVerboseMode(c *C) {
 	runConf := RunConf{Output: &output, Verbose: true}
 	Run(&helper, &runConf)
 
-	expected := "PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test1\t *[.0-9]+s\n" +
-		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
+	expected := "PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Test1\t *[.0-9]+s\n" +
+		"PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
 
 	c.Assert(output.value, Matches, expected)
 }
@@ -320,7 +320,7 @@ func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 	Run(&helper, &runConf)
 
 	expected := "(?s).*PANIC.*\n-+\n" + // Should have an extra line.
-		"PASS: gocheck_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
+		"PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Test2\t *[.0-9]+s\n"
 
 	c.Assert(output.value, Matches, expected)
 }
