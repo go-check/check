@@ -1,10 +1,20 @@
-Project documentation
-=====================
+Instructions
+============
 
-Please see the project page at http://labix.org/gocheck
+Install the package with:
 
-Import path and API documentation
-=================================
+    go get gopkg.in/check.v1
+    
+Import it with:
 
-This code must be imported as [gopkg.in/check.v1](https://gopkg.in/check.v1),
-and the API documentation is available in that same URL.
+    import "gopkg.in/check.v1"
+
+and use _check_ as the package name inside the code.
+
+For more details, visit the project page:
+
+    * http://labix.org/gocheck
+
+and the API documentation:
+
+    * https://gopkg.in/check.v1
