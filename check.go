@@ -358,6 +358,11 @@ func nicePath(path string) string {
 			return path[len(initWD):]
 		}
 	}
+
+	// strip directory
+	parts := strings.Split(path, "/")
+	path = parts[len(parts)-1]
+
 	return path
 }
 
