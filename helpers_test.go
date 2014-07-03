@@ -451,6 +451,14 @@ func (s *HelpersS) TestConcurrentLogging(c *check.C) {
 }
 
 // -----------------------------------------------------------------------
+// Test the TestName function
+
+func (s *HelpersS) TestTestName(c *check.C) {
+	name := c.TestName()
+	c.Check(name, check.Equals, "HelpersS.TestTestName")
+}
+
+// -----------------------------------------------------------------------
 // A couple of helper functions to test helper functions. :-)
 
 func testHelperSuccess(c *check.C, name string, expectedResult interface{}, closure func() interface{}) {
