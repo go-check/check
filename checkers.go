@@ -235,7 +235,10 @@ func (checker *hasLenChecker) Check(params []interface{}, names []string) (resul
 	default:
 		return false, "obtained value type has no length"
 	}
-	return value.Len() == n, ""
+	if value.Len() == n {
+		return true, ""
+	}
+	return false, fmt.Sprintf("obtained length = %d", value.Len())
 }
 
 // -----------------------------------------------------------------------
