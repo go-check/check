@@ -8,7 +8,7 @@ import (
 
 // TestName returns the current test name in the form "SuiteName.TestName"
 func (c *C) TestName() string {
-	return c.method.String()
+	return c.testName
 }
 
 // -----------------------------------------------------------------------
