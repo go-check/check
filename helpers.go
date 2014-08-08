@@ -229,3 +229,21 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 	}
 	return true
 }
+
+// Assert that the supplied map has the specified key, and it points to the specified value
+func (c *C) AssertMapKeyValue(container map[string]interface{}, key string, value interface{}, args ...string) {
+  actualValue, ok := container[key]
+  if ! ok {
+    c.Fatal("Map does not contain key '%v'", key)
+  }
+  if value != actualValue {
+    var msg string
+    if 0 != len(args) {
+      msg = args[0]
+    } else {
+      msg = fmt.Sprintf("Map has key, incorrect value. '%s' != '%s'", value, actualValue)
+    }
+    c.Fatal(msg)
+  }
+}
+
