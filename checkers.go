@@ -456,3 +456,65 @@ func (checker *implementsChecker) Check(params []interface{}, names []string) (r
 	}
 	return obtained.Type().Implements(ifaceptr.Elem().Type()), ""
 }
+
+// -----------------------------------------------------------------------
+// IsTrue checker.
+
+type isTrueChecker struct {
+	*CheckerInfo
+}
+
+// The IsTrue checker tests whether the obtained value is a bool and true.
+//
+// For example:
+//
+//    c.Assert(2 > 1, IsTrue)
+//
+var IsTrue Checker = &isTrueChecker{
+	&CheckerInfo{Name: "IsTrue", Params: []string{"value"}},
+}
+
+func (checker *isTrueChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return isTrue(params[0]), ""
+}
+
+func isTrue(obtained interface{}) (result bool) {
+	v := reflect.ValueOf(obtained)
+	if v.Kind() != reflect.Bool {
+		result = false
+	} else {
+		result = v.Bool()
+	}
+	return
+}
+
+// -----------------------------------------------------------------------
+// IsFalse checker.
+
+type isFalseChecker struct {
+	*CheckerInfo
+}
+
+// The IsFalse checker tests whether the obtained value is a bool and false.
+//
+// For example:
+//
+//    c.Assert(0 > 1, IsFalse)
+//
+var IsFalse Checker = &isFalseChecker{
+	&CheckerInfo{Name: "IsFalse", Params: []string{"value"}},
+}
+
+func (checker *isFalseChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	return isFalse(params[0]), ""
+}
+
+func isFalse(obtained interface{}) (result bool) {
+	v := reflect.ValueOf(obtained)
+	if v.Kind() != reflect.Bool {
+		result = false
+	} else {
+		result = !v.Bool()
+	}
+	return
+}
