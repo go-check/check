@@ -136,7 +136,7 @@ func (td *tempDir) newPath() string {
 	if td.path == "" {
 		var err error
 		for i := 0; i != 100; i++ {
-			path := fmt.Sprintf("%s/check-%d", os.TempDir(), rand.Int())
+			path := fmt.Sprintf("%s%ccheck-%d", os.TempDir(), os.PathSeparator, rand.Int())
 			if err = os.Mkdir(path, 0700); err == nil {
 				td.path = path
 				break
