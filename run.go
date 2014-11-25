@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -91,26 +92,48 @@ func TestingT(testingT *testing.T) {
 // RunAll runs all test suites registered with the Suite function, using the
 // provided run configuration.
 func RunAll(runConf *RunConf) *Result {
-	result := Result{}
+	concurrent := make([]interface{}, 0, len(allSuites))
+	serial := make([]interface{}, 0, len(allSuites))
 	for _, s := range allSuites {
 		if s.concurrent {
-			result.Add(RunConcurrent(s.suite, runConf))
+			concurrent = append(concurrent, s.suite)
 		} else {
-			result.Add(Run(s.suite, runConf))
+			serial = append(serial, s.suite)
 		}
+	}
+	result := Result{}
+	if len(concurrent) > 0 {
+		bucket := newConcurrencyBucket(runConf.ConcurrencyLevel)
+		var mtx sync.Mutex
+		var wg sync.WaitGroup
+		wg.Add(len(concurrent))
+		for _, suite := range concurrent {
+			go func(suite interface{}) {
+				r := RunConcurrent(suite, runConf, bucket)
+				mtx.Lock()
+				result.Add(r)
+				mtx.Unlock()
+				wg.Done()
+			}(suite)
+		}
+		wg.Wait()
+		bucket.drain()
+	}
+	for _, suite := range serial {
+		result.Add(Run(suite, runConf))
 	}
 	return &result
 }
 
 // Run runs the provided test suite using the provided run configuration.
 func Run(suite interface{}, runConf *RunConf) *Result {
-	runner := newSuiteRunner(suite, runConf, false)
+	runner := newSuiteRunner(suite, runConf, false, nil)
 	return runner.run()
 }
 
 // RunConcurrent runs the provided test suite concurrently using the provided run configuration.
-func RunConcurrent(suite interface{}, runConf *RunConf) *Result {
-	runner := newSuiteRunner(suite, runConf, true)
+func RunConcurrent(suite interface{}, runConf *RunConf, bucket *concurrencyBucket) *Result {
+	runner := newSuiteRunner(suite, runConf, true, bucket)
 	return runner.run()
 }
 
@@ -128,7 +151,7 @@ func ListAll(runConf *RunConf) []string {
 // suite that will be run with the provided run configuration.
 func List(suite interface{}, runConf *RunConf) []string {
 	var names []string
-	runner := newSuiteRunner(suite, runConf, false)
+	runner := newSuiteRunner(suite, runConf, false, nil)
 	for _, t := range runner.tests {
 		names = append(names, t.String())
 	}
