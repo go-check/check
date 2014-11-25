@@ -513,21 +513,24 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	concurrent                bool
+	concurrencyLevel          int
 }
 
 type RunConf struct {
-	Output        io.Writer
-	Stream        bool
-	Verbose       bool
-	Filter        string
-	Benchmark     bool
-	BenchmarkTime time.Duration // Defaults to 1 second
-	BenchmarkMem  bool
-	KeepWorkDir   bool
+	Output           io.Writer
+	Stream           bool
+	Verbose          bool
+	Filter           string
+	Benchmark        bool
+	BenchmarkTime    time.Duration // Defaults to 1 second
+	BenchmarkMem     bool
+	KeepWorkDir      bool
+	ConcurrencyLevel int
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
-func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
+func newSuiteRunner(suite interface{}, runConf *RunConf, concurrent bool) *suiteRunner {
 	var conf RunConf
 	if runConf != nil {
 		conf = *runConf
@@ -538,20 +541,25 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	if conf.Benchmark {
 		conf.Verbose = true
 	}
+	if concurrent && conf.ConcurrencyLevel == 0 {
+		conf.ConcurrencyLevel = 1
+	}
 
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
-		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
-		tracker:   newResultTracker(),
-		benchTime: conf.BenchmarkTime,
-		benchMem:  conf.BenchmarkMem,
-		tempDir:   &tempDir{},
-		keepDir:   conf.KeepWorkDir,
-		tests:     make([]*methodType, 0, suiteNumMethods),
+		suite:            suite,
+		output:           newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		tracker:          newResultTracker(),
+		benchTime:        conf.BenchmarkTime,
+		benchMem:         conf.BenchmarkMem,
+		tempDir:          &tempDir{},
+		keepDir:          conf.KeepWorkDir,
+		tests:            make([]*methodType, 0, suiteNumMethods),
+		concurrent:       concurrent,
+		concurrencyLevel: conf.ConcurrencyLevel,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -602,11 +610,28 @@ func (runner *suiteRunner) run() *Result {
 		if runner.checkFixtureArgs() {
 			c := runner.runFixture(runner.setUpSuite, "", nil)
 			if c == nil || c.status == succeededSt {
-				for i := 0; i != len(runner.tests); i++ {
-					c := runner.runTest(runner.tests[i])
-					if c.status == fixturePanickedSt {
-						runner.skipTests(missedSt, runner.tests[i+1:])
-						break
+				if runner.concurrent {
+					bucket := make(chan struct{}, runner.concurrencyLevel)
+					for i := 0; i < runner.concurrencyLevel; i++ {
+						bucket <- struct{}{}
+					}
+					for _, t := range runner.tests {
+						<-bucket
+						go func(t *methodType) {
+							runner.runTest(t)
+							bucket <- struct{}{}
+						}(t)
+					}
+					for i := 0; i < runner.concurrencyLevel; i++ {
+						<-bucket
+					}
+				} else {
+					for i, t := range runner.tests {
+						c := runner.runTest(t)
+						if c.status == fixturePanickedSt {
+							runner.skipTests(missedSt, runner.tests[i+1:])
+							break
+						}
 					}
 				}
 			} else if c != nil && c.status == skippedSt {
