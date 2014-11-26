@@ -635,13 +635,17 @@ func (runner *suiteRunner) run() *Result {
 			c := runner.runFixture(runner.setUpSuite, "", nil)
 			if c == nil || c.status == succeededSt {
 				if runner.concurrent {
+					var wg sync.WaitGroup
+					wg.Add(len(runner.tests))
 					for _, t := range runner.tests {
 						<-runner.concurrencyBucket.ch
 						go func(t *methodType) {
 							runner.runTest(t)
 							runner.concurrencyBucket.ch <- struct{}{}
+							wg.Done()
 						}(t)
 					}
+					wg.Wait()
 				} else {
 					for i, t := range runner.tests {
 						c := runner.runTest(t)
