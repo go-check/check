@@ -26,8 +26,8 @@ func printTestFunc() {
 	switch 5 {
 	case 6:
 		println(6) // Comment6
-		println(7)
 	}
+	println(7)
 	switch interface{}(9).(type) { // Comment9
 	case int:
 		println(10)
@@ -63,22 +63,22 @@ var printLineTests = []struct {
 	{2, "if 2 == 2 { // Comment2\n    ...\n}"},
 	{3, "println(3) // Comment3"},
 	{5, "switch 5 {\n...\n}"},
-	{6, "case 6:\n    println(6) // Comment6\n    ..."},
-	{7, "println(7)"},
-	{9, "switch interface{}(9).(type) { // Comment9\n...\n}"},
-	{10, "case int:\n    println(10)\n    ..."},
-	{14, "case <-(chan bool)(nil):\n    println(14)\n    ..."},
-	{15, "println(15)"},
-	{16, "default:\n    println(16)\n    ..."},
-	{17, "println(17)"},
-	{19, "println(19,\n    20)"},
-	{20, "println(19,\n    20)"},
-	{21, "_ = func() {\n    println(21)\n    println(22)\n}"},
-	{22, "println(22)"},
-	{24, "println(24, func() {\n    println(25)\n})"},
-	{25, "println(25)"},
-	{26, "println(24, func() {\n    println(25)\n})"},
-	{29, "// Leading comment\n// with multiple lines.\nprintln(29) // Comment29"},
+	{6, "case 6:\n    ... // Comment6"},
+	{9, "println(7)"},
+	{10, "switch interface{}(9).(type) { // Comment9\n...\n}"},
+	{11, "case int:\n    ...\n    println(11)"},
+	{16, "case <-(chan bool)(nil):\n    ...\n    println(15)"},
+	{18, "println(15)"},
+	{19, "default:\n    ...\n    println(17)"},
+	{21, "println(17)"},
+	{23, "println(19,\n    20)"},
+	{24, "println(19,\n    20)"},
+	{25, "_ = func() {\n    println(21)\n    println(22)\n}"},
+	{27, "println(22)"},
+	{29, "println(24, func() {\n    println(25)\n})"},
+	{30, "println(25)"},
+	{31, "println(24, func() {\n    println(25)\n})"},
+	{34, "// Leading comment\n// with multiple lines.\nprintln(29) // Comment29"},
 }
 
 func (s *PrinterS) TestPrintLine(c *C) {
