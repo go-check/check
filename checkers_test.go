@@ -270,3 +270,25 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
 }
+
+func (s *CheckersS) TestIsTrue(c *check.C) {
+	testInfo(c, check.IsTrue, "IsTrue", []string{"obtained"})
+
+	// Basic checks
+	testCheck(c, check.IsTrue, true, "", true)
+	testCheck(c, check.IsTrue, false, "", false)
+
+	// Non-bool values
+	testCheck(c, check.IsTrue, false, "Argument to IsTrue must be bool", nil)
+}
+
+func (s *CheckersS) TestIsFalse(c *check.C) {
+	testInfo(c, check.IsFalse, "IsFalse", []string{"obtained"})
+
+	// Basic checks
+	testCheck(c, check.IsFalse, true, "", false)
+	testCheck(c, check.IsFalse, false, "", true)
+
+	// Non-bool values
+	testCheck(c, check.IsFalse, false, "Argument to IsFalse must be bool", nil)
+}
