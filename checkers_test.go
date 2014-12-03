@@ -234,6 +234,20 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
 }
 
+func (s *CheckersS) TestDoesntPanic(c *check.C) {
+	testInfo(c, check.DoesntPanic, "DoesntPanic", []string{"function"})
+
+	// Some Errors
+	// Basic checks
+	//testCheck(c, check.IsTrue, false, "", false)
+
+	testCheck(c, check.DoesntPanic, false, "BOOM", func() bool { panic("BOOM") })
+	testCheck(c, check.DoesntPanic, false, "Function must take zero arguments", 1)
+
+	testCheck(c, check.DoesntPanic, true, "", func() bool { return false })
+
+}
+
 func (s *CheckersS) TestFitsTypeOf(c *check.C) {
 	testInfo(c, check.FitsTypeOf, "FitsTypeOf", []string{"obtained", "sample"})
 

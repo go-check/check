@@ -323,6 +323,10 @@ type panicsChecker struct {
 	*CheckerInfo
 }
 
+type doesntPanicChecker struct {
+	*CheckerInfo
+}
+
 // The Panics checker verifies that calling the provided zero-argument
 // function will cause a panic which is deep-equal to the provided value.
 //
@@ -332,7 +336,13 @@ type panicsChecker struct {
 //
 //
 var Panics Checker = &panicsChecker{
-	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
+	&CheckerInfo{
+		Name:   "Panics",
+		Params: []string{"function", "expected"}},
+}
+
+var DoesntPanic Checker = &doesntPanicChecker{
+	&CheckerInfo{Name: "DoesntPanic", Params: []string{"function"}},
 }
 
 func (checker *panicsChecker) Check(params []interface{}, names []string) (result bool, error string) {
@@ -351,6 +361,33 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 	}()
 	f.Call(nil)
 	return false, "Function has not panicked"
+}
+
+// The DoesntPanic checker verifies that calling the provided zero-argument
+// function will NOT cause a panic.
+//
+// The first param must be a function so that the execution of the code
+// to be tested can be delayed, and any unexpected panic caught.
+
+// For example:
+//
+//     c.Assert(func() { f(1, 2) }, DoesntPanic)
+//
+//
+func (checker *doesntPanicChecker) Check(params []interface{}, names []string) (result bool, err string) {
+	f := reflect.ValueOf(params[0])
+	if f.Kind() != reflect.Func || f.Type().NumIn() != 0 {
+		return false, "Function must take zero arguments"
+	}
+	defer func() {
+		if e := recover(); e != nil {
+			result = false
+			// TODO: Figure out how to set the error string
+			err = fmt.Sprintf("%v", e)
+		}
+	}()
+	f.Call(nil)
+	return true, ""
 }
 
 type panicMatchesChecker struct {
