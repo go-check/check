@@ -234,6 +234,20 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
 }
 
+func (s *CheckersS) TestSliceIncludes(c *check.C) {
+	testInfo(c, check.SliceIncludes, "SliceIncludes", []string{"aSlice", "aThing"})
+	letters := []string{"A", "B", "C", "D"}
+	numbers := []int{2, 4, 6, 8}
+
+	testCheck(c, check.SliceIncludes, true, "", letters, "A")
+	testCheck(c, check.SliceIncludes, false, "", letters, "Z")
+	testCheck(c, check.SliceIncludes, true, "", numbers, 2)
+	testCheck(c, check.SliceIncludes, false, "", numbers, 1)
+
+	// error states
+
+	testCheck(c, check.SliceIncludes, false, "SliceIncludes given a non-slice type: not a slice", "not a slice", 1)
+}
 func (s *CheckersS) TestDoesntPanic(c *check.C) {
 	testInfo(c, check.DoesntPanic, "DoesntPanic", []string{"function"})
 

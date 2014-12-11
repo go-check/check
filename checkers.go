@@ -535,3 +535,40 @@ var IsFalse Checker = &isBoolValueChecker{
 	&CheckerInfo{Name: "IsFalse", Params: []string{"obtained"}},
 	false,
 }
+
+// -----------------------------------------------------------------------
+// SliceIncludes checker.
+
+type sliceIncludesChecker struct {
+	*CheckerInfo
+}
+
+// The SliceIncludes checker verifies that the provided slice includes
+// the provided object.
+//
+// For example:
+// c.Assert(aSlice, SliceIncludes, aThing)
+//
+var SliceIncludes Checker = &sliceIncludesChecker{
+	&CheckerInfo{
+		Name:   "SliceIncludes",
+		Params: []string{"aSlice", "aThing"}},
+}
+
+func (checker *sliceIncludesChecker) Check(params []interface{}, names []string) (result bool, errStr string) {
+	//params[0] == aSlice
+	//params[1] == aThing (that we hope is in the slice)
+	s := reflect.ValueOf(params[0]) //aSlice
+	if s.Kind() != reflect.Slice {
+		return false, fmt.Sprintf("SliceIncludes given a non-slice type: %v", params[0])
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		x := s.Index(i).Interface()
+		if params[1] == x { //roughly:  if aThing == aSlice[i]
+			return true, ""
+		}
+	}
+	return false, ""
+
+}
