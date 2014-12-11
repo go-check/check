@@ -156,3 +156,14 @@ regular expression provided.
 	```go
 	c.Assert(aSlice, SliceIncludes, aThing)
 	```
+-----
+
+## License
+Distributed under the [Simplified BSD License](http://en.wikipedia.org/wiki/BSD_licenses#2-clause_license_.28.22Simplified_BSD_License.22_or_.22FreeBSD_License.22.29)
+
+
+-----
+## Credit where credit is due:
+
+This repo is an extension of the original [gocheck](http://labix.org/gocheck)
+  ([GitHub repo](https://github.com/go-check/check#readme)) by [Gustavo Niemeyer](http://labix.org/)  
