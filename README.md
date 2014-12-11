@@ -47,12 +47,14 @@ Instructions
 
 Install the package with:
 
-    go get github.com/masukomi/check
+	go get github.com/masukomi/check
 
 Import it with:
-
-    import "masukomi/check"
-
+```go
+	import (
+		. "github.com/masukomi/check"
+	)
+```
 
 ## Assertions
 
