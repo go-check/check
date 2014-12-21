@@ -56,6 +56,148 @@ Import it with:
 	)
 ```
 
+## Using Fixtures
+
+Fixtures are available by using one or more of the following methods in a test suite:
+
+* `func (s *SuiteType) SetUpSuite(c *C)` \- Run once when the suite starts running.
+* func (s *SuiteType) SetUpTest(c *C)` \- Run before each test or benchmark starts running.
+* `func (s *SuiteType) TearDownTest(c *C)` \- Run after each test or benchmark runs.
+* `func (s *SuiteType) TearDownSuite(c *C)` \- Run once after all tests or benchmarks have finished running.
+
+Here is an example preparing some data in a temporary directory before each test runs:
+
+```go
+type Suite struct{
+    dir string
+}
+
+func (s *MySuite) SetUpTest(c *C) {
+    s.dir = c.MkDir()
+    // Use s.dir to prepare some data.
+}
+
+func (s *MySuite) TestWithDir(c *C) {
+    // Use the data in s.dir in the test.
+}
+```
+
+## Adding Benchmarks
+
+Benchmarks may be added by prefixing a method in the suite with _Benchmark_. The method will be called with the usual _*C_ argument, but unlike a normal test it is supposed to put the benchmarked logic within a loop iterating _c.N_ times.
+
+For example:
+
+```go
+func (s *MySuite) BenchmarkLogic(c *C) {
+    for i := 0; i < c.N; i++ {
+        // Logic to benchmark
+    }
+}
+```
+
+These methods are only run when in benchmark mode, using the `-check.b` flag, and will present a result similar to the following when run:
+
+```
+PASS: myfile.go:67: MySuite.BenchmarkLogic 100000 14026 ns/op 
+PASS: myfile.go:73: MySuite.BenchmarkOtherLogic 100000 21133 ns/op 
+```
+
+All the fixture methods are run as usual for a test method.
+
+To obtain the timing for normal tests, use the `-check.v` flag instead.
+
+## Skipping tests
+
+Tests may be skipped with the `Skip` method within SetUpSuite, SetUpTest, or the test method itself. This allows selectively ignoring tests based on custom factors such as the architecture being run, flags provided to the test, or the availbility of resources (network, etc).
+
+As an example, the following test suite will skip all the tests within the suite unless the _-live_ option is provided to _go test_:
+
+```go
+
+var live = flag.Bool("live", false, "Include live tests")
+
+type LiveSuite struct{}
+
+func (s *LiveSuite) SetUpSuite(c *C) {
+    if !*live {
+        c.Skip("-live not provided")
+    }
+}
+```
+
+## Running tests and output sample
+
+Use the _go test_ tool as usual to run the tests:
+
+```
+$ go test
+
+----------------------------------------------------------------------
+FAIL: hello_test.go:16: S.TestHelloWorld
+
+hello_test.go:17:
+    c.Check(42, Equals, "42")
+... obtained int = 42
+... expected string = "42"
+
+hello_test.go:18:
+    c.Check(io.ErrClosedPipe, ErrorMatches, "BOOM")
+... error string = "io: read/write on closed pipe"
+... regex string = "BOOM"
+
+
+OOPS: 0 passed, 1 FAILED
+--- FAIL: hello_test.Test
+FAIL
+```
+
+
+## Assertions and checks
+
+gocheck uses two methods of `*C` to verify expectations on values obtained in test cases: `Assert` and `Check`. Both of these methods accept the same arguments, and the only difference between them is that when `Assert` fails, the test is interrupted immediately, while `Check` will fail the test, return `false`, and allow it to continue for further checks.
+
+`Assert` and `Check` have the following types:
+
+```go
+func (c *C) Assert(obtained interface{}, chk Checker, ...args interface{})
+func (c *C) Check(obtained interface{}, chk Checker, ...args interface{}) bool
+```
+
+They may be used as follows:
+
+```go
+func (s *S) TestSimpleChecks(c *C) {
+    c.Assert(value, Equals, 42)
+    c.Assert(s, Matches, "hel.*there")
+    c.Assert(err, IsNil)
+    c.Assert(foo, Equals, bar, Commentf("#CPUs == %d", runtime.NumCPU())
+}
+```
+
+The last statement will display the provided message next to the usual debugging information, but only if the check fails.
+
+Custom verifications may be defined by implementing the `Checker` interface. There are several standard checkers available. See the documtation for details and examples:
+
+## Selecting which tests to run
+
+gocheck can filter tests out based on the test name, the suite name, or both. To run tests selectively, provide the command line option `-check.f` when running `go test`. Note that this option is specific to `gocheck`, and won't affect `go test` itself.
+
+Some examples:
+
+```shell
+$ go test -check.f MyTestSuite
+$ go test -check.f "Test.*Works"
+$ go test -check.f "MyTestSuite.Test.*Works```
+
+
+## Verbose modes
+
+gocheck offers two levels of verbosity through the `-check.v` and `-check.vv` flags. In the first mode, passing tests will also be reported. The second mode will disable log caching entirely and will stream starting and ending suite calls and everything logged in between straight to the output. This is useful to debug hanging tests, for instance.
+
+
+
+
 ## Assertions
 
 * DeepEquals
