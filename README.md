@@ -31,15 +31,29 @@ func Test(t *testing.T) { TestingT(t) }
 
 type CoreSuite struct{} // define a test suite
 
+var testString = "Foo"
+
+// This will run before every test
+// reassigning testString to "Bar"
+// regardless of what it got set to.
+func (s *CoreSuite) SetUpTest(c *C) {
+    testString = "Bar"
+}
+
+
 var _ = Suite(&CoreSuite{})
 
 // add a test to the suite
 func (s *CoreSuite) Test_isInt(c *C) {
+	c.Assert(testString, Equals, "Bar")
+	//       ^^^^ reset in SetUpTest
 	c.Assert(isInt(1), IsTrue)
 	c.Assert(isInt(4.0), IsFalse)
 	c.Assert(isInt(int64(3)), IsTrue)
 }
 ```
+
+Note: The full list of available assertions can be found at the end of this document.
 
 
 Instructions
@@ -55,6 +69,7 @@ Import it with:
 		. "github.com/masukomi/check"
 	)
 ```
+
 
 ## Using Fixtures
 
