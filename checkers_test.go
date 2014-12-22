@@ -248,6 +248,7 @@ func (s *CheckersS) TestSliceIncludes(c *check.C) {
 
 	testCheck(c, check.SliceIncludes, false, "SliceIncludes given a non-slice type: not a slice", "not a slice", 1)
 }
+
 func (s *CheckersS) TestDoesntPanic(c *check.C) {
 	testInfo(c, check.DoesntPanic, "DoesntPanic", []string{"function"})
 
@@ -319,4 +320,17 @@ func (s *CheckersS) TestIsFalse(c *check.C) {
 
 	// Non-bool values
 	testCheck(c, check.IsFalse, false, "Argument to IsFalse must be bool", nil)
+}
+
+func (s *CheckersS) TestWithinDelta(c *check.C) {
+	testInfo(c, check.WithinDelta, "WithinDelta", []string{"obtained", "delta", "expected"})
+
+	testCheck(c, check.WithinDelta, true, "", 2.0, 0.5, 1.6)
+	testCheck(c, check.WithinDelta, false, "", 2.0, 0.5, 1.0)
+
+	// error states
+
+	testCheck(c, check.WithinDelta, false, "obtained must be a float64", 2, 0.5, 1.6)
+	testCheck(c, check.WithinDelta, false, "delta must be a float64", 2.0, 1, 1.6)
+	testCheck(c, check.WithinDelta, false, "expected must be a float64", 2.0, 0.5, 1)
 }

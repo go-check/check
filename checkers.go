@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 )
@@ -571,4 +572,41 @@ func (checker *sliceIncludesChecker) Check(params []interface{}, names []string)
 	}
 	return false, ""
 
+}
+
+// The WithinDelta checker verifies that the obtained value is
+// withen a delta of the expected value. All numbers must be floats64s
+//
+// For example:
+// c.Assert(gear.GearInches(), WithinDelta, 0.01, 137.1)//
+//
+// Based on Nathan Youngman's <http://nathany.com/> work
+// found here:
+// <https://github.com/nathany/go-poodr/blob/master/chapter9/gear1/gear1_check_test.go>
+// Distributed under the simplified BSD license:
+// <https://github.com/nathany/go-poodr/blob/master/LICENSE>
+type withinDeltaChecker struct {
+	*CheckerInfo
+}
+
+var WithinDelta Checker = &withinDeltaChecker{
+	&CheckerInfo{
+		Name:   "WithinDelta",
+		Params: []string{"obtained", "delta", "expected"}},
+}
+
+func (c *withinDeltaChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained, ok := params[0].(float64)
+	if !ok {
+		return false, "obtained must be a float64"
+	}
+	delta, ok := params[1].(float64)
+	if !ok {
+		return false, "delta must be a float64"
+	}
+	expected, ok := params[2].(float64)
+	if !ok {
+		return false, "expected must be a float64"
+	}
+	return math.Abs(obtained-expected) <= delta, ""
 }

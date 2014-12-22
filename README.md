@@ -315,6 +315,15 @@ regular expression provided.
 	```go
 	c.Assert(aSlice, SliceIncludes, aThing)
 	```
+* WithinDelta
+	* The WithinDelta checker verifies that the obtained float64 is within a
+	  given delta of the expected float64
+	* Example:
+	```go
+	c.Assert(gear.GearInches(), WithinDelta, 0.01,    137.1)
+	//       ^^^ obtained                    ^^^ delta ^^^ expected
+	```
+
 -----
 
 ## License
