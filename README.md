@@ -203,7 +203,8 @@ Some examples:
 ```shell
 $ go test -check.f MyTestSuite
 $ go test -check.f "Test.*Works"
-$ go test -check.f "MyTestSuite.Test.*Works```
+$ go test -check.f "MyTestSuite.Test.*Works"
+```
 
 
 ## Verbose modes
