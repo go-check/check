@@ -230,7 +230,7 @@ gocheck offers two levels of verbosity through the `-check.v` and `-check.vv` fl
 	c.Assert(array, DeepEquals, []string{"hi", "there"})
 	```
 * DoesntPanic
-	* The DoesntPanic checker verifies that calling the provided zero-argument function will not cause a panic
+	* The DoesntPanic checker verifies that calling the provided zero-argument function will not cause a panic. Useful when have a function that can panic, but never should.
 	* Example:
 	```go
 	c.Assert( func() bool { return false }, DoesntPanic)
