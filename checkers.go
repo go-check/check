@@ -610,3 +610,35 @@ func (c *withinDeltaChecker) Check(params []interface{}, names []string) (result
 	}
 	return math.Abs(obtained-expected) <= delta, ""
 }
+
+// BetweenFloats Checker
+// checks if a float is between a low and high value
+// similar to WithinDelta but the range on each side isn't
+// necessarily balanced.
+//
+// c.Assert(child.Age(), BetweenFloats, 3.5, 5.0)
+type betweenFloatsChecker struct {
+	*CheckerInfo
+}
+
+var BetweenFloats Checker = &betweenFloatsChecker{
+	&CheckerInfo{
+		Name:   "BetweenFloats",
+		Params: []string{"obtained", "low", "high"}},
+}
+
+func (c *betweenFloatsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained, ok := params[0].(float64)
+	if !ok {
+		return false, "obtained must be a float64"
+	}
+	low, ok := params[1].(float64)
+	if !ok {
+		return false, "low must be a float64"
+	}
+	high, ok := params[2].(float64)
+	if !ok {
+		return false, "high must be a float64"
+	}
+	return (obtained >= low && obtained <= high), ""
+}

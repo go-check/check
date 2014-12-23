@@ -215,7 +215,13 @@ gocheck offers two levels of verbosity through the `-check.v` and `-check.vv` fl
 
 
 ## Assertions
-
+* BetweenFloats
+	* The BetweenFloats checker verifies that the obtained value is between 
+		(inclusive) the given low and high float. See also `WithinDelta`
+	* Example:
+	```go
+	c.Assert(child.Age(), BetweenFloats, 3.5, 5.0)
+	```
 * DeepEquals
 	* The DeepEquals checker verifies that the obtained value is deep-equal to the expected value.  The check will work correctly even when facing slices, interfaces, and values of different types (which always fail the test).
 	* Example:

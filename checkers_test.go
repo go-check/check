@@ -334,3 +334,16 @@ func (s *CheckersS) TestWithinDelta(c *check.C) {
 	testCheck(c, check.WithinDelta, false, "delta must be a float64", 2.0, 1, 1.6)
 	testCheck(c, check.WithinDelta, false, "expected must be a float64", 2.0, 0.5, 1)
 }
+
+func (s *CheckersS) TestBetweenFloats(c *check.C) {
+	testInfo(c, check.BetweenFloats, "BetweenFloats", []string{"obtained", "low", "high"})
+
+	testCheck(c, check.BetweenFloats, true, "", 2.0, 0.5, 2.6)
+	testCheck(c, check.BetweenFloats, false, "", 2.0, 0.5, 1.0)
+
+	// error states
+
+	testCheck(c, check.BetweenFloats, false, "obtained must be a float64", 2, 0.5, 1.6)
+	testCheck(c, check.BetweenFloats, false, "low must be a float64", 2.0, 1, 1.6)
+	testCheck(c, check.BetweenFloats, false, "high must be a float64", 2.0, 0.5, 1)
+}
