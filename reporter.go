@@ -1,23 +1,27 @@
 package check
 
 import (
-	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strings"
 	"sync"
 	"time"
 )
 
 type reporter interface {
-	GetReport() (string, error)
+	GetReport() ([]byte, error)
 }
 
 type outputWriter interface {
 	Write(content []byte) (n int, err error)
 	WriteCallStarted(label string, c *C)
-	WriteCallProblem(label string, c *C)
+
 	WriteCallSuccess(label string, c *C)
+	WriteCallSkipped(label string, c *C)
+
+	WriteCallError(label string, c *C)
+	WriteCallFailure(label string, c *C)
 	StreamEnabled() bool
 }
 
@@ -32,7 +36,7 @@ type plainWriter struct {
 	verbose              bool
 }
 
-func newPlainWriter(writer io.Writer, stream, verbose bool) *plainWriter {
+func newPlainWriter(writer io.Writer, verbose, stream bool) *plainWriter {
 	return &plainWriter{writer: writer, stream: stream, verbose: verbose}
 }
 
@@ -54,7 +58,23 @@ func (w *plainWriter) WriteCallStarted(label string, c *C) {
 	}
 }
 
-func (w *plainWriter) WriteCallProblem(label string, c *C) {
+func (w *plainWriter) WriteCallSkipped(label string, c *C) {
+	w.writeSuccess(label, c)
+}
+
+func (w *plainWriter) WriteCallFailure(label string, c *C) {
+	w.writeProblem(label, c)
+}
+
+func (w *plainWriter) WriteCallError(label string, c *C) {
+	w.writeProblem(label, c)
+}
+
+func (w *plainWriter) WriteCallSuccess(label string, c *C) {
+	w.writeSuccess(label, c)
+}
+
+func (w *plainWriter) writeProblem(label string, c *C) {
 	var prefix string
 	if !w.stream {
 		prefix = "\n-----------------------------------" +
@@ -70,7 +90,7 @@ func (w *plainWriter) WriteCallProblem(label string, c *C) {
 	w.m.Unlock()
 }
 
-func (w *plainWriter) WriteCallSuccess(label string, c *C) {
+func (w *plainWriter) writeSuccess(label string, c *C) {
 	if w.stream || (w.verbose && c.kind == testKd) {
 		// TODO Use a buffer here.
 		var suffix string
@@ -106,7 +126,8 @@ func renderCallHeader(label string, c *C, prefix, suffix string) string {
 
 /*************** xUnit writer *****************/
 type xunitReport struct {
-	suites []xunitSuite `xml:"testsuites>testsuite,omitempty"`
+	XMLName xml.Name     `xml:"testsuites"`
+	Suites  []xunitSuite `xml:"testsuite,omitempty"`
 }
 
 type xunitSuite struct {
@@ -121,11 +142,12 @@ type xunitSuite struct {
 	Errors   uint64 `xml:"errors,attr"`
 	Skipped  uint64 `xml:"skipped,attr"`
 
-	Properties []xunitSuiteProperty `xml:"properties>property"` //TODO: test
-	Testcases  []xunitTestcase      `xml:"testcase"`
+	// TODO: according specs suite also contains Properties node
+	// but reporter has no use for it for now
+	Testcases []xunitTestcase `xml:"testcase,omitempty"`
 
-	SystemOut string `xml:"system-out,omitempty"`
-	SystemErr string `xml:"system-err,omitempty"`
+	// TODO: specs define also nodes "properties", "system-out" and "system-err"
+	// but reporter has no use for them for now
 
 	m sync.Mutex
 }
@@ -134,45 +156,46 @@ func (s *xunitSuite) TestFail(tc xunitTestcase, message, value string) {
 	tc.Failure = &xunitTestcaseResult{
 		Message: message,
 		Value:   value,
+		Type:    "go.failure",
 	}
 
 	s.m.Lock()
-	s.Tests++
 	s.Failures++
-	s.Testcases = append(s.Testcases, tc)
+	s.addTestCase(tc)
 	s.m.Unlock()
 }
 func (s *xunitSuite) TestError(tc xunitTestcase, message, value string) {
 	tc.Error = &xunitTestcaseResult{
 		Message: message,
 		Value:   value,
+		Type:    "go.error",
 	}
 
 	s.m.Lock()
-	s.Tests++
 	s.Errors++
-	s.Testcases = append(s.Testcases, tc)
+	s.addTestCase(tc)
 	s.m.Unlock()
 }
 
 func (s *xunitSuite) TestSkip(tc xunitTestcase) {
+	tc.Skipped = true
+
 	s.m.Lock()
-	s.Tests++
 	s.Skipped++
-	s.Testcases = append(s.Testcases, tc)
+	s.addTestCase(tc)
 	s.m.Unlock()
 }
 
 func (s *xunitSuite) TestSuccess(tc xunitTestcase) {
 	s.m.Lock()
-	s.Tests++
-	s.Testcases = append(s.Testcases, tc)
+	s.addTestCase(tc)
 	s.m.Unlock()
 }
 
-type xunitSuiteProperty struct {
-	Name  string `xml:"name,attr"`
-	Value string `xml:"value,attr"`
+func (s *xunitSuite) addTestCase(tc xunitTestcase) {
+	s.Tests++
+	s.Testcases = append(s.Testcases, tc)
+	s.Time = time.Since(s.Timestamp).Seconds()
 }
 
 type xunitTestcase struct {
@@ -180,55 +203,56 @@ type xunitTestcase struct {
 	Classname string  `xml:"classname,attr,omitempty"`
 	Time      float64 `xml:"time,attr"`
 
+	File string `xml:"file,attr,omitempty"`
+	Line int    `xml:"line,attr,omitempty"`
+
 	Failure *xunitTestcaseResult `xml:"failure,omitempty"`
 	Error   *xunitTestcaseResult `xml:"error,omitempty"`
+	Skipped bool                 `xml:"skipped,omitempty"`
 }
 
 type xunitTestcaseResult struct {
 	Message string `xml:"message,attr,omitempty"`
 	Type    string `xml:"type,attr,omitempty"`
-	Value   string `xml:",chardata"`
+	Value   string `xml:",innerxml"`
 }
 
 type xunitWriter struct {
 	outputWriter
-	m       sync.Mutex
-	writer  io.Writer
-	stream  bool
-	verbose bool
-	suites  map[string]*xunitSuite
+	m      sync.Mutex
+	writer io.Writer
+	stream bool
+	suites map[string]*xunitSuite
 
 	systemOut io.Writer
 }
 
-func newXunitWriter(writer io.Writer, stream, verbose bool) *xunitWriter {
+// creates new writer for xUnit reports
+// "writer" here is used for logging purpose
+func newXunitWriter(writer io.Writer, stream bool) *xunitWriter {
 	return &xunitWriter{
-		writer:    writer,
-		systemOut: &bytes.Buffer{},
-		stream:    stream,
-		verbose:   verbose,
+		writer: writer,
+		stream: stream,
+		suites: make(map[string]*xunitSuite),
 	}
 }
 
-func (w *xunitWriter) GetReport() (out string, err error) {
+func (w *xunitWriter) GetReport() ([]byte, error) {
 	report := xunitReport{}
-	report.suites = make([]xunitSuite, len(w.suites), 0)
+	report.Suites = make([]xunitSuite, 0, len(w.suites))
 	for k := range w.suites {
-		report.suites = append(report.suites, *w.suites[k])
+		report.Suites = append(report.Suites, *w.suites[k])
 	}
 
-	var buf []byte
-	buf, err = xml.Marshal(report)
-	if err != nil {
-		out = string(buf)
-	}
-
-	return
+	return xml.MarshalIndent(report, "", "    ")
 }
 
 func (w *xunitWriter) Write(content []byte) (n int, err error) {
+	if w.writer == nil {
+		return
+	}
 	w.m.Lock()
-	n, err = w.systemOut.Write(content)
+	n, err = w.writer.Write(content)
 	w.m.Unlock()
 	return
 }
@@ -237,24 +261,34 @@ func (w *xunitWriter) WriteCallStarted(label string, c *C) {
 	w.getSuite(c) // init suite if not yet existing
 }
 
-func (w *xunitWriter) WriteTestSkipped(label string, c *C) {
+func (w *xunitWriter) WriteCallSkipped(label string, c *C) {
 	res := w.newTestcase(c)
-	w.getSuite(c).TestSkip(res)
+	if !isAutogenerated(res.File) {
+		w.getSuite(c).TestSkip(res)
+	}
 }
 
 func (w *xunitWriter) WriteCallFailure(label string, c *C) {
 	res := w.newTestcase(c)
-	w.getSuite(c).TestFail(res, label, c.logb.String())
+	if !isAutogenerated(res.File) {
+		message := strings.TrimSpace(c.logb.String())
+		w.getSuite(c).TestFail(res, label, message)
+	}
 }
 
 func (w *xunitWriter) WriteCallError(label string, c *C) {
 	res := w.newTestcase(c)
-	w.getSuite(c).TestError(res, label, c.logb.String())
+	if !isAutogenerated(res.File) {
+		message := strings.TrimSpace(c.logb.String())
+		w.getSuite(c).TestError(res, label, message)
+	}
 }
 
 func (w *xunitWriter) WriteCallSuccess(label string, c *C) {
 	res := w.newTestcase(c)
-	w.getSuite(c).TestSuccess(res)
+	if !isAutogenerated(res.File) {
+		w.getSuite(c).TestSuccess(res)
+	}
 }
 
 func (w *xunitWriter) StreamEnabled() bool { return w.stream }
@@ -266,6 +300,7 @@ func (w *xunitWriter) getSuite(c *C) (suite *xunitSuite) {
 	if suite, ok = w.suites[suiteName]; !ok {
 		suite = &xunitSuite{
 			Name:      suiteName,
+			Package:   getFuncPackage(c.method.PC()),
 			Timestamp: c.startTime,
 		}
 		w.suites[suiteName] = suite
@@ -276,9 +311,16 @@ func (w *xunitWriter) getSuite(c *C) (suite *xunitSuite) {
 }
 
 func (w *xunitWriter) newTestcase(c *C) xunitTestcase {
+	file, line := getFuncPosition(c.method.PC())
 	return xunitTestcase{
 		Name:      c.testName,
 		Classname: c.method.suiteName(),
+		File:      file,
+		Line:      line,
 		Time:      time.Since(c.startTime).Seconds(),
 	}
+}
+
+func isAutogenerated(filename string) bool {
+	return filename == "<autogenerated>"
 }

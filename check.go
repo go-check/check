@@ -366,12 +366,34 @@ func nicePath(path string) string {
 }
 
 func niceFuncPath(pc uintptr) string {
-	function := runtime.FuncForPC(pc)
-	if function != nil {
-		filename, line := function.FileLine(pc)
+	filename, line := getFuncPosition(pc)
+	if line != 0 {
 		return fmt.Sprintf("%s:%d", nicePath(filename), line)
 	}
 	return "<unknown path>"
+}
+
+func getFuncPackage(pc uintptr) (pack string) {
+	function := runtime.FuncForPC(pc)
+	if function != nil {
+		filename, _ := function.FileLine(pc)
+		pack = path.Base(path.Dir(filename))
+	} else {
+		pack = "<unknown package>"
+	}
+
+	return
+}
+
+func getFuncPosition(pc uintptr) (file string, line int) {
+	function := runtime.FuncForPC(pc)
+	if function != nil {
+		file, line = function.FileLine(pc)
+	} else {
+		file = "<unknown path>"
+	}
+
+	return
 }
 
 func niceFuncName(pc uintptr) string {
@@ -524,6 +546,7 @@ type RunConf struct {
 	BenchmarkTime time.Duration // Defaults to 1 second
 	BenchmarkMem  bool
 	KeepWorkDir   bool
+	Writer        outputWriter
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -539,13 +562,17 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		conf.Verbose = true
 	}
 
+	if conf.Writer == nil {
+		conf.Writer = newPlainWriter(conf.Output, conf.Verbose, conf.Stream)
+	}
+
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newPlainWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    conf.Writer,
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
@@ -847,17 +874,17 @@ func (runner *suiteRunner) reportCallDone(c *C) {
 			runner.output.WriteCallSuccess("PASS", c)
 		}
 	case skippedSt:
-		runner.output.WriteCallSuccess("SKIP", c)
+		runner.output.WriteCallSkipped("SKIP", c)
 	case failedSt:
-		runner.output.WriteCallProblem("FAIL", c)
+		runner.output.WriteCallFailure("FAIL", c)
 	case panickedSt:
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteCallError("PANIC", c)
 	case fixturePanickedSt:
 		// That's a testKd call reporting that its fixture
 		// has panicked. The fixture call which caused the
 		// panic itself was tracked above. We'll report to
 		// aid debugging.
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteCallError("PANIC", c)
 	case missedSt:
 		runner.output.WriteCallSuccess("MISS", c)
 	}
