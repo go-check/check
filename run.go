@@ -2,8 +2,10 @@ package check
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"testing"
 	"time"
@@ -42,6 +44,7 @@ var (
 	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
 	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
 	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	outputFlag   = flag.String("check.output", "", "Name of the file to print report into. If empty, stdout is used")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -61,6 +64,11 @@ func TestingT(testingT *testing.T) {
 		BenchmarkMem:  *newBenchMem,
 		KeepWorkDir:   *oldWorkFlag || *newWorkFlag,
 	}
+	var err error
+	conf.Output, err = getOutput(*outputFlag)
+	if err != nil {
+		testingT.Fatal(err.Error())
+	}
 	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)
 		for _, name := range ListAll(conf) {
@@ -76,6 +84,12 @@ func TestingT(testingT *testing.T) {
 	}
 }
 
+func getOutput(filename string) (io.Writer, error) {
+	if filename == "" {
+		return os.Stdout, nil
+	}
+	return os.Create(filename)
+}
 // RunAll runs all test suites registered with the Suite function, using the
 // provided run configuration.
 func RunAll(runConf *RunConf) *Result {
