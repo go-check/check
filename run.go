@@ -2,8 +2,10 @@ package check
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"testing"
@@ -53,6 +55,8 @@ var (
 	newBenchMem        = flag.Bool("check.bmem", false, "Report memory benchmarks")
 	newListFlag        = flag.Bool("check.list", false, "List the names of all tests that will be run")
 	newWorkFlag        = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	reporterFlag       = flag.String("check.r", "plain", "Name of reporter for outputting result: [plain|xunit]")
+	outputFlag         = flag.String("check.output", "", "Name of the file to print report into. If empty, stdout is used")
 	newConcurrencyFlag = flag.Int("check.c", 5, "How many tests to run concurrently for concurrent test suites")
 )
 
@@ -74,6 +78,16 @@ func TestingT(testingT *testing.T) {
 		KeepWorkDir:      *oldWorkFlag || *newWorkFlag,
 		ConcurrencyLevel: *newConcurrencyFlag,
 	}
+	var err error
+	conf.Output, err = getOutput(*outputFlag)
+	if err != nil {
+		testingT.Fatal(err.Error())
+	}
+
+	conf.Writer, err = getWriter(*reporterFlag, conf.Output, conf.Verbose, conf.Stream)
+	if err != nil {
+		testingT.Fatal(err.Error())
+	}
 	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)
 		for _, name := range ListAll(conf) {
@@ -83,9 +97,38 @@ func TestingT(testingT *testing.T) {
 		return
 	}
 	result := RunAll(conf)
-	println(result.String())
+
+	if reporter, ok := conf.Writer.(reporter); ok {
+		report, err := reporter.GetReport()
+		if err != nil {
+			testingT.Fatalf("could not generate report: %s", err.Error())
+		}
+		fmt.Fprintf(conf.Output, "%s", string(report))
+	} else {
+		fmt.Fprintf(conf.Output, "%s\n", result.String())
+	}
+
 	if !result.Passed() {
 		testingT.Fail()
+	}
+}
+
+func getOutput(filename string) (io.Writer, error) {
+	if filename == "" {
+		return os.Stdout, nil
+	}
+	return os.Create(filename)
+}
+
+// factory method that returns instance of reporter by name
+func getWriter(name string, writer io.Writer, verbose, stream bool) (outputWriter, error) {
+	switch name {
+	case "plain":
+		return newPlainWriter(writer, verbose, stream), nil
+	case "xunit":
+		return newXunitWriter(writer, stream), nil
+	default:
+		return nil, errors.New("unknown reporter name provided: " + name)
 	}
 }
 

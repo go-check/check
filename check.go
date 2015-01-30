@@ -366,12 +366,34 @@ func nicePath(path string) string {
 }
 
 func niceFuncPath(pc uintptr) string {
-	function := runtime.FuncForPC(pc)
-	if function != nil {
-		filename, line := function.FileLine(pc)
+	filename, line := getFuncPosition(pc)
+	if line != 0 {
 		return fmt.Sprintf("%s:%d", nicePath(filename), line)
 	}
 	return "<unknown path>"
+}
+
+func getFuncPackage(pc uintptr) (pack string) {
+	function := runtime.FuncForPC(pc)
+	if function != nil {
+		filename, _ := function.FileLine(pc)
+		pack = path.Base(path.Dir(filename))
+	} else {
+		pack = "<unknown package>"
+	}
+
+	return
+}
+
+func getFuncPosition(pc uintptr) (file string, line int) {
+	function := runtime.FuncForPC(pc)
+	if function != nil {
+		file, line = function.FileLine(pc)
+	} else {
+		file = "<unknown path>"
+	}
+
+	return
 }
 
 func niceFuncName(pc uintptr) string {
@@ -509,7 +531,7 @@ type suiteRunner struct {
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	keepDir                   bool
-	output                    *outputWriter
+	output                    outputWriter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
@@ -528,6 +550,7 @@ type RunConf struct {
 	BenchmarkMem     bool
 	KeepWorkDir      bool
 	ConcurrencyLevel int
+	Writer           outputWriter
 }
 
 type concurrencyBucket struct {
@@ -568,13 +591,17 @@ func newSuiteRunner(suite interface{}, runConf *RunConf, concurrent bool, bucket
 		conf.ConcurrencyLevel = 1
 	}
 
+	if conf.Writer == nil {
+		conf.Writer = newPlainWriter(conf.Output, conf.Verbose, conf.Stream)
+	}
+
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
 		suite:             suite,
-		output:            newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:            conf.Writer,
 		tracker:           newResultTracker(),
 		benchTime:         conf.BenchmarkTime,
 		benchMem:          conf.BenchmarkMem,
@@ -678,7 +705,7 @@ func (runner *suiteRunner) run() *Result {
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
-	if runner.output.Stream {
+	if runner.output.StreamEnabled() {
 		logw = runner.output
 	}
 	if logb == nil {
@@ -893,99 +920,18 @@ func (runner *suiteRunner) reportCallDone(c *C) {
 			runner.output.WriteCallSuccess("PASS", c)
 		}
 	case skippedSt:
-		runner.output.WriteCallSuccess("SKIP", c)
+		runner.output.WriteCallSkipped("SKIP", c)
 	case failedSt:
-		runner.output.WriteCallProblem("FAIL", c)
+		runner.output.WriteCallFailure("FAIL", c)
 	case panickedSt:
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteCallError("PANIC", c)
 	case fixturePanickedSt:
 		// That's a testKd call reporting that its fixture
 		// has panicked. The fixture call which caused the
 		// panic itself was tracked above. We'll report to
 		// aid debugging.
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteCallError("PANIC", c)
 	case missedSt:
 		runner.output.WriteCallSuccess("MISS", c)
 	}
-}
-
-// -----------------------------------------------------------------------
-// Output writer manages atomic output writing according to settings.
-
-type outputWriter struct {
-	m                    sync.Mutex
-	writer               io.Writer
-	wroteCallProblemLast bool
-	Stream               bool
-	Verbose              bool
-}
-
-func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose}
-}
-
-func (ow *outputWriter) Write(content []byte) (n int, err error) {
-	ow.m.Lock()
-	n, err = ow.writer.Write(content)
-	ow.m.Unlock()
-	return
-}
-
-func (ow *outputWriter) WriteCallStarted(label string, c *C) {
-	if ow.Stream {
-		header := renderCallHeader(label, c, "", "\n")
-		ow.m.Lock()
-		ow.writer.Write([]byte(header))
-		ow.m.Unlock()
-	}
-}
-
-func (ow *outputWriter) WriteCallProblem(label string, c *C) {
-	var prefix string
-	if !ow.Stream {
-		prefix = "\n-----------------------------------" +
-			"-----------------------------------\n"
-	}
-	header := renderCallHeader(label, c, prefix, "\n\n")
-	ow.m.Lock()
-	ow.wroteCallProblemLast = true
-	ow.writer.Write([]byte(header))
-	if !ow.Stream {
-		c.logb.WriteTo(ow.writer)
-	}
-	ow.m.Unlock()
-}
-
-func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
-	if ow.Stream || (ow.Verbose && c.kind == testKd) {
-		// TODO Use a buffer here.
-		var suffix string
-		if c.reason != "" {
-			suffix = " (" + c.reason + ")"
-		}
-		if c.status == succeededSt {
-			suffix += "\t" + c.timerString()
-		}
-		suffix += "\n"
-		if ow.Stream {
-			suffix += "\n"
-		}
-		header := renderCallHeader(label, c, "", suffix)
-		ow.m.Lock()
-		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream && ow.wroteCallProblemLast {
-			header = "\n-----------------------------------" +
-				"-----------------------------------\n" +
-				header
-		}
-		ow.wroteCallProblemLast = false
-		ow.writer.Write([]byte(header))
-		ow.m.Unlock()
-	}
-}
-
-func renderCallHeader(label string, c *C, prefix, suffix string) string {
-	pc := c.method.PC()
-	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
-		niceFuncName(pc), suffix)
 }
