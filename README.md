@@ -70,6 +70,31 @@ Import it with:
 	)
 ```
 
+Make some assertions about your code (see below).
+
+Run it with `go test`
+
+## Runtime Options
+
+```
+  -check.bmem=false: Report memory benchmarks
+  -check.btime=1s: approximate run time for each benchmark
+  -check.c=5: How many tests to run concurrently for concurrent test suites
+  -check.f="": Regular expression selecting which tests and/or suites to run
+
+  -check.output="": Name of the file to print report into. If empty, stdout is used
+  -check.r="plain": Name of reporter for outputting result: [plain|xunit]
+  -check.v=false: Verbose mode
+  -check.vv=false: Super verbose mode (disables output caching)
+  -check.work=false: Display and do not remove the test working directory
+```
+
+The following two runtime options currently have issues. Pull requests (with test) would be greatly appreciated.
+
+```
+  -check.b=false: Run benchmarks
+  -check.list=false: List the names of all tests that will be run
+```
 
 ## Using Fixtures
 
