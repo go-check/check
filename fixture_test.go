@@ -138,6 +138,8 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
 		"PANIC: check_test\\.go:[0-9]+: " +
 		"FixtureHelper.SetUpSuite\n\n" +
 		"\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
+		"(.+:[0-9]+\n" + // this line, and the next, happen on Travis-CI
+		"  in call32\n){0,1}" +
 		".+:[0-9]+\n" +
 		"  in (go)?panic\n" +
 		".*check_test.go:[0-9]+\n" +
