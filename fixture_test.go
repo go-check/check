@@ -54,7 +54,7 @@ func (s *FixtureS) TestPanicOnTest(c *C) {
 	expected := "^\n-+\n" +
 		"PANIC: check_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
 		"\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
+		"(.|\n)*" +
 		"  in (go)?panic\n" +
 		".*check_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
@@ -79,7 +79,7 @@ func (s *FixtureS) TestPanicOnSetUpTest(c *C) {
 		"PANIC: check_test\\.go:[0-9]+: " +
 		"FixtureHelper\\.SetUpTest\n\n" +
 		"\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
+		"(.|\n)*" +
 		"  in (go)?panic\n" +
 		".*check_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
@@ -110,8 +110,7 @@ func (s *FixtureS) TestPanicOnTearDownTest(c *C) {
 		"PANIC: check_test\\.go:[0-9]+: " +
 		"FixtureHelper.TearDownTest\n\n" +
 		"\\.\\.\\. Panic: TearDownTest \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
+		"(.|\n)*" +
 		".*check_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*check_test.go:[0-9]+\n" +
@@ -138,10 +137,7 @@ func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
 		"PANIC: check_test\\.go:[0-9]+: " +
 		"FixtureHelper.SetUpSuite\n\n" +
 		"\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
-		"(.+:[0-9]+\n" + // this line, and the next, happen on Travis-CI
-		"  in call32\n){0,1}" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
+		"(.|\n)*" +
 		".*check_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*check_test.go:[0-9]+\n" +
@@ -169,8 +165,7 @@ func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
 		"PANIC: check_test\\.go:[0-9]+: " +
 		"FixtureHelper.TearDownSuite\n\n" +
 		"\\.\\.\\. Panic: TearDownSuite \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
+		"(.|\n)*" +
 		".*check_test.go:[0-9]+\n" +
 		"  in FixtureHelper.trace\n" +
 		".*check_test.go:[0-9]+\n" +
