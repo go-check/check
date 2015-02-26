@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 )
@@ -235,7 +236,10 @@ func (checker *hasLenChecker) Check(params []interface{}, names []string) (resul
 	default:
 		return false, "obtained value type has no length"
 	}
-	return value.Len() == n, ""
+	if value.Len() == n {
+		return true, ""
+	}
+	return false, fmt.Sprintf("obtained length = %d", value.Len())
 }
 
 // -----------------------------------------------------------------------
@@ -320,6 +324,10 @@ type panicsChecker struct {
 	*CheckerInfo
 }
 
+type doesntPanicChecker struct {
+	*CheckerInfo
+}
+
 // The Panics checker verifies that calling the provided zero-argument
 // function will cause a panic which is deep-equal to the provided value.
 //
@@ -329,7 +337,13 @@ type panicsChecker struct {
 //
 //
 var Panics Checker = &panicsChecker{
-	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
+	&CheckerInfo{
+		Name:   "Panics",
+		Params: []string{"function", "expected"}},
+}
+
+var DoesntPanic Checker = &doesntPanicChecker{
+	&CheckerInfo{Name: "DoesntPanic", Params: []string{"function"}},
 }
 
 func (checker *panicsChecker) Check(params []interface{}, names []string) (result bool, error string) {
@@ -348,6 +362,33 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 	}()
 	f.Call(nil)
 	return false, "Function has not panicked"
+}
+
+// The DoesntPanic checker verifies that calling the provided zero-argument
+// function will NOT cause a panic.
+//
+// The first param must be a function so that the execution of the code
+// to be tested can be delayed, and any unexpected panic caught.
+
+// For example:
+//
+//     c.Assert(func() { f(1, 2) }, DoesntPanic)
+//
+//
+func (checker *doesntPanicChecker) Check(params []interface{}, names []string) (result bool, err string) {
+	f := reflect.ValueOf(params[0])
+	if f.Kind() != reflect.Func || f.Type().NumIn() != 0 {
+		return false, "Function must take zero arguments"
+	}
+	defer func() {
+		if e := recover(); e != nil {
+			result = false
+			// TODO: Figure out how to set the error string
+			err = fmt.Sprintf("%v", e)
+		}
+	}()
+	f.Call(nil)
+	return true, ""
 }
 
 type panicMatchesChecker struct {
@@ -455,4 +496,149 @@ func (checker *implementsChecker) Check(params []interface{}, names []string) (r
 		return false, "ifaceptr should be a pointer to an interface variable"
 	}
 	return obtained.Type().Implements(ifaceptr.Elem().Type()), ""
+}
+
+// -----------------------------------------------------------------------
+// IsTrue / IsFalse checker.
+
+type isBoolValueChecker struct {
+	*CheckerInfo
+	expected bool
+}
+
+func (checker *isBoolValueChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained, ok := params[0].(bool)
+	if !ok {
+		return false, "Argument to " + checker.Name + " must be bool"
+	}
+
+	return obtained == checker.expected, ""
+}
+
+// The IsTrue checker verifies that the obtained value is true.
+//
+// For example:
+//
+//     c.Assert(value, IsTrue)
+//
+var IsTrue Checker = &isBoolValueChecker{
+	&CheckerInfo{Name: "IsTrue", Params: []string{"obtained"}},
+	true,
+}
+
+// The IsFalse checker verifies that the obtained value is false.
+//
+// For example:
+//
+//     c.Assert(value, IsFalse)
+//
+var IsFalse Checker = &isBoolValueChecker{
+	&CheckerInfo{Name: "IsFalse", Params: []string{"obtained"}},
+	false,
+}
+
+// -----------------------------------------------------------------------
+// SliceIncludes checker.
+
+type sliceIncludesChecker struct {
+	*CheckerInfo
+}
+
+// The SliceIncludes checker verifies that the provided slice includes
+// the provided object.
+//
+// For example:
+// c.Assert(aSlice, SliceIncludes, aThing)
+//
+var SliceIncludes Checker = &sliceIncludesChecker{
+	&CheckerInfo{
+		Name:   "SliceIncludes",
+		Params: []string{"aSlice", "aThing"}},
+}
+
+func (checker *sliceIncludesChecker) Check(params []interface{}, names []string) (result bool, errStr string) {
+	//params[0] == aSlice
+	//params[1] == aThing (that we hope is in the slice)
+	s := reflect.ValueOf(params[0]) //aSlice
+	if s.Kind() != reflect.Slice {
+		return false, fmt.Sprintf("SliceIncludes given a non-slice type: %v", params[0])
+	}
+
+	for i := 0; i < s.Len(); i++ {
+		x := s.Index(i).Interface()
+		if params[1] == x { //roughly:  if aThing == aSlice[i]
+			return true, ""
+		}
+	}
+	return false, ""
+
+}
+
+// The WithinDelta checker verifies that the obtained value is
+// withen a delta of the expected value. All numbers must be floats64s
+//
+// For example:
+// c.Assert(gear.GearInches(), WithinDelta, 0.01, 137.1)//
+//
+// Based on Nathan Youngman's <http://nathany.com/> work
+// found here:
+// <https://github.com/nathany/go-poodr/blob/master/chapter9/gear1/gear1_check_test.go>
+// Distributed under the simplified BSD license:
+// <https://github.com/nathany/go-poodr/blob/master/LICENSE>
+type withinDeltaChecker struct {
+	*CheckerInfo
+}
+
+var WithinDelta Checker = &withinDeltaChecker{
+	&CheckerInfo{
+		Name:   "WithinDelta",
+		Params: []string{"obtained", "delta", "expected"}},
+}
+
+func (c *withinDeltaChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained, ok := params[0].(float64)
+	if !ok {
+		return false, "obtained must be a float64"
+	}
+	delta, ok := params[1].(float64)
+	if !ok {
+		return false, "delta must be a float64"
+	}
+	expected, ok := params[2].(float64)
+	if !ok {
+		return false, "expected must be a float64"
+	}
+	return math.Abs(obtained-expected) <= delta, ""
+}
+
+// BetweenFloats Checker
+// checks if a float is between a low and high value
+// similar to WithinDelta but the range on each side isn't
+// necessarily balanced.
+//
+// c.Assert(child.Age(), BetweenFloats, 3.5, 5.0)
+type betweenFloatsChecker struct {
+	*CheckerInfo
+}
+
+var BetweenFloats Checker = &betweenFloatsChecker{
+	&CheckerInfo{
+		Name:   "BetweenFloats",
+		Params: []string{"obtained", "low", "high"}},
+}
+
+func (c *betweenFloatsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	obtained, ok := params[0].(float64)
+	if !ok {
+		return false, "obtained must be a float64"
+	}
+	low, ok := params[1].(float64)
+	if !ok {
+		return false, "low must be a float64"
+	}
+	high, ok := params[2].(float64)
+	if !ok {
+		return false, "high must be a float64"
+	}
+	return (obtained >= low && obtained <= high), ""
 }

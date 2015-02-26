@@ -2,7 +2,7 @@ package check_test
 
 import (
 	"errors"
-	"gopkg.in/check.v1"
+	"github.com/masukomi/check"
 	"reflect"
 	"runtime"
 )
@@ -139,7 +139,7 @@ func (s *CheckersS) TestHasLen(c *check.C) {
 
 	testCheck(c, check.HasLen, true, "", "abcd", 4)
 	testCheck(c, check.HasLen, true, "", []int{1, 2}, 2)
-	testCheck(c, check.HasLen, false, "", []int{1, 2}, 3)
+	testCheck(c, check.HasLen, false, "obtained length = 2", []int{1, 2}, 3)
 
 	testCheck(c, check.HasLen, false, "n must be an int", []int{1, 2}, "2")
 	testCheck(c, check.HasLen, false, "obtained value type has no length", nil, 2)
@@ -234,6 +234,35 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
 }
 
+func (s *CheckersS) TestSliceIncludes(c *check.C) {
+	testInfo(c, check.SliceIncludes, "SliceIncludes", []string{"aSlice", "aThing"})
+	letters := []string{"A", "B", "C", "D"}
+	numbers := []int{2, 4, 6, 8}
+
+	testCheck(c, check.SliceIncludes, true, "", letters, "A")
+	testCheck(c, check.SliceIncludes, false, "", letters, "Z")
+	testCheck(c, check.SliceIncludes, true, "", numbers, 2)
+	testCheck(c, check.SliceIncludes, false, "", numbers, 1)
+
+	// error states
+
+	testCheck(c, check.SliceIncludes, false, "SliceIncludes given a non-slice type: not a slice", "not a slice", 1)
+}
+
+func (s *CheckersS) TestDoesntPanic(c *check.C) {
+	testInfo(c, check.DoesntPanic, "DoesntPanic", []string{"function"})
+
+	// Some Errors
+	// Basic checks
+	//testCheck(c, check.IsTrue, false, "", false)
+
+	testCheck(c, check.DoesntPanic, false, "BOOM", func() bool { panic("BOOM") })
+	testCheck(c, check.DoesntPanic, false, "Function must take zero arguments", 1)
+
+	testCheck(c, check.DoesntPanic, true, "", func() bool { return false })
+
+}
+
 func (s *CheckersS) TestFitsTypeOf(c *check.C) {
 	testInfo(c, check.FitsTypeOf, "FitsTypeOf", []string{"obtained", "sample"})
 
@@ -269,4 +298,52 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, errors.New(""))
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
+}
+
+func (s *CheckersS) TestIsTrue(c *check.C) {
+	testInfo(c, check.IsTrue, "IsTrue", []string{"obtained"})
+
+	// Basic checks
+	testCheck(c, check.IsTrue, true, "", true)
+	testCheck(c, check.IsTrue, false, "", false)
+
+	// Non-bool values
+	testCheck(c, check.IsTrue, false, "Argument to IsTrue must be bool", nil)
+}
+
+func (s *CheckersS) TestIsFalse(c *check.C) {
+	testInfo(c, check.IsFalse, "IsFalse", []string{"obtained"})
+
+	// Basic checks
+	testCheck(c, check.IsFalse, true, "", false)
+	testCheck(c, check.IsFalse, false, "", true)
+
+	// Non-bool values
+	testCheck(c, check.IsFalse, false, "Argument to IsFalse must be bool", nil)
+}
+
+func (s *CheckersS) TestWithinDelta(c *check.C) {
+	testInfo(c, check.WithinDelta, "WithinDelta", []string{"obtained", "delta", "expected"})
+
+	testCheck(c, check.WithinDelta, true, "", 2.0, 0.5, 1.6)
+	testCheck(c, check.WithinDelta, false, "", 2.0, 0.5, 1.0)
+
+	// error states
+
+	testCheck(c, check.WithinDelta, false, "obtained must be a float64", 2, 0.5, 1.6)
+	testCheck(c, check.WithinDelta, false, "delta must be a float64", 2.0, 1, 1.6)
+	testCheck(c, check.WithinDelta, false, "expected must be a float64", 2.0, 0.5, 1)
+}
+
+func (s *CheckersS) TestBetweenFloats(c *check.C) {
+	testInfo(c, check.BetweenFloats, "BetweenFloats", []string{"obtained", "low", "high"})
+
+	testCheck(c, check.BetweenFloats, true, "", 2.0, 0.5, 2.6)
+	testCheck(c, check.BetweenFloats, false, "", 2.0, 0.5, 1.0)
+
+	// error states
+
+	testCheck(c, check.BetweenFloats, false, "obtained must be a float64", 2, 0.5, 1.6)
+	testCheck(c, check.BetweenFloats, false, "low must be a float64", 2.0, 1, 1.6)
+	testCheck(c, check.BetweenFloats, false, "high must be a float64", 2.0, 0.5, 1)
 }
