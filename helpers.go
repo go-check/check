@@ -8,6 +8,8 @@ import (
 
 // TestName returns the current test name in the form "SuiteName.TestName"
 func (c *C) TestName() string {
+	c.RLock()
+	defer c.RUnlock()
 	return c.testName
 }
 
@@ -16,6 +18,8 @@ func (c *C) TestName() string {
 
 // Failed returns whether the currently running test has already failed.
 func (c *C) Failed() bool {
+	c.RLock()
+	defer c.RUnlock()
 	return c.status == failedSt
 }
 
@@ -25,6 +29,8 @@ func (c *C) Failed() bool {
 // what went wrong. The higher level helper functions will fail the test
 // and do the logging properly.
 func (c *C) Fail() {
+	c.Lock()
+	defer c.Unlock()
 	c.status = failedSt
 }
 
@@ -40,6 +46,8 @@ func (c *C) FailNow() {
 // Succeed marks the currently running test as succeeded, undoing any
 // previous failures.
 func (c *C) Succeed() {
+	c.RLock()
+	defer c.RUnlock()
 	c.status = succeededSt
 }
 
@@ -57,6 +65,8 @@ func (c *C) SucceedNow() {
 // fix the problem is found, without forgetting about the fact that a
 // failure still exists.
 func (c *C) ExpectFailure(reason string) {
+	c.Lock()
+	defer c.Unlock()
 	if reason == "" {
 		panic("Missing reason why the test is expected to fail")
 	}
@@ -68,6 +78,8 @@ func (c *C) ExpectFailure(reason string) {
 // SetUpTest, the individual test being set up will be skipped, and if run
 // from within SetUpSuite, the whole suite is skipped.
 func (c *C) Skip(reason string) {
+	c.Lock()
+	defer c.Unlock()
 	if reason == "" {
 		panic("Missing reason why the test is being skipped")
 	}
@@ -81,6 +93,8 @@ func (c *C) Skip(reason string) {
 
 // GetTestLog returns the current test error output.
 func (c *C) GetTestLog() string {
+	c.RLock()
+	defer c.RUnlock()
 	return c.logb.String()
 }
 
