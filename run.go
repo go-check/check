@@ -42,6 +42,8 @@ var (
 	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
 	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
 	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+
+	newOriginalVerboseFlag = flag.Bool("check.ov", false, "Display verbose messages in the format compatible with go test")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -53,13 +55,14 @@ func TestingT(testingT *testing.T) {
 		benchTime = *oldBenchTime
 	}
 	conf := &RunConf{
-		Filter:        *oldFilterFlag + *newFilterFlag,
-		Verbose:       *oldVerboseFlag || *newVerboseFlag,
-		Stream:        *oldStreamFlag || *newStreamFlag,
-		Benchmark:     *oldBenchFlag || *newBenchFlag,
-		BenchmarkTime: benchTime,
-		BenchmarkMem:  *newBenchMem,
-		KeepWorkDir:   *oldWorkFlag || *newWorkFlag,
+		Filter:          *oldFilterFlag + *newFilterFlag,
+		Verbose:         *oldVerboseFlag || *newVerboseFlag || *newOriginalVerboseFlag,
+		Stream:          *oldStreamFlag || *newStreamFlag,
+		Benchmark:       *oldBenchFlag || *newBenchFlag,
+		BenchmarkTime:   benchTime,
+		BenchmarkMem:    *newBenchMem,
+		KeepWorkDir:     *oldWorkFlag || *newWorkFlag,
+		BackwardVerbose: *newOriginalVerboseFlag,
 	}
 	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)

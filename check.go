@@ -516,14 +516,15 @@ type suiteRunner struct {
 }
 
 type RunConf struct {
-	Output        io.Writer
-	Stream        bool
-	Verbose       bool
-	Filter        string
-	Benchmark     bool
-	BenchmarkTime time.Duration // Defaults to 1 second
-	BenchmarkMem  bool
-	KeepWorkDir   bool
+	Output          io.Writer
+	Stream          bool
+	Verbose         bool
+	BackwardVerbose bool
+	Filter          string
+	Benchmark       bool
+	BenchmarkTime   time.Duration // Defaults to 1 second
+	BenchmarkMem    bool
+	KeepWorkDir     bool
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -545,7 +546,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose, conf.BackwardVerbose),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
@@ -872,10 +873,11 @@ type outputWriter struct {
 	wroteCallProblemLast bool
 	Stream               bool
 	Verbose              bool
+	BackwardVerbose      bool
 }
 
-func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose}
+func newOutputWriter(writer io.Writer, stream, verbose, backwardVerbose bool) *outputWriter {
+	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose, BackwardVerbose: backwardVerbose}
 }
 
 func (ow *outputWriter) Write(content []byte) (n int, err error) {
@@ -886,8 +888,12 @@ func (ow *outputWriter) Write(content []byte) (n int, err error) {
 }
 
 func (ow *outputWriter) WriteCallStarted(label string, c *C) {
-	if ow.Stream {
-		header := renderCallHeader(label, c, "", "\n")
+	if ow.Stream || ow.BackwardVerbose {
+		suffix := "\n"
+		if ow.BackwardVerbose {
+			suffix = ""
+		}
+		header := renderCallHeader(ow, label, c, "", suffix)
 		ow.m.Lock()
 		ow.writer.Write([]byte(header))
 		ow.m.Unlock()
@@ -900,7 +906,7 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 		prefix = "\n-----------------------------------" +
 			"-----------------------------------\n"
 	}
-	header := renderCallHeader(label, c, prefix, "\n\n")
+	header := renderCallHeader(ow, label, c, prefix, "\n\n")
 	ow.m.Lock()
 	ow.wroteCallProblemLast = true
 	ow.writer.Write([]byte(header))
@@ -911,35 +917,72 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 }
 
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
-	if ow.Stream || (ow.Verbose && c.kind == testKd) {
-		// TODO Use a buffer here.
-		var suffix string
-		if c.reason != "" {
-			suffix = " (" + c.reason + ")"
-		}
-		if c.status == succeededSt {
+	if (!(ow.Stream || (ow.Verbose && c.kind == testKd))){
+		return
+	}
+
+	// TODO Use a buffer here.
+	var suffix string
+	if c.reason != "" {
+		suffix = " (" + c.reason + ")"
+	}
+	if c.status == succeededSt {
+		if ow.BackwardVerbose {
+			suffix += " (" + c.timerString()
+		} else {
 			suffix += "\t" + c.timerString()
 		}
+	}
+	if ow.BackwardVerbose {
+		if c.reason == "" {
+			suffix += ")"
+		}
+	} else {
 		suffix += "\n"
 		if ow.Stream {
 			suffix += "\n"
 		}
-		header := renderCallHeader(label, c, "", suffix)
-		ow.m.Lock()
-		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream && ow.wroteCallProblemLast {
-			header = "\n-----------------------------------" +
-				"-----------------------------------\n" +
-				header
-		}
-		ow.wroteCallProblemLast = false
-		ow.writer.Write([]byte(header))
-		ow.m.Unlock()
 	}
+	header := renderCallHeader(ow, label, c, "", suffix)
+	ow.m.Lock()
+	// Resist temptation of using line as prefix above due to race.
+	if !ow.Stream && ow.wroteCallProblemLast {
+		header = "\n-----------------------------------" +
+			"-----------------------------------\n" +
+			header
+	}
+	ow.wroteCallProblemLast = false
+	ow.writer.Write([]byte(header))
+	ow.m.Unlock()
 }
 
-func renderCallHeader(label string, c *C, prefix, suffix string) string {
+func renderCallHeader(ow *outputWriter, label string, c *C, prefix, suffix string) string {
 	pc := c.method.PC()
-	return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
-		niceFuncName(pc), suffix)
+	funcPath := niceFuncPath(pc)
+	funcName := niceFuncName(pc)
+	if !ow.BackwardVerbose {
+		return fmt.Sprintf("%s%s: %s: %s%s", prefix, label, funcPath, funcName, suffix)
+	}
+
+	switch c.method.Info.Name {
+	case "SetUpSuite":
+		fallthrough
+	case "TearDownSuite":
+		fallthrough
+	case "SetUpTest":
+		fallthrough
+	case "TearDownTest":
+		return ""
+	}
+
+	if label == "START" {
+		label = "=== RUN"
+	} else {
+		label += ":"
+		prefix = "--- "
+	}
+	if funcPath == "Test" {
+		return ""
+	}
+	return fmt.Sprintf("%s%s %s%s\n", prefix, label, funcName, suffix)
 }
