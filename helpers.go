@@ -8,8 +8,8 @@ import (
 
 // TestName returns the current test name in the form "SuiteName.TestName"
 func (c *C) TestName() string {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
 	return c.testName
 }
 
@@ -18,8 +18,8 @@ func (c *C) TestName() string {
 
 // Failed returns whether the currently running test has already failed.
 func (c *C) Failed() bool {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
 	return c.status == failedSt
 }
 
@@ -46,8 +46,8 @@ func (c *C) FailNow() {
 // Succeed marks the currently running test as succeeded, undoing any
 // previous failures.
 func (c *C) Succeed() {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
 	c.status = succeededSt
 }
 
@@ -93,8 +93,8 @@ func (c *C) Skip(reason string) {
 
 // GetTestLog returns the current test error output.
 func (c *C) GetTestLog() string {
-	c.RLock()
-	defer c.RUnlock()
+	c.Lock()
+	defer c.Unlock()
 	return c.logb.String()
 }
 
