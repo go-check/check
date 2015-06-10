@@ -78,6 +78,7 @@ func (method *methodType) matches(re *regexp.Regexp) bool {
 }
 
 type C struct {
+	sync.Mutex
 	method    *methodType
 	kind      funcKind
 	testName  string
