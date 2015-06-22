@@ -7,6 +7,7 @@ import (
 	"os"
 	"testing"
 	"time"
+	"strconv"
 )
 
 // -----------------------------------------------------------------------
@@ -48,13 +49,16 @@ var (
 // printing results to stdout, and reporting any failures back to
 // the "testing" package.
 func TestingT(testingT *testing.T) {
+	// goTestVerbose is true if -v was passed to go test.
+	goTestVerbose, _ := strconv.ParseBool(flag.Lookup("test.v").Value.String())
+
 	benchTime := *newBenchTime
 	if benchTime == 1*time.Second {
 		benchTime = *oldBenchTime
 	}
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
-		Verbose:       *oldVerboseFlag || *newVerboseFlag,
+		Verbose:       goTestVerbose || *oldVerboseFlag || *newVerboseFlag,
 		Stream:        *oldStreamFlag || *newStreamFlag,
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
