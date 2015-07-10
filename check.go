@@ -282,13 +282,15 @@ func (c *C) logCaller(skip int) {
 	var testFile string
 	var testLine int
 	testFunc := runtime.FuncForPC(c.method.PC())
+	var prevPc uintptr = 0
 	if runtime.FuncForPC(pc) != testFunc {
 		for {
 			skip += 1
-			if pc, file, line, ok := runtime.Caller(skip); ok {
+			if pc, file, line, ok := runtime.Caller(skip); ok && pc != prevPc {
 				// Note that the test line may be different on
 				// distinct calls for the same test.  Showing
 				// the "internal" line is helpful when debugging.
+				prevPc = pc
 				if runtime.FuncForPC(pc) == testFunc {
 					testFile, testLine = file, line
 					break
@@ -322,8 +324,10 @@ var asmGo = filepath.Join("runtime", "asm_")
 func (c *C) logPanic(skip int, value interface{}) {
 	skip++ // Our own frame.
 	initialSkip := skip
+	var prevPc uintptr = 0
 	for ; ; skip++ {
-		if pc, file, line, ok := runtime.Caller(skip); ok {
+		if pc, file, line, ok := runtime.Caller(skip); ok && pc != prevPc {
+			prevPc = pc
 			if skip == initialSkip {
 				c.logf("... Panic: %s (PC=0x%X)\n", value, pc)
 			}
