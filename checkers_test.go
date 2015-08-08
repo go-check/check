@@ -270,3 +270,15 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
 }
+
+func (s *CheckersS) TestBind(c *check.C) {
+	IsTrue := check.Bind(check.Equals, true)
+
+	testInfo(c, IsTrue, "Bind(Equals, true)", []string{"obtained"})
+
+	testCheck(c, IsTrue, true, "", true)
+	testCheck(c, IsTrue, false, "", false)
+	testCheck(c, IsTrue, false, "", 0)
+	testCheck(c, IsTrue, false, "", 1)
+	testCheck(c, IsTrue, false, "", nil)
+}

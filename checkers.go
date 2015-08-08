@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // -----------------------------------------------------------------------
@@ -455,4 +456,44 @@ func (checker *implementsChecker) Check(params []interface{}, names []string) (r
 		return false, "ifaceptr should be a pointer to an interface variable"
 	}
 	return obtained.Type().Implements(ifaceptr.Elem().Type()), ""
+}
+
+// -----------------------------------------------------------------------
+// Bind checker
+// The Bind checker binds one or more parameters to another checker
+//
+// For example:
+//
+//    IsTrue := Bind(Equals, true)
+//    c.Assert(2 > 1, IsTrue)
+//
+
+func Bind(checker Checker, param... interface{}) Checker {
+	return &bindChecker{checker, param}
+
+}
+
+// -----------------------------------------------------------------------
+// bind checker.
+
+type bindChecker struct {
+	sub Checker
+	params []interface{}
+}
+
+func (checker *bindChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	params = append(checker.params, params...)
+	return checker.sub.Check(params, names)
+}
+
+func (checker *bindChecker) Info() *CheckerInfo {
+	info := *checker.sub.Info()
+	info.Params = info.Params[:len(info.Params)-len(checker.params)]
+
+	paramStr := []string{info.Name}
+	for _, p := range checker.params {
+		paramStr = append(paramStr, fmt.Sprintf("%#v", p))
+	}
+	info.Name = "Bind(" + strings.Join(paramStr, ", ") + ")"
+	return &info
 }
