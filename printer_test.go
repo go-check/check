@@ -1,7 +1,7 @@
 package check_test
 
 import (
-    .   "gopkg.in/check.v1"
+	. "github.com/pingcap/check"
 )
 
 var _ = Suite(&PrinterS{})
@@ -9,13 +9,13 @@ var _ = Suite(&PrinterS{})
 type PrinterS struct{}
 
 func (s *PrinterS) TestCountSuite(c *C) {
-    suitesRun += 1
+	suitesRun += 1
 }
 
 var printTestFuncLine int
 
 func init() {
-    printTestFuncLine = getMyLine() + 3
+	printTestFuncLine = getMyLine() + 3
 }
 
 func printTestFunc() {
@@ -77,28 +77,28 @@ var printLineTests = []struct {
 }
 
 func (s *PrinterS) TestPrintLine(c *C) {
-    for _, test := range printLineTests {
-        output, err := PrintLine("printer_test.go", printTestFuncLine+test.line)
-        c.Assert(err, IsNil)
-        c.Assert(output, Equals, test.output)
-    }
+	for _, test := range printLineTests {
+		output, err := PrintLine("printer_test.go", printTestFuncLine+test.line)
+		c.Assert(err, IsNil)
+		c.Assert(output, Equals, test.output)
+	}
 }
 
 var indentTests = []struct {
-    in, out string
+	in, out string
 }{
-    {"", ""},
-    {"\n", "\n"},
-    {"a", ">>>a"},
-    {"a\n", ">>>a\n"},
-    {"a\nb", ">>>a\n>>>b"},
-    {" ", ">>> "},
+	{"", ""},
+	{"\n", "\n"},
+	{"a", ">>>a"},
+	{"a\n", ">>>a\n"},
+	{"a\nb", ">>>a\n>>>b"},
+	{" ", ">>> "},
 }
 
 func (s *PrinterS) TestIndent(c *C) {
-    for _, test := range indentTests {
-        out := Indent(test.in, ">>>")
-        c.Assert(out, Equals, test.out)
-    }
+	for _, test := range indentTests {
+		out := Indent(test.in, ">>>")
+		c.Assert(out, Equals, test.out)
+	}
 
 }
