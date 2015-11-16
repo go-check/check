@@ -270,3 +270,57 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
 }
+
+func (s *CheckersS) TestUnsupportedTypes(c *check.C) {
+	testInfo(c, check.Contains, "Contains", []string{"container", "elem"})
+	testCheck(c, check.Contains, false, "int is not a supported container", 5, nil)
+	testCheck(c, check.Contains, false, "bool is not a supported container", false, nil)
+	testCheck(c, check.Contains, false, "element is a int but expected a string", "container", 1)
+}
+
+func (s *CheckersS) TestContainsVerifiesTypes(c *check.C) {
+	testInfo(c, check.Contains, "Contains", []string{"container", "elem"})
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		[...]int{1, 2, 3}, "foo")
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		[]int{1, 2, 3}, "foo")
+	// This looks tricky, Contains looks at _values_, not at keys
+	testCheck(c, check.Contains,
+		false, "container has items of type int but expected element is a string",
+		map[string]int{"foo": 1, "bar": 2}, "foo")
+}
+
+func (s *CheckersS) TestContainsString(c *check.C) {
+	c.Assert("foo", check.Contains, "f")
+	c.Assert("foo", check.Contains, "fo")
+	c.Assert("foo", check.Not(check.Contains), "foobar")
+}
+
+func (s *CheckersS) TestContainsArray(c *check.C) {
+	c.Assert([...]int{1, 2, 3}, check.Contains, 1)
+	c.Assert([...]int{1, 2, 3}, check.Contains, 2)
+	c.Assert([...]int{1, 2, 3}, check.Contains, 3)
+	c.Assert([...]int{1, 2, 3}, check.Not(check.Contains), 4)
+}
+
+func (s *CheckersS) TestContainsSlice(c *check.C) {
+	c.Assert([]int{1, 2, 3}, check.Contains, 1)
+	c.Assert([]int{1, 2, 3}, check.Contains, 2)
+	c.Assert([]int{1, 2, 3}, check.Contains, 3)
+	c.Assert([]int{1, 2, 3}, check.Not(check.Contains), 4)
+}
+
+func (s *CheckersS) TestContainsMap(c *check.C) {
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Contains, 1)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Contains, 2)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Not(check.Contains), 3)
+}
+
+func (s *CheckersS) TestContainsExapmles(c *check.C) {
+	c.Assert([]int{1, 2, 3}, check.Contains, 2)
+	c.Assert([...]int{1, 2, 3}, check.Contains, 2)
+	c.Assert(map[string]int{"foo": 1, "bar": 2}, check.Contains, 1)
+	c.Assert("foobar", check.Contains, "oba")
+}
