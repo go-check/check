@@ -2,6 +2,10 @@ package check
 
 import "io"
 
+type Reporter interface {
+	reporter
+}
+
 func PrintLine(filename string, line int) (string, error) {
 	return printLine(filename, line)
 }

@@ -25,15 +25,14 @@ func (s *ReporterS) TestWrite(c *C) {
 }
 
 func (s *ReporterS) TestWriteCallStartedWithStreamFlag(c *C) {
-	testLabel := "test started label"
 	stream := true
 	output := String{}
 
 	dummyVerbose := true
 	o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	o.WriteCallStarted(testLabel, c)
-	expected := fmt.Sprintf("%s: %s:\\d+: %s\n", testLabel, testFile, c.TestName())
+	o.WriteStarted(c)
+	expected := fmt.Sprintf("START: %s:\\d+: %s\n", testFile, c.TestName())
 	c.Assert(output.value, Matches, expected)
 }
 
@@ -41,111 +40,145 @@ func (s *ReporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
 	stream := false
 	output := String{}
 
-	dummyLabel := "dummy"
 	dummyVerbose := true
 	o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	o.WriteCallStarted(dummyLabel, c)
+	o.WriteStarted(c)
 	c.Assert(output.value, Equals, "")
+}
+
+var problemTests = []string{"FAIL", "PANIC"}
+
+func writeProblem(label string, r Reporter, c *C) {
+	if label == "FAIL" {
+		r.WriteFailure(c)
+	} else if label == "PANIC" {
+		r.WriteError(c)
+	} else {
+		panic("Unknown problem: " + label)
+	}
 }
 
 func (s *ReporterS) TestWriteCallProblemWithStreamFlag(c *C) {
-	testLabel := "test problem label"
-	stream := true
-	output := String{}
+	for _, testLabel := range problemTests {
+		stream := true
+		output := String{}
 
-	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+		dummyVerbose := true
+		o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	o.WriteCallProblem(testLabel, c)
-	expected := fmt.Sprintf("%s: %s:\\d+: %s\n\n", testLabel, testFile, c.TestName())
-	c.Assert(output.value, Matches, expected)
+		writeProblem(testLabel, o, c)
+		expected := fmt.Sprintf("%s: %s:\\d+: %s\n\n", testLabel, testFile, c.TestName())
+		c.Check(output.value, Matches, expected)
+	}
 }
 
 func (s *ReporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
-	testLabel := "test problem label"
-	stream := false
-	output := String{}
+	for _, testLabel := range problemTests {
+		stream := false
+		output := String{}
 
-	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+		dummyVerbose := true
+		o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	o.WriteCallProblem(testLabel, c)
-	expected := fmt.Sprintf(""+
-		"\n"+
-		"----------------------------------------------------------------------\n"+
-		"%s: %s:\\d+: %s\n\n", testLabel, testFile, c.TestName())
-	c.Assert(output.value, Matches, expected)
+		writeProblem(testLabel, o, c)
+		expected := fmt.Sprintf(""+
+			"\n"+
+			"----------------------------------------------------------------------\n"+
+			"%s: %s:\\d+: %s\n\n", testLabel, testFile, c.TestName())
+		c.Check(output.value, Matches, expected)
+	}
 }
 
 func (s *ReporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
-	testLabel := "test problem label"
-	testLog := "test log"
-	stream := false
-	output := String{}
+	for _, testLabel := range problemTests {
+		testLog := "test log"
+		stream := false
+		output := String{}
 
-	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+		dummyVerbose := true
+		o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	c.Log(testLog)
-	o.WriteCallProblem(testLabel, c)
-	expected := fmt.Sprintf(""+
-		"\n"+
-		"----------------------------------------------------------------------\n"+
-		"%s: %s:\\d+: %s\n\n%s\n", testLabel, testFile, c.TestName(), testLog)
-	c.Assert(output.value, Matches, expected)
+		c.Log(testLog)
+		writeProblem(testLabel, o, c)
+		expected := fmt.Sprintf(""+
+			"\n"+
+			"----------------------------------------------------------------------\n"+
+			"%s: %s:\\d+: %s\n\n%s\n", testLabel, testFile, c.TestName(), testLog)
+		c.Check(output.value, Matches, expected)
+	}
+}
+
+var successTests = []string{"PASS", "SKIP", "FAIL EXPECTED", "MISS"}
+
+func writeSuccess(label string, r Reporter, c *C) {
+	if label == "PASS" {
+		r.WriteSuccess(c)
+	} else if label == "SKIP" {
+		r.WriteSkip(c)
+	} else if label == "FAIL EXPECTED" {
+		r.WriteExpectedFailure(c)
+	} else if label == "MISS" {
+		r.WriteMissed(c)
+	} else {
+		panic("Unknown success: " + label)
+	}
 }
 
 func (s *ReporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
-	testLabel := "test success label"
-	stream := true
-	output := String{}
+	for _, testLabel := range successTests {
+		stream := true
+		output := String{}
 
-	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+		dummyVerbose := true
+		o := NewOutputWriter(&output, stream, dummyVerbose)
 
-	o.WriteCallSuccess(testLabel, c)
-	expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n\n", testLabel, testFile, c.TestName())
-	c.Assert(output.value, Matches, expected)
+		writeSuccess(testLabel, o, c)
+		expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n\n", testLabel, testFile, c.TestName())
+		c.Check(output.value, Matches, expected)
+	}
 }
 
 func (s *ReporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
-	testLabel := "test success label"
-	testReason := "test skip reason"
-	stream := true
-	output := String{}
+	for _, testLabel := range successTests {
+		testReason := "test skip reason"
+		stream := true
+		output := String{}
 
-	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
-	c.FakeSkip(testReason)
+		dummyVerbose := true
+		o := NewOutputWriter(&output, stream, dummyVerbose)
+		c.FakeSkip(testReason)
 
-	o.WriteCallSuccess(testLabel, c)
-	expected := fmt.Sprintf("%s: %s:\\d+: %s \\(%s\\)\t\\d\\.\\d+s\n\n",
-		testLabel, testFile, c.TestName(), testReason)
-	c.Assert(output.value, Matches, expected)
+		writeSuccess(testLabel, o, c)
+		expected := fmt.Sprintf("%s: %s:\\d+: %s \\(%s\\)\t\\d\\.\\d+s\n\n",
+			testLabel, testFile, c.TestName(), testReason)
+		c.Check(output.value, Matches, expected)
+	}
 }
 
 func (s *ReporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
-	testLabel := "test success label"
-	stream := false
-	verbose := true
-	output := String{}
+	for _, testLabel := range successTests {
+		stream := false
+		verbose := true
+		output := String{}
 
-	o := NewOutputWriter(&output, stream, verbose)
+		o := NewOutputWriter(&output, stream, verbose)
 
-	o.WriteCallSuccess(testLabel, c)
-	expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n", testLabel, testFile, c.TestName())
-	c.Assert(output.value, Matches, expected)
+		writeSuccess(testLabel, o, c)
+		expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n", testLabel, testFile, c.TestName())
+		c.Check(output.value, Matches, expected)
+	}
 }
 
 func (s *ReporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C) {
-	testLabel := "test success label"
-	stream := false
-	verbose := false
-	output := String{}
+	for _, testLabel := range successTests {
+		stream := false
+		verbose := false
+		output := String{}
 
-	o := NewOutputWriter(&output, stream, verbose)
+		o := NewOutputWriter(&output, stream, verbose)
 
-	o.WriteCallSuccess(testLabel, c)
-	c.Assert(output.value, Equals, "")
+		writeSuccess(testLabel, o, c)
+		c.Check(output.value, Equals, "")
+	}
 }

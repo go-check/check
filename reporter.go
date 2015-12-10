@@ -6,6 +6,18 @@ import (
 	"sync"
 )
 
+type reporter interface {
+	Write(content []byte) (int, error)
+	WriteStarted(c *C)
+	WriteFailure(c *C)
+	WriteError(c *C)
+	WriteSuccess(c *C)
+	WriteSkip(c *C)
+	WriteExpectedFailure(c *C)
+	WriteMissed(c *C)
+	Stream() bool
+}
+
 // -----------------------------------------------------------------------
 // Output writer manages atomic output writing according to settings.
 
@@ -13,12 +25,16 @@ type outputWriter struct {
 	m                    sync.Mutex
 	writer               io.Writer
 	wroteCallProblemLast bool
-	Stream               bool
-	Verbose              bool
+	stream               bool
+	verbose              bool
 }
 
 func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose}
+	return &outputWriter{writer: writer, stream: stream, verbose: verbose}
+}
+
+func (ow *outputWriter) Stream() bool {
+	return ow.stream
 }
 
 func (ow *outputWriter) Write(content []byte) (n int, err error) {
@@ -28,18 +44,26 @@ func (ow *outputWriter) Write(content []byte) (n int, err error) {
 	return
 }
 
-func (ow *outputWriter) WriteCallStarted(label string, c *C) {
-	if ow.Stream {
-		header := renderCallHeader(label, c, "", "\n")
+func (ow *outputWriter) WriteStarted(c *C) {
+	if ow.Stream() {
+		header := renderCallHeader("START", c, "", "\n")
 		ow.m.Lock()
 		ow.writer.Write([]byte(header))
 		ow.m.Unlock()
 	}
 }
 
-func (ow *outputWriter) WriteCallProblem(label string, c *C) {
+func (ow *outputWriter) WriteFailure(c *C) {
+	ow.writeProblem("FAIL", c)
+}
+
+func (ow *outputWriter) WriteError(c *C) {
+	ow.writeProblem("PANIC", c)
+}
+
+func (ow *outputWriter) writeProblem(label string, c *C) {
 	var prefix string
-	if !ow.Stream {
+	if !ow.Stream() {
 		prefix = "\n-----------------------------------" +
 			"-----------------------------------\n"
 	}
@@ -47,14 +71,30 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 	ow.m.Lock()
 	ow.wroteCallProblemLast = true
 	ow.writer.Write([]byte(header))
-	if !ow.Stream {
+	if !ow.Stream() {
 		c.logb.WriteTo(ow.writer)
 	}
 	ow.m.Unlock()
 }
 
-func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
-	if ow.Stream || (ow.Verbose && c.kind == testKd) {
+func (ow *outputWriter) WriteSuccess(c *C) {
+	ow.writeSuccess("PASS", c)
+}
+
+func (ow *outputWriter) WriteSkip(c *C) {
+	ow.writeSuccess("SKIP", c)
+}
+
+func (ow *outputWriter) WriteExpectedFailure(c *C) {
+	ow.writeSuccess("FAIL EXPECTED", c)
+}
+
+func (ow *outputWriter) WriteMissed(c *C) {
+	ow.writeSuccess("MISS", c)
+}
+
+func (ow *outputWriter) writeSuccess(label string, c *C) {
+	if ow.Stream() || (ow.verbose && c.kind == testKd) {
 		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
@@ -64,13 +104,13 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
-		if ow.Stream {
+		if ow.Stream() {
 			suffix += "\n"
 		}
 		header := renderCallHeader(label, c, "", suffix)
 		ow.m.Lock()
 		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream && ow.wroteCallProblemLast {
+		if !ow.Stream() && ow.wroteCallProblemLast {
 			header = "\n-----------------------------------" +
 				"-----------------------------------\n" +
 				header
