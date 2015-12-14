@@ -8,13 +8,13 @@ import (
 
 type reporter interface {
 	Write([]byte) (int, error)
-	WriteStarted(c *C)
-	WriteFailure(c *C)
-	WriteError(c *C)
-	WriteSuccess(c *C)
-	WriteSkip(c *C)
-	WriteExpectedFailure(c *C)
-	WriteMissed(c *C)
+	WriteStarted(*C)
+	WriteFailure(*C)
+	WriteError(*C)
+	WriteSuccess(*C)
+	WriteSkip(*C)
+	WriteExpectedFailure(*C)
+	WriteMissed(*C)
 	Stream() bool
 }
 
