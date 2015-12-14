@@ -7,7 +7,7 @@ import (
 )
 
 type reporter interface {
-	Write([]byte) (int, error)
+	io.Writer
 	WriteStarted(*C)
 	WriteFailure(*C)
 	WriteError(*C)
