@@ -7,7 +7,7 @@ import (
 )
 
 type reporter interface {
-	Write(content []byte) (int, error)
+	Write([]byte) (int, error)
 	WriteStarted(c *C)
 	WriteFailure(c *C)
 	WriteError(c *C)
