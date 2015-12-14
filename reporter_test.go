@@ -8,11 +8,11 @@ import (
 
 const testFile = "reporter_test.go"
 
-var _ = Suite(&ReporterS{})
+var _ = Suite(&reporterS{})
 
-type ReporterS struct{}
+type reporterS struct{}
 
-func (s *ReporterS) TestWrite(c *C) {
+func (s *reporterS) TestWrite(c *C) {
 	testString := "test string"
 	output := String{}
 
@@ -24,7 +24,7 @@ func (s *ReporterS) TestWrite(c *C) {
 	c.Assert(output.value, Equals, testString)
 }
 
-func (s *ReporterS) TestWriteCallStartedWithStreamFlag(c *C) {
+func (s *reporterS) TestWriteCallStartedWithStreamFlag(c *C) {
 	testLabel := "test started label"
 	stream := true
 	output := String{}
@@ -37,7 +37,7 @@ func (s *ReporterS) TestWriteCallStartedWithStreamFlag(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
+func (s *reporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
 	stream := false
 	output := String{}
 
@@ -49,7 +49,7 @@ func (s *ReporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
 	c.Assert(output.value, Equals, "")
 }
 
-func (s *ReporterS) TestWriteCallProblemWithStreamFlag(c *C) {
+func (s *reporterS) TestWriteCallProblemWithStreamFlag(c *C) {
 	testLabel := "test problem label"
 	stream := true
 	output := String{}
@@ -62,7 +62,7 @@ func (s *ReporterS) TestWriteCallProblemWithStreamFlag(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
+func (s *reporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
 	testLabel := "test problem label"
 	stream := false
 	output := String{}
@@ -78,7 +78,7 @@ func (s *ReporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
+func (s *reporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
 	testLabel := "test problem label"
 	testLog := "test log"
 	stream := false
@@ -96,7 +96,7 @@ func (s *ReporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
+func (s *reporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
 	testLabel := "test success label"
 	stream := true
 	output := String{}
@@ -109,7 +109,7 @@ func (s *ReporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
+func (s *reporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
 	testLabel := "test success label"
 	testReason := "test skip reason"
 	stream := true
@@ -125,7 +125,7 @@ func (s *ReporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
+func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
 	testLabel := "test success label"
 	stream := false
 	verbose := true
@@ -138,7 +138,7 @@ func (s *ReporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *ReporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C) {
+func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C) {
 	testLabel := "test success label"
 	stream := false
 	verbose := false
