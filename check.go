@@ -554,7 +554,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    newCheckReporter(conf.Output, conf.Stream, conf.Verbose),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,

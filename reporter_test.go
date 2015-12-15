@@ -8,50 +8,50 @@ import (
 	. "gopkg.in/check.v1"
 )
 
-var _ = Suite(&reporterS{})
+var _ = Suite(&checkReporterS{})
 
-type reporterS struct {
+type checkReporterS struct {
 	testFile string
 }
 
-func (s *reporterS) SetUpSuite(c *C) {
+func (s *checkReporterS) SetUpSuite(c *C) {
 	_, fileName, _, ok := runtime.Caller(0)
 	c.Assert(ok, Equals, true)
 	s.testFile = filepath.Base(fileName)
 }
 
-func (s *reporterS) TestWrite(c *C) {
+func (s *checkReporterS) TestWrite(c *C) {
 	testString := "test string"
 	output := String{}
 
 	dummyStream := true
 	dummyVerbose := true
-	o := NewOutputWriter(&output, dummyStream, dummyVerbose)
+	r := NewCheckReporter(&output, dummyStream, dummyVerbose)
 
-	o.Write([]byte(testString))
+	r.Write([]byte(testString))
 	c.Assert(output.value, Equals, testString)
 }
 
-func (s *reporterS) TestWriteCallStartedWithStreamFlag(c *C) {
+func (s *checkReporterS) TestWriteCallStartedWithStreamFlag(c *C) {
 	stream := true
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	r := NewCheckReporter(&output, stream, dummyVerbose)
 
-	o.WriteStarted(c)
+	r.WriteStarted(c)
 	expected := fmt.Sprintf("START: %s:\\d+: %s\n", s.testFile, c.TestName())
 	c.Assert(output.value, Matches, expected)
 }
 
-func (s *reporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
+func (s *checkReporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
 	stream := false
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	r := NewCheckReporter(&output, stream, dummyVerbose)
 
-	o.WriteStarted(c)
+	r.WriteStarted(c)
 	c.Assert(output.value, Equals, "")
 }
 
@@ -67,29 +67,29 @@ func writeProblem(label string, r Reporter, c *C) {
 	}
 }
 
-func (s *reporterS) TestWriteCallProblemWithStreamFlag(c *C) {
+func (s *checkReporterS) TestWriteCallProblemWithStreamFlag(c *C) {
 	for _, testLabel := range problemTests {
 		stream := true
 		output := String{}
 
 		dummyVerbose := true
-		o := NewOutputWriter(&output, stream, dummyVerbose)
+		r := NewCheckReporter(&output, stream, dummyVerbose)
 
-		writeProblem(testLabel, o, c)
+		writeProblem(testLabel, r, c)
 		expected := fmt.Sprintf("%s: %s:\\d+: %s\n\n", testLabel, s.testFile, c.TestName())
 		c.Check(output.value, Matches, expected)
 	}
 }
 
-func (s *reporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
+func (s *checkReporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
 	for _, testLabel := range problemTests {
 		stream := false
 		output := String{}
 
 		dummyVerbose := true
-		o := NewOutputWriter(&output, stream, dummyVerbose)
+		r := NewCheckReporter(&output, stream, dummyVerbose)
 
-		writeProblem(testLabel, o, c)
+		writeProblem(testLabel, r, c)
 		expected := fmt.Sprintf(""+
 			"\n"+
 			"----------------------------------------------------------------------\n"+
@@ -98,17 +98,17 @@ func (s *reporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
 	}
 }
 
-func (s *reporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
+func (s *checkReporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
 	for _, testLabel := range problemTests {
 		testLog := "test log"
 		stream := false
 		output := String{}
 
 		dummyVerbose := true
-		o := NewOutputWriter(&output, stream, dummyVerbose)
+		r := NewCheckReporter(&output, stream, dummyVerbose)
 
 		c.Log(testLog)
-		writeProblem(testLabel, o, c)
+		writeProblem(testLabel, r, c)
 		expected := fmt.Sprintf(""+
 			"\n"+
 			"----------------------------------------------------------------------\n"+
@@ -133,60 +133,60 @@ func writeSuccess(label string, r Reporter, c *C) {
 	}
 }
 
-func (s *reporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
+func (s *checkReporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
 	for _, testLabel := range successTests {
 		stream := true
 		output := String{}
 
 		dummyVerbose := true
-		o := NewOutputWriter(&output, stream, dummyVerbose)
+		r := NewCheckReporter(&output, stream, dummyVerbose)
 
-		writeSuccess(testLabel, o, c)
+		writeSuccess(testLabel, r, c)
 		expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n\n", testLabel, s.testFile, c.TestName())
 		c.Check(output.value, Matches, expected)
 	}
 }
 
-func (s *reporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
+func (s *checkReporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
 	for _, testLabel := range successTests {
 		testReason := "test skip reason"
 		stream := true
 		output := String{}
 
 		dummyVerbose := true
-		o := NewOutputWriter(&output, stream, dummyVerbose)
+		r := NewCheckReporter(&output, stream, dummyVerbose)
 		c.FakeSkip(testReason)
 
-		writeSuccess(testLabel, o, c)
+		writeSuccess(testLabel, r, c)
 		expected := fmt.Sprintf("%s: %s:\\d+: %s \\(%s\\)\t\\d\\.\\d+s\n\n",
 			testLabel, s.testFile, c.TestName(), testReason)
 		c.Check(output.value, Matches, expected)
 	}
 }
 
-func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
+func (s *checkReporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
 	for _, testLabel := range successTests {
 		stream := false
 		verbose := true
 		output := String{}
 
-		o := NewOutputWriter(&output, stream, verbose)
+		r := NewCheckReporter(&output, stream, verbose)
 
-		writeSuccess(testLabel, o, c)
+		writeSuccess(testLabel, r, c)
 		expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n", testLabel, s.testFile, c.TestName())
 		c.Check(output.value, Matches, expected)
 	}
 }
 
-func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C) {
+func (s *checkReporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C) {
 	for _, testLabel := range successTests {
 		stream := false
 		verbose := false
 		output := String{}
 
-		o := NewOutputWriter(&output, stream, verbose)
+		r := NewCheckReporter(&output, stream, verbose)
 
-		writeSuccess(testLabel, o, c)
+		writeSuccess(testLabel, r, c)
 		c.Check(output.value, Equals, "")
 	}
 }

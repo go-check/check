@@ -19,9 +19,9 @@ type reporter interface {
 }
 
 // -----------------------------------------------------------------------
-// Output writer manages atomic output writing according to settings.
+// Reporters manage atomic output writing according to settings.
 
-type outputWriter struct {
+type checkReporter struct {
 	m                    sync.Mutex
 	writer               io.Writer
 	wroteCallProblemLast bool
@@ -29,72 +29,72 @@ type outputWriter struct {
 	verbose              bool
 }
 
-func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, stream: stream, verbose: verbose}
+func newCheckReporter(writer io.Writer, stream, verbose bool) *checkReporter {
+	return &checkReporter{writer: writer, stream: stream, verbose: verbose}
 }
 
-func (ow *outputWriter) Stream() bool {
-	return ow.stream
+func (r *checkReporter) Stream() bool {
+	return r.stream
 }
 
-func (ow *outputWriter) Write(content []byte) (n int, err error) {
-	ow.m.Lock()
-	n, err = ow.writer.Write(content)
-	ow.m.Unlock()
+func (r *checkReporter) Write(content []byte) (n int, err error) {
+	r.m.Lock()
+	n, err = r.writer.Write(content)
+	r.m.Unlock()
 	return
 }
 
-func (ow *outputWriter) WriteStarted(c *C) {
-	if ow.Stream() {
+func (r *checkReporter) WriteStarted(c *C) {
+	if r.Stream() {
 		header := renderCallHeader("START", c, "", "\n")
-		ow.m.Lock()
-		ow.writer.Write([]byte(header))
-		ow.m.Unlock()
+		r.m.Lock()
+		r.writer.Write([]byte(header))
+		r.m.Unlock()
 	}
 }
 
-func (ow *outputWriter) WriteFailure(c *C) {
-	ow.writeProblem("FAIL", c)
+func (r *checkReporter) WriteFailure(c *C) {
+	r.writeProblem("FAIL", c)
 }
 
-func (ow *outputWriter) WriteError(c *C) {
-	ow.writeProblem("PANIC", c)
+func (r *checkReporter) WriteError(c *C) {
+	r.writeProblem("PANIC", c)
 }
 
-func (ow *outputWriter) writeProblem(label string, c *C) {
+func (r *checkReporter) writeProblem(label string, c *C) {
 	var prefix string
-	if !ow.Stream() {
+	if !r.Stream() {
 		prefix = "\n-----------------------------------" +
 			"-----------------------------------\n"
 	}
 	header := renderCallHeader(label, c, prefix, "\n\n")
-	ow.m.Lock()
-	ow.wroteCallProblemLast = true
-	ow.writer.Write([]byte(header))
-	if !ow.Stream() {
-		c.logb.WriteTo(ow.writer)
+	r.m.Lock()
+	r.wroteCallProblemLast = true
+	r.writer.Write([]byte(header))
+	if !r.Stream() {
+		c.logb.WriteTo(r.writer)
 	}
-	ow.m.Unlock()
+	r.m.Unlock()
 }
 
-func (ow *outputWriter) WriteSuccess(c *C) {
-	ow.writeSuccess("PASS", c)
+func (r *checkReporter) WriteSuccess(c *C) {
+	r.writeSuccess("PASS", c)
 }
 
-func (ow *outputWriter) WriteSkip(c *C) {
-	ow.writeSuccess("SKIP", c)
+func (r *checkReporter) WriteSkip(c *C) {
+	r.writeSuccess("SKIP", c)
 }
 
-func (ow *outputWriter) WriteExpectedFailure(c *C) {
-	ow.writeSuccess("FAIL EXPECTED", c)
+func (r *checkReporter) WriteExpectedFailure(c *C) {
+	r.writeSuccess("FAIL EXPECTED", c)
 }
 
-func (ow *outputWriter) WriteMissed(c *C) {
-	ow.writeSuccess("MISS", c)
+func (r *checkReporter) WriteMissed(c *C) {
+	r.writeSuccess("MISS", c)
 }
 
-func (ow *outputWriter) writeSuccess(label string, c *C) {
-	if ow.Stream() || (ow.verbose && c.kind == testKd) {
+func (r *checkReporter) writeSuccess(label string, c *C) {
+	if r.Stream() || (r.verbose && c.kind == testKd) {
 		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
@@ -104,20 +104,20 @@ func (ow *outputWriter) writeSuccess(label string, c *C) {
 			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
-		if ow.Stream() {
+		if r.Stream() {
 			suffix += "\n"
 		}
 		header := renderCallHeader(label, c, "", suffix)
-		ow.m.Lock()
+		r.m.Lock()
 		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream() && ow.wroteCallProblemLast {
+		if !r.Stream() && r.wroteCallProblemLast {
 			header = "\n-----------------------------------" +
 				"-----------------------------------\n" +
 				header
 		}
-		ow.wroteCallProblemLast = false
-		ow.writer.Write([]byte(header))
-		ow.m.Unlock()
+		r.wroteCallProblemLast = false
+		r.writer.Write([]byte(header))
+		r.m.Unlock()
 	}
 }
 
