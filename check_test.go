@@ -9,6 +9,7 @@ import (
 	"os"
 	"regexp"
 	"runtime"
+	"sync"
 	"testing"
 	"time"
 
@@ -164,6 +165,45 @@ func (s *FixtureHelper) Benchmark3(c *check.C) {
 		x = make([]int64, 5)
 		_ = x
 	}
+}
+
+// -----------------------------------------------------------------------
+// Helper which verifies that tests are run in parallel
+
+type parallelHelper struct {
+	mu          sync.Mutex
+	chTest      map[*check.C]chan struct{}
+	chTestWait  chan struct{}
+	chNotifyAdd chan struct{}
+}
+
+func (s *parallelHelper) addCheck(c *check.C) {
+	s.mu.Lock()
+	s.chTest[c] = make(chan struct{})
+	s.mu.Unlock()
+	s.chNotifyAdd <- struct{}{}
+}
+
+func (s *parallelHelper) SetupSuite(c *check.C) {
+	s.chTest = make(map[*check.C]chan struct{})
+}
+
+func (s *parallelHelper) Test1(c *check.C) {
+	c.Parallel()
+	s.addCheck(c)
+	<-s.chTestWait
+}
+
+func (s *parallelHelper) Test2(c *check.C) {
+	c.Parallel()
+	s.addCheck(c)
+	<-s.chTestWait
+}
+
+func (s *parallelHelper) TearDownTest(c *check.C) {
+	s.mu.Lock()
+	close(s.chTest[c])
+	s.mu.Unlock()
 }
 
 // -----------------------------------------------------------------------

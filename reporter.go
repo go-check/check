@@ -64,7 +64,7 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
-		if ow.Stream {
+		if ow.Stream && !c.isParallel {
 			suffix += "\n"
 		}
 		header := renderCallHeader(label, c, "", suffix)

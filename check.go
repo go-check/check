@@ -92,6 +92,20 @@ type C struct {
 	benchMem  bool
 	startTime time.Time
 	timer
+	startParallel chan bool
+	isParallel    bool
+}
+
+// Parallel signals that this test is to be run in parallel with (and only with)
+// other parallel tests.
+func (c *C) Parallel() {
+	if c.isParallel {
+		panic("go-check: c.Parallel called multiple times")
+	}
+	c.isParallel = true
+	c.done <- nil
+	<-c.startParallel
+	c.startTime = time.Now()
 }
 
 func (c *C) status() funcStatus {
@@ -522,6 +536,7 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	parallel                  int
 }
 
 type RunConf struct {
@@ -533,6 +548,7 @@ type RunConf struct {
 	BenchmarkTime time.Duration // Defaults to 1 second
 	BenchmarkMem  bool
 	KeepWorkDir   bool
+	Parallel      int
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -561,6 +577,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
+		parallel:  runConf.Parallel,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -607,16 +624,43 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 // Run all methods in the given suite.
 func (runner *suiteRunner) run() *Result {
 	if runner.tracker.result.RunError == nil && len(runner.tests) > 0 {
+		numParallel := 0
+		startParallel := make(chan bool)
 		runner.tracker.start()
+		collector := make(chan *C, len(runner.tests))
+
 		if runner.checkFixtureArgs() {
 			c := runner.runFixture(runner.setUpSuite, "", nil)
 			if c == nil || c.status() == succeededSt {
 				for i := 0; i != len(runner.tests); i++ {
-					c := runner.runTest(runner.tests[i])
+					c := runner.runTest(runner.tests[i], startParallel)
+					if done := <-c.done; done == nil { // parallel run
+						go func() {
+							collector <- <-c.done
+						}()
+						numParallel++
+						continue
+					}
 					if c.status() == fixturePanickedSt {
 						runner.skipTests(missedSt, runner.tests[i+1:])
 						break
 					}
+				}
+
+				running := 0
+				for numParallel+running > 0 {
+					if running < runner.parallel && numParallel > 0 {
+						startParallel <- true
+						running++
+						numParallel--
+						continue
+					}
+					c := <-collector
+					if c.status() == fixturePanickedSt {
+						runner.skipTests(missedSt, []*methodType{c.method})
+					}
+					running--
+
 				}
 			} else if c != nil && c.status() == skippedSt {
 				runner.skipTests(skippedSt, runner.tests)
@@ -627,6 +671,7 @@ func (runner *suiteRunner) run() *Result {
 		} else {
 			runner.skipTests(missedSt, runner.tests)
 		}
+
 		runner.tracker.waitAndStop()
 		if runner.keepDir {
 			runner.tracker.result.WorkDir = runner.tempDir.path
@@ -639,7 +684,7 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, startParallel chan bool, dispatcher func(c *C)) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
@@ -648,16 +693,17 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		logb = new(logger)
 	}
 	c := &C{
-		method:    method,
-		kind:      kind,
-		testName:  testName,
-		logb:      logb,
-		logw:      logw,
-		tempDir:   runner.tempDir,
-		done:      make(chan *C, 1),
-		timer:     timer{benchTime: runner.benchTime},
-		startTime: time.Now(),
-		benchMem:  runner.benchMem,
+		method:        method,
+		kind:          kind,
+		testName:      testName,
+		logb:          logb,
+		logw:          logw,
+		tempDir:       runner.tempDir,
+		done:          make(chan *C, 2),
+		timer:         timer{benchTime: runner.benchTime},
+		startTime:     time.Now(),
+		benchMem:      runner.benchMem,
+		startParallel: startParallel,
 	}
 	runner.tracker.expectCall(c)
 	go (func() {
@@ -670,7 +716,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 
 // Same as forkCall(), but wait for call to finish before returning.
 func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
-	c := runner.forkCall(method, kind, testName, logb, dispatcher)
+	c := runner.forkCall(method, kind, testName, logb, nil, dispatcher)
 	<-c.done
 	return c
 }
@@ -749,9 +795,9 @@ type fixturePanic struct {
 
 // Run the suite test method, together with the test-specific fixture,
 // asynchronously.
-func (runner *suiteRunner) forkTest(method *methodType) *C {
+func (runner *suiteRunner) forkTest(method *methodType, startParallel chan bool) *C {
 	testName := method.String()
-	return runner.forkCall(method, testKd, testName, nil, func(c *C) {
+	return runner.forkCall(method, testKd, testName, nil, startParallel, func(c *C) {
 		var skipped bool
 		defer runner.runFixtureWithPanic(runner.tearDownTest, testName, nil, &skipped)
 		defer c.StopTimer()
@@ -805,9 +851,8 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 }
 
 // Same as forkTest(), but wait for the test to finish before returning.
-func (runner *suiteRunner) runTest(method *methodType) *C {
-	c := runner.forkTest(method)
-	<-c.done
+func (runner *suiteRunner) runTest(method *methodType, startParallel chan bool) *C {
+	c := runner.forkTest(method, startParallel)
 	return c
 }
 

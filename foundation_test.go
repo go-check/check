@@ -8,11 +8,13 @@ package check_test
 
 import (
 	"fmt"
-	"gopkg.in/check.v1"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+	"time"
+
+	"gopkg.in/check.v1"
 )
 
 // -----------------------------------------------------------------------
@@ -186,6 +188,47 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *check.C) {
 			failed: true,
 			log:    log,
 		})
+}
+
+func (s *FoundationS) TestParallel(c *check.C) {
+	suite := &parallelHelper{chTestWait: make(chan struct{}), chNotifyAdd: make(chan struct{}, 2)}
+	chDone := make(chan struct{})
+	go func() {
+		check.Run(suite, &check.RunConf{})
+		close(chDone)
+	}()
+
+	for {
+		select {
+		case <-suite.chNotifyAdd:
+		case <-time.After(1 * time.Second):
+			c.Fatal("timeout waiting for parallel tests")
+		}
+
+		suite.mu.Lock()
+		size := len(suite.chTest)
+		suite.mu.Unlock()
+		if size < 2 {
+			continue
+		}
+		break
+	}
+
+	// make sure tests are still running
+	for check, done := range suite.chTest {
+		select {
+		case <-done:
+			c.Fatalf("expected test to still be running: %s", check)
+		default:
+		}
+	}
+
+	close(suite.chTestWait)
+	select {
+	case <-chDone:
+	case <-time.After(1 * time.Second):
+		c.Fatalf("timeout waiting for parallel tests to finish")
+	}
 }
 
 // -----------------------------------------------------------------------

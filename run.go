@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime"
 	"testing"
 	"time"
 )
@@ -42,6 +43,8 @@ var (
 	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
 	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
 	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+
+	parallelFlag = flag.Int("check.parallel", runtime.GOMAXPROCS(0), "maximum test parallelism")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -60,6 +63,7 @@ func TestingT(testingT *testing.T) {
 		BenchmarkTime: benchTime,
 		BenchmarkMem:  *newBenchMem,
 		KeepWorkDir:   *oldWorkFlag || *newWorkFlag,
+		Parallel:      *parallelFlag,
 	}
 	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)
