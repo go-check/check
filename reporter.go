@@ -13,12 +13,12 @@ type outputWriter struct {
 	m                    sync.Mutex
 	writer               io.Writer
 	wroteCallProblemLast bool
-	Stream               bool
-	Verbose              bool
+	stream               bool
+	verbose              bool
 }
 
 func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose}
+	return &outputWriter{writer: writer, stream: stream, verbose: verbose}
 }
 
 func (ow *outputWriter) Write(content []byte) (n int, err error) {
@@ -29,7 +29,7 @@ func (ow *outputWriter) Write(content []byte) (n int, err error) {
 }
 
 func (ow *outputWriter) WriteCallStarted(label string, c *C) {
-	if ow.Stream {
+	if ow.stream {
 		header := renderCallHeader(label, c, "", "\n")
 		ow.m.Lock()
 		ow.writer.Write([]byte(header))
@@ -39,7 +39,7 @@ func (ow *outputWriter) WriteCallStarted(label string, c *C) {
 
 func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 	var prefix string
-	if !ow.Stream {
+	if !ow.stream {
 		prefix = "\n-----------------------------------" +
 			"-----------------------------------\n"
 	}
@@ -47,14 +47,14 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 	ow.m.Lock()
 	ow.wroteCallProblemLast = true
 	ow.writer.Write([]byte(header))
-	if !ow.Stream {
+	if !ow.stream {
 		c.logb.WriteTo(ow.writer)
 	}
 	ow.m.Unlock()
 }
 
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
-	if ow.Stream || (ow.Verbose && c.kind == testKd) {
+	if ow.stream || (ow.verbose && c.kind == testKd) {
 		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
@@ -64,13 +64,13 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
-		if ow.Stream {
+		if ow.stream {
 			suffix += "\n"
 		}
 		header := renderCallHeader(label, c, "", suffix)
 		ow.m.Lock()
 		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream && ow.wroteCallProblemLast {
+		if !ow.stream && ow.wroteCallProblemLast {
 			header = "\n-----------------------------------" +
 				"-----------------------------------\n" +
 				header
