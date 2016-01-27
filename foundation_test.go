@@ -238,7 +238,7 @@ func (s *FoundationS) TestExpectFailureSucceed(c *check.C) {
 func (s *FoundationS) TestExpectFailureSucceedVerbose(c *check.C) {
 	helper := ExpectFailureSucceedHelper{}
 	output := String{}
-	result := check.Run(&helper, &check.RunConf{Output: &output, Verbose: true})
+	result := check.Run(&helper, &check.RunConf{Output: &output, Verbosity: 1})
 
 	expected := "" +
 		"FAIL EXPECTED: foundation_test\\.go:[0-9]+:" +
@@ -277,7 +277,7 @@ func (s *FoundationS) TestSkip(c *check.C) {
 func (s *FoundationS) TestSkipVerbose(c *check.C) {
 	helper := SkipTestHelper{}
 	output := String{}
-	check.Run(&helper, &check.RunConf{Output: &output, Verbose: true})
+	check.Run(&helper, &check.RunConf{Output: &output, Verbosity: 1})
 
 	expected := "SKIP: foundation_test\\.go:[0-9]+: SkipTestHelper\\.TestFail" +
 		" \\(Wrong platform or whatever\\)"

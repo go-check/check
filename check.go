@@ -527,8 +527,7 @@ type suiteRunner struct {
 
 type RunConf struct {
 	Output        io.Writer
-	Stream        bool
-	Verbose       bool
+	Verbosity     uint8
 	Filter        string
 	Benchmark     bool
 	BenchmarkTime time.Duration // Defaults to 1 second
@@ -545,31 +544,24 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	if conf.Output == nil {
 		conf.Output = os.Stdout
 	}
-	if conf.Benchmark {
-		conf.Verbose = true
+	if conf.Benchmark && conf.Verbosity < 1 {
+		conf.Verbosity = 1
 	}
 
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
-	var verbosity uint8
-	if conf.Verbose {
-		verbosity = 1
-	}
-	if conf.Stream {
-		verbosity = 2
-	}
 	
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, verbosity),
+		output:    newOutputWriter(conf.Output, conf.Verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
-		verbosity: verbosity,
+		verbosity: conf.Verbosity,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
