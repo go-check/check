@@ -520,7 +520,7 @@ type suiteRunner struct {
 	tempDir                   *tempDir
 	keepDir                   bool
 	logOutput                 io.Writer
-	output                    *outputWriter
+	reporter                  testReporter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
@@ -565,7 +565,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	runner := &suiteRunner{
 		suite:     suite,
 	  logOutput: conf.Output,
-		output:    newOutputWriter(conf.Output, verbosity),
+		reporter:  newOutputWriter(conf.Output, verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
@@ -853,7 +853,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 }
 
 func (runner *suiteRunner) reportCallStarted(c *C) {
-	runner.output.WriteCallStarted("START", c)
+	runner.reporter.StartTest(c)
 }
 
 func (runner *suiteRunner) reportCallDone(c *C) {
@@ -861,23 +861,23 @@ func (runner *suiteRunner) reportCallDone(c *C) {
 	switch c.status() {
 	case succeededSt:
 		if c.mustFail {
-			runner.output.WriteCallSuccess("FAIL EXPECTED", c)
+			runner.reporter.AddExpectedFailure(c)
 		} else {
-			runner.output.WriteCallSuccess("PASS", c)
+			runner.reporter.AddSuccess(c)
 		}
 	case skippedSt:
-		runner.output.WriteCallSuccess("SKIP", c)
+		runner.reporter.AddSkip(c)
 	case failedSt:
-		runner.output.WriteCallProblem("FAIL", c)
+		runner.reporter.AddFailure(c)
 	case panickedSt:
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.reporter.AddError(c)
 	case fixturePanickedSt:
 		// That's a testKd call reporting that its fixture
 		// has panicked. The fixture call which caused the
 		// panic itself was tracked above. We'll report to
 		// aid debugging.
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.reporter.AddError(c)
 	case missedSt:
-		runner.output.WriteCallSuccess("MISS", c)
+		runner.reporter.AddMissed(c)
 	}
 }

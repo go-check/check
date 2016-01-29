@@ -2,6 +2,10 @@ package check
 
 import "io"
 
+type TestReporter interface {
+	testReporter
+}
+
 func PrintLine(filename string, line int) (string, error) {
 	return printLine(filename, line)
 }
