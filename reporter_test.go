@@ -20,17 +20,6 @@ func (s *reporterS) SetUpSuite(c *C) {
 	s.testFile = filepath.Base(fileName)
 }
 
-func (s *reporterS) TestWrite(c *C) {
-	testString := "test string"
-	output := String{}
-
-	var dummyVerbosity uint8
-	o := NewOutputWriter(&output, dummyVerbosity)
-
-	o.Write([]byte(testString))
-	c.Assert(output.value, Equals, testString)
-}
-
 func (s *reporterS) TestWriteCallStartedWithStreamFlag(c *C) {
 	testLabel := "test started label"
 	var verbosity uint8 = 2

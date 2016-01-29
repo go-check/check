@@ -20,13 +20,6 @@ func newOutputWriter(writer io.Writer, verbosity uint8) *outputWriter {
 	return &outputWriter{writer: writer, verbosity: verbosity}
 }
 
-func (ow *outputWriter) Write(content []byte) (n int, err error) {
-	ow.m.Lock()
-	n, err = ow.writer.Write(content)
-	ow.m.Unlock()
-	return
-}
-
 func (ow *outputWriter) WriteCallStarted(label string, c *C) {
 	if ow.verbosity > 1 {
 		header := renderCallHeader(label, c, "", "\n")
