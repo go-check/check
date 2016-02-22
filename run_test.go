@@ -6,6 +6,7 @@ import (
 	"errors"
 	"os"
 	"sync"
+	"time"
 )
 
 var runnerS = Suite(&RunS{})
@@ -415,4 +416,39 @@ func (s *RunS) TestKeepWorkDir(c *C) {
 	stat, err := os.Stat(result.WorkDir)
 	c.Assert(err, IsNil)
 	c.Assert(stat.IsDir(), Equals, true)
+}
+
+// -----------------------------------------------------------------------
+// Verify that check timeouts panic
+
+type TimeoutSuite struct{}
+
+func (s *TimeoutSuite) Test(c *C) {
+	time.Sleep(10 * time.Millisecond)
+}
+
+func (s *RunS) TestTimeout(c *C) {
+	defer func() {
+		if r := recover(); r == nil {
+			c.Fatal("test did not panic")
+		}
+	}()
+
+	duration, err := time.ParseDuration("5ms")
+	if err != nil {
+		c.Fatal(err)
+	}
+	runConf := RunConf{CheckTimeout: duration}
+	Run(&TimeoutSuite{}, &runConf)
+}
+
+func (s *RunS) TestNoTimeout(c *C) {
+	defer func() {
+		if r := recover(); r != nil {
+			c.Fatal("test should not panic")
+		}
+	}()
+
+	runConf := RunConf{}
+	Run(&TimeoutSuite{}, &runConf)
 }
