@@ -10,23 +10,22 @@
 // Do not assume *any* internal functionality works as expected besides
 // what's actually tested here.
 
-package check_test
+package check
 
 import (
 	"fmt"
-	"gopkg.in/check.v1"
 	"strings"
 )
 
 type BootstrapS struct{}
 
-var boostrapS = check.Suite(&BootstrapS{})
+var boostrapS = Suite(&BootstrapS{})
 
-func (s *BootstrapS) TestCountSuite(c *check.C) {
+func (s *BootstrapS) TestCountSuite(c *C) {
 	suitesRun += 1
 }
 
-func (s *BootstrapS) TestFailedAndFail(c *check.C) {
+func (s *BootstrapS) TestFailedAndFail(c *C) {
 	if c.Failed() {
 		critical("c.Failed() must be false first!")
 	}
@@ -37,7 +36,7 @@ func (s *BootstrapS) TestFailedAndFail(c *check.C) {
 	c.Succeed()
 }
 
-func (s *BootstrapS) TestFailedAndSucceed(c *check.C) {
+func (s *BootstrapS) TestFailedAndSucceed(c *C) {
 	c.Fail()
 	c.Succeed()
 	if c.Failed() {
@@ -45,7 +44,7 @@ func (s *BootstrapS) TestFailedAndSucceed(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestLogAndGetTestLog(c *check.C) {
+func (s *BootstrapS) TestLogAndGetTestLog(c *C) {
 	c.Log("Hello there!")
 	log := c.GetTestLog()
 	if log != "Hello there!\n" {
@@ -53,7 +52,7 @@ func (s *BootstrapS) TestLogAndGetTestLog(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestLogfAndGetTestLog(c *check.C) {
+func (s *BootstrapS) TestLogfAndGetTestLog(c *C) {
 	c.Logf("Hello %v", "there!")
 	log := c.GetTestLog()
 	if log != "Hello there!\n" {
@@ -61,9 +60,9 @@ func (s *BootstrapS) TestLogfAndGetTestLog(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestRunShowsErrors(c *check.C) {
+func (s *BootstrapS) TestRunShowsErrors(c *C) {
 	output := String{}
-	check.Run(&FailHelper{}, &check.RunConf{Output: &output})
+	Run(&FailHelper{}, &RunConf{Output: &output})
 	if strings.Index(output.value, "Expected failure!") == -1 {
 		critical(fmt.Sprintf("RunWithWriter() output did not contain the "+
 			"expected failure! Got: %#v",
@@ -71,9 +70,9 @@ func (s *BootstrapS) TestRunShowsErrors(c *check.C) {
 	}
 }
 
-func (s *BootstrapS) TestRunDoesntShowSuccesses(c *check.C) {
+func (s *BootstrapS) TestRunDoesntShowSuccesses(c *C) {
 	output := String{}
-	check.Run(&SuccessHelper{}, &check.RunConf{Output: &output})
+	Run(&SuccessHelper{}, &RunConf{Output: &output})
 	if strings.Index(output.value, "Expected success!") != -1 {
 		critical(fmt.Sprintf("RunWithWriter() output contained a successful "+
 			"test! Got: %#v",
