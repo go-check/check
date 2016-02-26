@@ -1,11 +1,9 @@
-package check_test
+package check
 
 import (
 	"fmt"
 	"path/filepath"
 	"runtime"
-
-	. "gopkg.in/check.v1"
 )
 
 var _ = Suite(&reporterS{})
