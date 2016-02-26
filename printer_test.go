@@ -79,7 +79,7 @@ var printLineTests = []struct {
 
 func (s *PrinterS) TestPrintLine(c *C) {
 	for _, test := range printLineTests {
-		output, err := PrintLine("printer_test.go", printTestFuncLine+test.line)
+		output, err := printLine("printer_test.go", printTestFuncLine+test.line)
 		c.Assert(err, IsNil)
 		c.Assert(output, Equals, test.output)
 	}
@@ -98,8 +98,7 @@ var indentTests = []struct {
 
 func (s *PrinterS) TestIndent(c *C) {
 	for _, test := range indentTests {
-		out := Indent(test.in, ">>>")
+		out := indent(test.in, ">>>")
 		c.Assert(out, Equals, test.out)
 	}
-
 }

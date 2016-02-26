@@ -24,7 +24,7 @@ func (s *reporterS) TestWrite(c *C) {
 
 	dummyStream := true
 	dummyVerbose := true
-	o := NewOutputWriter(&output, dummyStream, dummyVerbose)
+	o := newOutputWriter(&output, dummyStream, dummyVerbose)
 
 	o.Write([]byte(testString))
 	c.Assert(output.value, Equals, testString)
@@ -36,7 +36,7 @@ func (s *reporterS) TestWriteCallStartedWithStreamFlag(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	o.WriteCallStarted(testLabel, c)
 	expected := fmt.Sprintf("%s: %s:\\d+: %s\n", testLabel, s.testFile, c.TestName())
@@ -49,7 +49,7 @@ func (s *reporterS) TestWriteCallStartedWithoutStreamFlag(c *C) {
 
 	dummyLabel := "dummy"
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	o.WriteCallStarted(dummyLabel, c)
 	c.Assert(output.value, Equals, "")
@@ -61,7 +61,7 @@ func (s *reporterS) TestWriteCallProblemWithStreamFlag(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	o.WriteCallProblem(testLabel, c)
 	expected := fmt.Sprintf("%s: %s:\\d+: %s\n\n", testLabel, s.testFile, c.TestName())
@@ -74,7 +74,7 @@ func (s *reporterS) TestWriteCallProblemWithoutStreamFlag(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	o.WriteCallProblem(testLabel, c)
 	expected := fmt.Sprintf(""+
@@ -91,7 +91,7 @@ func (s *reporterS) TestWriteCallProblemWithoutStreamFlagWithLog(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	c.Log(testLog)
 	o.WriteCallProblem(testLabel, c)
@@ -108,7 +108,7 @@ func (s *reporterS) TestWriteCallSuccessWithStreamFlag(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
+	o := newOutputWriter(&output, stream, dummyVerbose)
 
 	o.WriteCallSuccess(testLabel, c)
 	expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n\n", testLabel, s.testFile, c.TestName())
@@ -122,8 +122,8 @@ func (s *reporterS) TestWriteCallSuccessWithStreamFlagAndReason(c *C) {
 	output := String{}
 
 	dummyVerbose := true
-	o := NewOutputWriter(&output, stream, dummyVerbose)
-	c.FakeSkip(testReason)
+	o := newOutputWriter(&output, stream, dummyVerbose)
+	c.reason = testReason
 
 	o.WriteCallSuccess(testLabel, c)
 	expected := fmt.Sprintf("%s: %s:\\d+: %s \\(%s\\)\t\\d\\.\\d+s\n\n",
@@ -137,7 +137,7 @@ func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithVerboseFlag(c *C) {
 	verbose := true
 	output := String{}
 
-	o := NewOutputWriter(&output, stream, verbose)
+	o := newOutputWriter(&output, stream, verbose)
 
 	o.WriteCallSuccess(testLabel, c)
 	expected := fmt.Sprintf("%s: %s:\\d+: %s\t\\d\\.\\d+s\n", testLabel, s.testFile, c.TestName())
@@ -150,7 +150,7 @@ func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C
 	verbose := false
 	output := String{}
 
-	o := NewOutputWriter(&output, stream, verbose)
+	o := newOutputWriter(&output, stream, verbose)
 
 	o.WriteCallSuccess(testLabel, c)
 	c.Assert(output.value, Equals, "")
