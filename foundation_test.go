@@ -8,11 +8,12 @@ package check_test
 
 import (
 	"fmt"
-	"gopkg.in/check.v1"
 	"log"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/elopio/check"
 )
 
 // -----------------------------------------------------------------------
@@ -175,7 +176,7 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *check.C) {
 		"foundation_test.go:%d:\n"+
 		"    result, line := checkEqualWrapper\\(c, 10, 20\\)\n"+
 		"check_test.go:%d:\n"+
-		"    return c.Check\\(obtained, check.Equals, expected\\), getMyLine\\(\\)\n"+
+		"    return c.Check\\(obtained, Equals, expected\\), getMyLine\\(\\)\n"+
 		"\\.\\.\\. obtained int = 10\n"+
 		"\\.\\.\\. expected int = 20\n\n",
 		testLine, line)
