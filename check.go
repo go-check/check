@@ -84,7 +84,6 @@ type C struct {
 	testName  string
 	_status   funcStatus
 	logb      *logger
-	logw      io.Writer
 	done      chan *C
 	reason    string
 	mustFail  bool
@@ -109,25 +108,30 @@ func (c *C) stopNow() {
 // logger is a concurrency safe byte.Buffer
 type logger struct {
 	sync.Mutex
-	writer bytes.Buffer
+	buffer bytes.Buffer
+	output io.Writer
+	verbosity uint8
 }
 
 func (l *logger) Write(buf []byte) (int, error) {
 	l.Lock()
 	defer l.Unlock()
-	return l.writer.Write(buf)
+	if l.verbosity > 1 {
+		l.output.Write(buf)
+	}
+	return l.buffer.Write(buf)
 }
 
 func (l *logger) WriteTo(w io.Writer) (int64, error) {
 	l.Lock()
 	defer l.Unlock()
-	return l.writer.WriteTo(w)
+	return l.buffer.WriteTo(w)
 }
 
 func (l *logger) String() string {
 	l.Lock()
 	defer l.Unlock()
-	return l.writer.String()
+	return l.buffer.String()
 }
 
 // -----------------------------------------------------------------------
@@ -198,9 +202,6 @@ func (c *C) logNewLine() {
 
 func (c *C) writeLog(buf []byte) {
 	c.logb.Write(buf)
-	if c.logw != nil {
-		c.logw.Write(buf)
-	}
 }
 
 func hasStringOrError(x interface{}) (ok bool) {
@@ -518,6 +519,7 @@ type suiteRunner struct {
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	keepDir                   bool
+	logOutput                 io.Writer
 	output                    *outputWriter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
@@ -562,6 +564,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	
 	runner := &suiteRunner{
 		suite:     suite,
+	  logOutput: conf.Output,
 		output:    newOutputWriter(conf.Output, verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
@@ -649,19 +652,17 @@ func (runner *suiteRunner) run() *Result {
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
-	var logw io.Writer
-	if runner.verbosity > 1 {
-		logw = runner.output
-	}
 	if logb == nil {
-		logb = new(logger)
+		logb = &logger{
+			output:    runner.logOutput,
+			verbosity: runner.verbosity,
+		}
 	}
 	c := &C{
 		method:    method,
 		kind:      kind,
 		testName:  testName,
 		logb:      logb,
-		logw:      logw,
 		tempDir:   runner.tempDir,
 		done:      make(chan *C, 1),
 		timer:     timer{benchTime: runner.benchTime},
