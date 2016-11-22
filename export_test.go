@@ -2,6 +2,10 @@ package check
 
 import "io"
 
+type TestReporter interface {
+	testReporter
+}
+
 func PrintLine(filename string, line int) (string, error) {
 	return printLine(filename, line)
 }
@@ -10,8 +14,8 @@ func Indent(s, with string) string {
 	return indent(s, with)
 }
 
-func NewOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return newOutputWriter(writer, stream, verbose)
+func NewOutputWriter(writer io.Writer, verbosity uint8) *outputWriter {
+	return newOutputWriter(writer, verbosity)
 }
 
 func (c *C) FakeSkip(reason string) {

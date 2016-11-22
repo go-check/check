@@ -2,9 +2,7 @@
 
 package check_test
 
-import (
-	. "gopkg.in/check.v1"
-)
+import . "github.com/elopio/check"
 
 // -----------------------------------------------------------------------
 // Fixture test suite.
@@ -14,7 +12,7 @@ type FixtureS struct{}
 var fixtureS = Suite(&FixtureS{})
 
 func (s *FixtureS) TestCountSuite(c *C) {
-	suitesRun += 1
+	suitesRun++
 }
 
 // -----------------------------------------------------------------------
