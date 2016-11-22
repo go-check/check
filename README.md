@@ -3,11 +3,11 @@ Instructions
 
 Install the package with:
 
-    go get gopkg.in/check.v1
-    
+    go get github.com/elopio/check
+
 Import it with:
 
-    import "gopkg.in/check.v1"
+    import "github.com/elopio/check"
 
 and use _check_ as the package name inside the code.
 
