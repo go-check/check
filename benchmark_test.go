@@ -1,10 +1,9 @@
 // These tests verify the test running logic.
 
-package check_test
+package check
 
 import (
 	"time"
-	. "gopkg.in/check.v1"
 )
 
 var benchmarkS = Suite(&BenchmarkS{})

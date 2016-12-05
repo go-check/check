@@ -1,10 +1,6 @@
 // Tests for the behavior of the test fixture system.
 
-package check_test
-
-import (
-	. "gopkg.in/check.v1"
-)
+package check
 
 // -----------------------------------------------------------------------
 // Fixture test suite.
