@@ -72,7 +72,7 @@ func (c *C) StartTimer() {
 // want to measure.
 func (c *C) StopTimer() {
 	if c.timerOn {
-		c.duration += time.Now().Sub(c.start)
+		c.duration += time.Since(c.start)
 		c.timerOn = false
 		runtime.ReadMemStats(&memStats)
 		c.netAllocs += memStats.Mallocs - c.startAllocs
