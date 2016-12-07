@@ -417,3 +417,39 @@ func (s *RunS) TestKeepWorkDir(c *C) {
 	c.Assert(err, IsNil)
 	c.Assert(stat.IsDir(), Equals, true)
 }
+
+// -----------------------------------------------------------------------
+// Verify that abort misses the tests as expected.
+
+type AbortHelper struct{}
+
+func (s *AbortHelper) Test1(c *C) {
+	c.Log("1")
+}
+
+func (s *AbortHelper) Test2(c *C) {
+	c.Fail()
+}
+
+func (s *AbortHelper) Test3(c *C) {
+	c.Log("1")
+}
+
+func (s *RunS) TestAbortMissedTests(c *C) {
+	helper := &AbortHelper{}
+	output := String{}
+	runConf := RunConf{Abort: true, Output: &output, Stream: true}
+	result := Run(helper, &runConf)
+
+	expected := "START: run_test\\.go:[0-9]+: AbortHelper.Test1\n1\n" +
+		"PASS: run_test\\.go:[0-9]+: AbortHelper.Test1\t0.[0-9]+s\n\n" +
+		"START: run_test\\.go:[0-9]+: AbortHelper.Test2\n" +
+		"FAIL: run_test\\.go:[0-9]+: AbortHelper.Test2\n\n" +
+		"START: run_test\\.go:[0-9]+: AbortHelper.Test3\n" +
+		"MISS: run_test\\.go:[0-9]+: AbortHelper.Test3\n\n"
+
+	c.Check(result.Succeeded, Equals, 1)
+	c.Check(result.Failed, Equals, 1)
+	c.Check(result.Missed, Equals, 1)
+	c.Assert(output.value, Matches, expected)
+}

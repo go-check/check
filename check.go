@@ -522,6 +522,7 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	abort                     bool
 }
 
 type RunConf struct {
@@ -533,6 +534,7 @@ type RunConf struct {
 	BenchmarkTime time.Duration // Defaults to 1 second
 	BenchmarkMem  bool
 	KeepWorkDir   bool
+	Abort         bool
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -561,6 +563,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
+		abort:     conf.Abort,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -613,7 +616,9 @@ func (runner *suiteRunner) run() *Result {
 			if c == nil || c.status() == succeededSt {
 				for i := 0; i != len(runner.tests); i++ {
 					c := runner.runTest(runner.tests[i])
-					if c.status() == fixturePanickedSt {
+					status := c.status()
+					if status == fixturePanickedSt || runner.abort &&
+						(status == failedSt || status == panickedSt) {
 						runner.skipTests(missedSt, runner.tests[i+1:])
 						break
 					}
@@ -633,6 +638,16 @@ func (runner *suiteRunner) run() *Result {
 		} else {
 			runner.tempDir.removeAll()
 		}
+	}
+	return &runner.tracker.result
+}
+
+// Skip all methods in the given suite.
+func (runner *suiteRunner) skip() *Result {
+	if runner.tracker.result.RunError == nil && len(runner.tests) > 0 {
+		runner.tracker.start()
+		runner.skipTests(missedSt, runner.tests)
+		runner.tracker.waitAndStop()
 	}
 	return &runner.tracker.result
 }
