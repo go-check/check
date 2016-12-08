@@ -146,6 +146,14 @@ func (c *C) Fatalf(format string, args ...interface{}) {
 	c.FailNow()
 }
 
+// FatalError handles an error by calling Fatal if the error is non-nil, and
+// doing nothing otherwise.
+func (c *C) FatalError(err error) {
+	if err != nil {
+		c.Fatal(err)
+	}
+}
+
 // -----------------------------------------------------------------------
 // Generic checks and assertions based on checkers.
 
