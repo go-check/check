@@ -522,6 +522,7 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	verbosity                 uint8
 }
 
 type RunConf struct {
@@ -551,16 +552,24 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
-
+	var verbosity uint8
+	if conf.Verbose {
+		verbosity = 1
+	}
+	if conf.Stream {
+		verbosity = 2
+	}
+	
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    newOutputWriter(conf.Output, verbosity),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
+		verbosity: verbosity,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -641,7 +650,7 @@ func (runner *suiteRunner) run() *Result {
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
-	if runner.output.Stream {
+	if runner.verbosity > 1 {
 		logw = runner.output
 	}
 	if logb == nil {
