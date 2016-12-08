@@ -54,12 +54,16 @@ func TestingT(testingT *testing.T) {
 	}
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
-		Verbose:       *oldVerboseFlag || *newVerboseFlag,
-		Stream:        *oldStreamFlag || *newStreamFlag,
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
 		BenchmarkMem:  *newBenchMem,
 		KeepWorkDir:   *oldWorkFlag || *newWorkFlag,
+	}
+	if *oldVerboseFlag || *newVerboseFlag {
+		conf.Verbosity = 1
+	}
+	if *oldStreamFlag || *newStreamFlag {
+		conf.Verbosity = 2
 	}
 	if *oldListFlag || *newListFlag {
 		w := bufio.NewWriter(os.Stdout)

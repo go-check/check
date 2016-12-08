@@ -18,7 +18,7 @@ func (s *BenchmarkS) TestCountSuite(c *C) {
 func (s *BenchmarkS) TestBasicTestTiming(c *C) {
 	helper := FixtureHelper{sleepOn: "Test1", sleep: 1000000 * time.Nanosecond}
 	output := String{}
-	runConf := RunConf{Output: &output, Verbose: true}
+	runConf := RunConf{Output: &output, Verbosity: 1}
 	Run(&helper, &runConf)
 
 	expected := "PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Test1\t0\\.0[0-9]+s\n" +
@@ -29,7 +29,7 @@ func (s *BenchmarkS) TestBasicTestTiming(c *C) {
 func (s *BenchmarkS) TestStreamTestTiming(c *C) {
 	helper := FixtureHelper{sleepOn: "SetUpSuite", sleep: 1000000 * time.Nanosecond}
 	output := String{}
-	runConf := RunConf{Output: &output, Stream: true}
+	runConf := RunConf{Output: &output, Verbosity: 2}
 	Run(&helper, &runConf)
 
 	expected := "(?s).*\nPASS: check_test\\.go:[0-9]+: FixtureHelper\\.SetUpSuite\t[0-9]+\\.[0-9]+s\n.*"

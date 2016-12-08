@@ -13,12 +13,11 @@ type outputWriter struct {
 	m                    sync.Mutex
 	writer               io.Writer
 	wroteCallProblemLast bool
-	Stream               bool
-	Verbose              bool
+	verbosity            uint8
 }
 
-func newOutputWriter(writer io.Writer, stream, verbose bool) *outputWriter {
-	return &outputWriter{writer: writer, Stream: stream, Verbose: verbose}
+func newOutputWriter(writer io.Writer, verbosity uint8) *outputWriter {
+	return &outputWriter{writer: writer, verbosity: verbosity}
 }
 
 func (ow *outputWriter) Write(content []byte) (n int, err error) {
@@ -29,7 +28,7 @@ func (ow *outputWriter) Write(content []byte) (n int, err error) {
 }
 
 func (ow *outputWriter) WriteCallStarted(label string, c *C) {
-	if ow.Stream {
+	if ow.verbosity > 1 {
 		header := renderCallHeader(label, c, "", "\n")
 		ow.m.Lock()
 		ow.writer.Write([]byte(header))
@@ -39,7 +38,7 @@ func (ow *outputWriter) WriteCallStarted(label string, c *C) {
 
 func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 	var prefix string
-	if !ow.Stream {
+	if ow.verbosity < 2 {
 		prefix = "\n-----------------------------------" +
 			"-----------------------------------\n"
 	}
@@ -47,14 +46,14 @@ func (ow *outputWriter) WriteCallProblem(label string, c *C) {
 	ow.m.Lock()
 	ow.wroteCallProblemLast = true
 	ow.writer.Write([]byte(header))
-	if !ow.Stream {
+	if ow.verbosity < 2 {
 		c.logb.WriteTo(ow.writer)
 	}
 	ow.m.Unlock()
 }
 
 func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
-	if ow.Stream || (ow.Verbose && c.kind == testKd) {
+	if ow.verbosity > 1 || (ow.verbosity == 1 && c.kind == testKd) {
 		// TODO Use a buffer here.
 		var suffix string
 		if c.reason != "" {
@@ -64,13 +63,13 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 			suffix += "\t" + c.timerString()
 		}
 		suffix += "\n"
-		if ow.Stream {
+		if ow.verbosity > 1 {
 			suffix += "\n"
 		}
 		header := renderCallHeader(label, c, "", suffix)
 		ow.m.Lock()
 		// Resist temptation of using line as prefix above due to race.
-		if !ow.Stream && ow.wroteCallProblemLast {
+		if ow.verbosity < 2 && ow.wroteCallProblemLast {
 			header = "\n-----------------------------------" +
 				"-----------------------------------\n" +
 				header

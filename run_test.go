@@ -304,7 +304,7 @@ func (s *RunS) TestList(c *C) {
 func (s *RunS) TestVerboseMode(c *C) {
 	helper := FixtureHelper{}
 	output := String{}
-	runConf := RunConf{Output: &output, Verbose: true}
+	runConf := RunConf{Output: &output, Verbosity: 1}
 	Run(&helper, &runConf)
 
 	expected := "PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Test1\t *[.0-9]+s\n" +
@@ -316,7 +316,7 @@ func (s *RunS) TestVerboseMode(c *C) {
 func (s *RunS) TestVerboseModeWithFailBeforePass(c *C) {
 	helper := FixtureHelper{panicOn: "Test1"}
 	output := String{}
-	runConf := RunConf{Output: &output, Verbose: true}
+	runConf := RunConf{Output: &output, Verbosity: 1}
 	Run(&helper, &runConf)
 
 	expected := "(?s).*PANIC.*\n-+\n" + // Should have an extra line.
@@ -359,7 +359,7 @@ func (s *StreamHelper) Test2(c *C) {
 func (s *RunS) TestStreamMode(c *C) {
 	helper := &StreamHelper{}
 	output := String{}
-	runConf := RunConf{Output: &output, Stream: true}
+	runConf := RunConf{Output: &output, Verbosity: 2}
 	Run(helper, &runConf)
 
 	expected := "START: run_test\\.go:[0-9]+: StreamHelper\\.SetUpSuite\n0\n" +
@@ -386,7 +386,7 @@ func (s *StreamMissHelper) Test1(c *C) {
 func (s *RunS) TestStreamModeWithMiss(c *C) {
 	helper := &StreamMissHelper{}
 	output := String{}
-	runConf := RunConf{Output: &output, Stream: true}
+	runConf := RunConf{Output: &output, Verbosity: 2}
 	Run(helper, &runConf)
 
 	expected := "START: run_test\\.go:[0-9]+: StreamMissHelper\\.SetUpSuite\n0\n" +
@@ -408,7 +408,7 @@ func (s *WorkDirSuite) Test(c *C) {
 
 func (s *RunS) TestKeepWorkDir(c *C) {
 	output := String{}
-	runConf := RunConf{Output: &output, Verbose: true, KeepWorkDir: true}
+	runConf := RunConf{Output: &output, Verbosity: 1, KeepWorkDir: true}
 	result := Run(&WorkDirSuite{}, &runConf)
 
 	c.Assert(result.String(), Matches, ".*\nWORK=" + result.WorkDir)
