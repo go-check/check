@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 // -----------------------------------------------------------------------
@@ -455,4 +456,73 @@ func (checker *implementsChecker) Check(params []interface{}, names []string) (r
 		return false, "ifaceptr should be a pointer to an interface variable"
 	}
 	return obtained.Type().Implements(ifaceptr.Elem().Type()), ""
+}
+
+// -----------------------------------------------------------------------
+// Contains checker.
+
+type containsChecker struct {
+	*CheckerInfo
+}
+
+// The Contains checker verifies that an element is present in a collection.
+// The elem can be any object. The container can be an array, slice, map or
+// string. For arrays and slices the obvious thing happens. For maps, Contains
+// looks at values (not keys). For strings it is an alias to strings.Contains()
+//
+// For example:
+//
+//	c.Assert([]int{1, 2, 3}, Contains, 2)
+//	c.Assert([...]int{1, 2, 3}, Contains, 2)
+//	c.Assert(map[string]int{"foo": 1, "bar": 2}, Contains, 1)
+//	c.Assert("foobar", Contains, "oba")
+//
+var Contains Checker = &containsChecker{
+	&CheckerInfo{Name: "Contains", Params: []string{"container", "elem"}},
+}
+
+func (c *containsChecker) Check(params []interface{}, names []string) (result bool, error string) {
+	defer func() {
+		if v := recover(); v != nil {
+			result = false
+			error = fmt.Sprint(v)
+		}
+	}()
+	var container interface{} = params[0]
+	var elem interface{} = params[1]
+	// Ensure that type of elements in container is compatible with elem
+	switch containerV := reflect.ValueOf(container); containerV.Kind() {
+	case reflect.Slice, reflect.Array, reflect.Map:
+		if elemV := reflect.ValueOf(elem); containerV.Type().Elem() != elemV.Type() {
+			return false, fmt.Sprintf(
+				"container has items of type %s but expected element is a %s",
+				containerV.Type().Elem(), elemV.Type())
+		}
+	}
+	switch containerV := reflect.ValueOf(container); containerV.Kind() {
+	case reflect.Slice, reflect.Array:
+		for len, i := containerV.Len(), 0; i < len; i++ {
+			itemV := containerV.Index(i)
+			if itemV.Interface() == elem {
+				return true, ""
+			}
+		}
+		return false, ""
+	case reflect.Map:
+		for _, keyV := range containerV.MapKeys() {
+			itemV := containerV.MapIndex(keyV)
+			if itemV.Interface() == elem {
+				return true, ""
+			}
+		}
+		return false, ""
+	case reflect.String:
+		// When container is a string, we expect elem to be a string as well
+		if reflect.ValueOf(elem).Kind() != reflect.String {
+			return false, fmt.Sprintf("element is a %T but expected a string", elem)
+		}
+		return strings.Contains(container.(string), elem.(string)), ""
+	default:
+		return false, fmt.Sprintf("%T is not a supported container", container)
+	}
 }
