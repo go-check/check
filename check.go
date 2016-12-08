@@ -518,7 +518,7 @@ type suiteRunner struct {
 	tracker                   *resultTracker
 	tempDir                   *tempDir
 	keepDir                   bool
-	output                    *outputWriter
+	output                    reporter
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
@@ -554,7 +554,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 
 	runner := &suiteRunner{
 		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		output:    newCheckReporter(conf.Output, conf.Stream, conf.Verbose),
 		tracker:   newResultTracker(),
 		benchTime: conf.BenchmarkTime,
 		benchMem:  conf.BenchmarkMem,
@@ -641,7 +641,7 @@ func (runner *suiteRunner) run() *Result {
 // goroutine with the provided dispatcher for running it.
 func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
 	var logw io.Writer
-	if runner.output.Stream {
+	if runner.output.Stream() {
 		logw = runner.output
 	}
 	if logb == nil {
@@ -843,7 +843,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 }
 
 func (runner *suiteRunner) reportCallStarted(c *C) {
-	runner.output.WriteCallStarted("START", c)
+	runner.output.WriteStarted(c)
 }
 
 func (runner *suiteRunner) reportCallDone(c *C) {
@@ -851,23 +851,23 @@ func (runner *suiteRunner) reportCallDone(c *C) {
 	switch c.status() {
 	case succeededSt:
 		if c.mustFail {
-			runner.output.WriteCallSuccess("FAIL EXPECTED", c)
+			runner.output.WriteExpectedFailure(c)
 		} else {
-			runner.output.WriteCallSuccess("PASS", c)
+			runner.output.WriteSuccess(c)
 		}
 	case skippedSt:
-		runner.output.WriteCallSuccess("SKIP", c)
+		runner.output.WriteSkip(c)
 	case failedSt:
-		runner.output.WriteCallProblem("FAIL", c)
+		runner.output.WriteFailure(c)
 	case panickedSt:
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteError(c)
 	case fixturePanickedSt:
 		// That's a testKd call reporting that its fixture
 		// has panicked. The fixture call which caused the
 		// panic itself was tracked above. We'll report to
 		// aid debugging.
-		runner.output.WriteCallProblem("PANIC", c)
+		runner.output.WriteError(c)
 	case missedSt:
-		runner.output.WriteCallSuccess("MISS", c)
+		runner.output.WriteMissed(c)
 	}
 }
