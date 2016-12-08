@@ -365,13 +365,14 @@ func init() {
 	}
 }
 
-func nicePath(path string) string {
+func nicePath(p string) string {
 	if initWDErr == nil {
-		if strings.HasPrefix(path, initWD) {
-			return path[len(initWD):]
+		if strings.HasPrefix(p, initWD) {
+			return p[len(initWD):]
 		}
 	}
-	return path
+
+	return path.Base(p)
 }
 
 func niceFuncPath(pc uintptr) string {
