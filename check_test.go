@@ -12,7 +12,7 @@ import (
 	"testing"
 	"time"
 
-	"gopkg.in/check.v1"
+	"github.com/pingcap/check"
 )
 
 // We count the number of suites run at least to get a vague hint that the
@@ -24,7 +24,7 @@ var suitesRun int = 0
 
 func Test(t *testing.T) {
 	check.TestingT(t)
-	if suitesRun != suitesRunExpected && flag.Lookup("check.f").Value.String() == "" {
+	if suitesRun != suitesRunExpected && flag.Lookup("check.g").Value.String() == "" {
 		critical(fmt.Sprintf("Expected %d suites to run rather than %d",
 			suitesRunExpected, suitesRun))
 	}
