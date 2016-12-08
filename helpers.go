@@ -76,6 +76,12 @@ func (c *C) Skip(reason string) {
 	c.stopNow()
 }
 
+// Section informs that the running test is in a particular section, such that
+// errors may be reported with the appropriate logging.
+func (c *C) Section(testSect string) {
+	c.testSect = testSect
+}
+
 // -----------------------------------------------------------------------
 // Basic logging.
 

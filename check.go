@@ -82,6 +82,7 @@ type C struct {
 	method    *methodType
 	kind      funcKind
 	testName  string
+	testSect  string
 	_status   funcStatus
 	logb      *logger
 	logw      io.Writer
@@ -312,6 +313,9 @@ func (c *C) logCode(path string, line int) {
 		if err != nil {
 			code += err.Error()
 		}
+	}
+	if c.testSect != "" {
+		c.log(indent(c.testSect, "    section: "))
 	}
 	c.log(indent(code, "    "))
 }
