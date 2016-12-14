@@ -52,6 +52,11 @@ type methodType struct {
 	Info reflect.Method
 }
 
+func init() {
+	timeStamp := time.Now()
+	rand.Seed(timeStamp.UnixNano())
+}
+
 func newMethod(receiver reflect.Value, i int) *methodType {
 	return &methodType{receiver.Method(i), receiver.Type().Method(i)}
 }
