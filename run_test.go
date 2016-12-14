@@ -440,7 +440,7 @@ func (s *RunS) TestTimeout(c *C) {
 	if err != nil {
 		c.Fatal(err)
 	}
-	runConf := RunConf{CheckTimeout: duration}
+	runConf := RunConf{TestTimeout: duration}
 	Run(&TimeoutSuite{}, &runConf)
 }
 
