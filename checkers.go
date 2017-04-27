@@ -88,7 +88,7 @@ func (checker *notChecker) Info() *CheckerInfo {
 }
 
 func (checker *notChecker) Check(params []interface{}, names []string) (result bool, error string) {
-	result, error = checker.sub.Check(params, names)
+	result, _ = checker.sub.Check(params, names)
 	result = !result
 	return
 }
