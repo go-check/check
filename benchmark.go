@@ -117,18 +117,30 @@ func (c *C) GetNsPerOp() int64 {
 }
 
 // GetDuration returns the benchmark total duration.
-// When TearDownTest() is invoked, GetTestDuration() returns the test stats.
+// When GetTestDuration() is invoked within TearDownTest(), it returns the test stats.
 func (c *C) GetTestDuration() time.Duration {
 	return c.stats.duration
 }
 
 // GetNsPerOp returns the benchmark duration per iteration.
-// When TearDownTest() is invoked, GetTestNsPerOp() returns the test stats.
+// When GetTestNsPerOp() is invoked within TearDownTest(), it returns the test stats.
 func (c *C) GetTestNsPerOp() int64 {
 	if c.stats.N <= 0 {
 		return 0
 	}
 	return c.stats.duration.Nanoseconds() / int64(c.stats.N)
+}
+
+// GetTestNetAllocs returns the net memory allocations.
+// When GetTestNetAllocs() is invoked within TearDownTest(), it returns the test stats.
+func (c *C) GetTestNetAllocs() uint64 {
+	return c.stats.netAllocs
+}
+
+// GetTestNetBytes returns the net memory allocations.
+// When GetTestNetBytes() is invoked within TearDownTest(), it returns the test stats.
+func (c *C) GetTestNetBytes() uint64 {
+	return c.stats.netBytes
 }
 
 // SetBytes informs the number of bytes that the benchmark processes
