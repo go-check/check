@@ -609,7 +609,7 @@ func (runner *suiteRunner) run() *Result {
 	if runner.tracker.result.RunError == nil && len(runner.tests) > 0 {
 		runner.tracker.start()
 		if runner.checkFixtureArgs() {
-			c := runner.runFixture(runner.setUpSuite, "", nil)
+			c := runner.runFixture(runner.setUpSuite, "", nil, nil)
 			if c == nil || c.status() == succeededSt {
 				for i := 0; i != len(runner.tests); i++ {
 					c := runner.runTest(runner.tests[i])
@@ -623,7 +623,7 @@ func (runner *suiteRunner) run() *Result {
 			} else {
 				runner.skipTests(missedSt, runner.tests)
 			}
-			runner.runFixture(runner.tearDownSuite, "", nil)
+			runner.runFixture(runner.tearDownSuite, "", nil, nil)
 		} else {
 			runner.skipTests(missedSt, runner.tests)
 		}
@@ -639,7 +639,7 @@ func (runner *suiteRunner) run() *Result {
 
 // Create a call object with the given suite method, and fork a
 // goroutine with the provided dispatcher for running it.
-func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
+func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName string, logb *logger, stats *testStats, dispatcher func(c *C)) *C {
 	var logw io.Writer
 	if runner.output.Stream {
 		logw = runner.output
@@ -659,6 +659,12 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		startTime: time.Now(),
 		benchMem:  runner.benchMem,
 	}
+	if stats != nil {
+		c.stats.duration = stats.duration
+		c.stats.N = stats.N
+		c.stats.netAllocs = stats.netAllocs
+		c.stats.netBytes = stats.netBytes
+	}
 	runner.tracker.expectCall(c)
 	go (func() {
 		runner.reportCallStarted(c)
@@ -669,8 +675,8 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 }
 
 // Same as forkCall(), but wait for call to finish before returning.
-func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, testName string, logb *logger, dispatcher func(c *C)) *C {
-	c := runner.forkCall(method, kind, testName, logb, dispatcher)
+func (runner *suiteRunner) runFunc(method *methodType, kind funcKind, testName string, logb *logger, stats *testStats, dispatcher func(c *C)) *C {
+	c := runner.forkCall(method, kind, testName, logb, stats, dispatcher)
 	<-c.done
 	return c
 }
@@ -712,9 +718,9 @@ func (runner *suiteRunner) callDone(c *C) {
 // goroutine like all suite methods, but this method will not return
 // while the fixture goroutine is not done, because the fixture must be
 // run in a desired order.
-func (runner *suiteRunner) runFixture(method *methodType, testName string, logb *logger) *C {
+func (runner *suiteRunner) runFixture(method *methodType, testName string, logb *logger, stats *testStats) *C {
 	if method != nil {
-		c := runner.runFunc(method, fixtureKd, testName, logb, func(c *C) {
+		c := runner.runFunc(method, fixtureKd, testName, logb, stats, func(c *C) {
 			c.ResetTimer()
 			c.StartTimer()
 			defer c.StopTimer()
@@ -728,11 +734,11 @@ func (runner *suiteRunner) runFixture(method *methodType, testName string, logb 
 // Run the fixture method with runFixture(), but panic with a fixturePanic{}
 // in case the fixture method panics.  This makes it easier to track the
 // fixture panic together with other call panics within forkTest().
-func (runner *suiteRunner) runFixtureWithPanic(method *methodType, testName string, logb *logger, skipped *bool) *C {
+func (runner *suiteRunner) runFixtureWithPanic(method *methodType, testName string, logb *logger, skipped *bool, stats *testStats) *C {
 	if skipped != nil && *skipped {
 		return nil
 	}
-	c := runner.runFixture(method, testName, logb)
+	c := runner.runFixture(method, testName, logb, stats)
 	if c != nil && c.status() != succeededSt {
 		if skipped != nil {
 			*skipped = c.status() == skippedSt
@@ -751,13 +757,21 @@ type fixturePanic struct {
 // asynchronously.
 func (runner *suiteRunner) forkTest(method *methodType) *C {
 	testName := method.String()
-	return runner.forkCall(method, testKd, testName, nil, func(c *C) {
+	return runner.forkCall(method, testKd, testName, nil, nil, func(c *C) {
 		var skipped bool
-		defer runner.runFixtureWithPanic(runner.tearDownTest, testName, nil, &skipped)
+		defer func() {
+			st := testStats{
+				duration:  c.duration,
+				N:         c.N,
+				netBytes:  c.netBytes,
+				netAllocs: c.netAllocs,
+			}
+			runner.runFixtureWithPanic(runner.tearDownTest, testName, nil, &skipped, &st)
+		}()
 		defer c.StopTimer()
 		benchN := 1
 		for {
-			runner.runFixtureWithPanic(runner.setUpTest, testName, c.logb, &skipped)
+			runner.runFixtureWithPanic(runner.setUpTest, testName, c.logb, &skipped, nil)
 			mt := c.method.Type()
 			if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
 				// Rather than a plain panic, provide a more helpful message when
@@ -796,9 +810,8 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 			// - Be sure to run at least one more than last time.
 			benchN = max(min(perOpN+perOpN/2, 100*benchN), benchN+1)
 			benchN = roundUp(benchN)
-
 			skipped = true // Don't run the deferred one if this panics.
-			runner.runFixtureWithPanic(runner.tearDownTest, testName, nil, nil)
+			runner.runFixtureWithPanic(runner.tearDownTest, testName, nil, nil, &c.stats)
 			skipped = false
 		}
 	})
@@ -816,7 +829,7 @@ func (runner *suiteRunner) runTest(method *methodType) *C {
 // nice verbose output.
 func (runner *suiteRunner) skipTests(status funcStatus, methods []*methodType) {
 	for _, method := range methods {
-		runner.runFunc(method, testKd, "", nil, func(c *C) {
+		runner.runFunc(method, testKd, "", nil, nil, func(c *C) {
 			c.setStatus(status)
 		})
 	}
@@ -832,7 +845,7 @@ func (runner *suiteRunner) checkFixtureArgs() bool {
 			mt := method.Type()
 			if mt.NumIn() != 1 || mt.In(0) != argType {
 				succeeded = false
-				runner.runFunc(method, fixtureKd, "", nil, func(c *C) {
+				runner.runFunc(method, fixtureKd, "", nil, nil, func(c *C) {
 					c.logArgPanic(method, "*check.C")
 					c.setStatus(panickedSt)
 				})

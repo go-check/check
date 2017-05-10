@@ -1,9 +1,9 @@
 // Copyright (c) 2012 The Go Authors. All rights reserved.
-// 
+//
 // Redistribution and use in source and binary forms, with or without
 // modification, are permitted provided that the following conditions are
 // met:
-// 
+//
 //    * Redistributions of source code must retain the above copyright
 // notice, this list of conditions and the following disclaimer.
 //    * Redistributions in binary form must reproduce the above
@@ -13,7 +13,7 @@
 //    * Neither the name of Google Inc. nor the names of its
 // contributors may be used to endorse or promote products derived from
 // this software without specific prior written permission.
-// 
+//
 // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
 // "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
 // LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
@@ -36,6 +36,14 @@ import (
 
 var memStats runtime.MemStats
 
+type testStats struct {
+	duration time.Duration
+	N        int
+	// The net total of this test after being run.
+	netAllocs uint64
+	netBytes  uint64
+}
+
 // testingB is a type passed to Benchmark functions to manage benchmark
 // timing and to specify the number of iterations to run.
 type timer struct {
@@ -51,6 +59,7 @@ type timer struct {
 	// The net total of this test after being run.
 	netAllocs uint64
 	netBytes  uint64
+	stats     testStats
 }
 
 // StartTimer starts timing a test. This function is called automatically
@@ -92,6 +101,34 @@ func (c *C) ResetTimer() {
 	c.duration = 0
 	c.netAllocs = 0
 	c.netBytes = 0
+}
+
+// GetDuration returns the test total duration.
+func (c *C) GetDuration() time.Duration {
+	return c.duration
+}
+
+// GetNsPerOp returns the test duration per iteration.
+func (c *C) GetNsPerOp() int64 {
+	if c.N <= 0 {
+		return 0
+	}
+	return c.duration.Nanoseconds() / int64(c.N)
+}
+
+// GetDuration returns the benchmark total duration.
+// When TearDownTest() is invoked, GetTestDuration() returns the test stats.
+func (c *C) GetTestDuration() time.Duration {
+	return c.stats.duration
+}
+
+// GetNsPerOp returns the benchmark duration per iteration.
+// When TearDownTest() is invoked, GetTestNsPerOp() returns the test stats.
+func (c *C) GetTestNsPerOp() int64 {
+	if c.stats.N <= 0 {
+		return 0
+	}
+	return c.stats.duration.Nanoseconds() / int64(c.stats.N)
 }
 
 // SetBytes informs the number of bytes that the benchmark processes
