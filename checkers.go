@@ -299,9 +299,8 @@ func matches(value, regex interface{}) (result bool, error string) {
 		m, err := regexp.Compile("^"+r+"$")
 		if err != nil {
 			return false, "Can't compile regex: " + err.Error()
-		} else {
-			matcher = m
 		}
+		matcher = m
 	case *regexp.Regexp:
 		matcher = r
 	default:
