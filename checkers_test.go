@@ -155,7 +155,7 @@ func (s *CheckersS) TestErrorMatches(c *check.C) {
 	testCheck(c, check.ErrorMatches, true, "", errors.New("some error"), "so.*or")
 
 	// Supports Regex instances
-	compiledRegex := MustCompile(`(?i:error)`)
+	compiledRegex := regexp.MustCompile(`(?i:error)`)
 	testCheck(c, check.ErrorMatches, true, "", errors.New("An Error"), compiledRegex)
 	testCheck(c, check.ErrorMatches, false, "", errors.New("something went wrong"), compiledRegex)
 
@@ -181,7 +181,7 @@ func (s *CheckersS) TestMatches(c *check.C) {
 	testCheck(c, check.Matches, false, "", reflect.ValueOf("abc"), "a.d")
 
 	// Supports Regex instances
-	compiledRegex := MustCompile(`(?i:bcd)`)
+	compiledRegex := regexp.MustCompile(`(?i:bcd)`)
 	testCheck(c, check.Matches, true, "", "abCDe", compiledRegex)
 	testCheck(c, check.Matches, false, "", "xyz", compiledRegex)
 
@@ -238,7 +238,7 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	testCheck(c, check.PanicMatches, true, "", func() bool { panic("BOOM") }, "BO.M")
 
 	// Supports Regex instances
-	compiledRegex := MustCompile(`(?i:panic)`)
+	compiledRegex := regexp.MustCompile(`(?i:panic)`)
 	testCheck(c, check.PanicMatches, true, "", func() { panic("WE PANICKED") }, compiledRegex)
 	testCheck(c, check.PanicMatches, false, "", func() { panic("BOOM") }, compiledRegex)
 
