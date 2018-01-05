@@ -2,9 +2,11 @@ package check_test
 
 import (
 	"errors"
-	"gopkg.in/check.v1"
+	"fmt"
 	"reflect"
 	"runtime"
+
+	"gopkg.in/check.v1"
 )
 
 type CheckersS struct{}
@@ -88,24 +90,70 @@ func (s *CheckersS) TestEquals(c *check.C) {
 
 	// The simplest.
 	testCheck(c, check.Equals, true, "", 42, 42)
-	testCheck(c, check.Equals, false, "", 42, 43)
+	testCheck(c, check.Equals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(int) 43\n"+
+		"+(int) 42\n",
+		42, 43)
 
 	// Different native types.
-	testCheck(c, check.Equals, false, "", int32(42), int64(42))
+	testCheck(c, check.Equals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(int64) 42\n"+
+		"+(int32) 42\n",
+		int32(42), int64(42))
 
 	// With nil.
-	testCheck(c, check.Equals, false, "", 42, nil)
+	testCheck(c, check.Equals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(interface {}) <nil>\n"+
+		"+(int) 42\n",
+		42, nil)
 
 	// Slices
 	testCheck(c, check.Equals, false, "runtime error: comparing uncomparable type []uint8", []byte{1, 2}, []byte{1, 2})
 
 	// Struct values
 	testCheck(c, check.Equals, true, "", simpleStruct{1}, simpleStruct{1})
-	testCheck(c, check.Equals, false, "", simpleStruct{1}, simpleStruct{2})
+	testCheck(c, check.Equals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,3 +1,3 @@\n"+
+		" (check_test.simpleStruct) {\n"+
+		"- i: (int) 2\n"+
+		"+ i: (int) 1\n"+
+		" }\n", simpleStruct{1}, simpleStruct{2})
 
 	// Struct pointers
-	testCheck(c, check.Equals, false, "", &simpleStruct{1}, &simpleStruct{1})
-	testCheck(c, check.Equals, false, "", &simpleStruct{1}, &simpleStruct{2})
+	s1 := &simpleStruct{1}
+	s1Another := &simpleStruct{1}
+	testCheck(c, check.Equals, false,
+		fmt.Sprintf("Values are different, diff:\n"+
+			"--- Expected\n+++ Actual\n"+
+			"@@ -1,2 +1,2 @@\n"+
+			"-(*check_test.simpleStruct)(%p)({\n"+
+			"+(*check_test.simpleStruct)(%p)({\n"+
+			"  i: (int) 1\n", s1Another, s1),
+		s1, s1Another)
+
+	s2 := &simpleStruct{2}
+	testCheck(c, check.Equals, false,
+		fmt.Sprintf("Values are different, diff:\n"+
+			"--- Expected\n"+
+			"+++ Actual\n"+
+			"@@ -1,3 +1,3 @@\n"+
+			"-(*check_test.simpleStruct)(%p)({\n"+
+			"- i: (int) 2\n"+
+			"+(*check_test.simpleStruct)(%p)({\n"+
+			"+ i: (int) 1\n"+
+			" })\n", s2, s1),
+		s1, s2)
 }
 
 func (s *CheckersS) TestDeepEquals(c *check.C) {
@@ -113,25 +161,66 @@ func (s *CheckersS) TestDeepEquals(c *check.C) {
 
 	// The simplest.
 	testCheck(c, check.DeepEquals, true, "", 42, 42)
-	testCheck(c, check.DeepEquals, false, "", 42, 43)
+	testCheck(c, check.DeepEquals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(int) 43\n"+
+		"+(int) 42\n", 42, 43)
 
 	// Different native types.
-	testCheck(c, check.DeepEquals, false, "", int32(42), int64(42))
+	testCheck(c, check.DeepEquals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(int64) 42\n"+
+		"+(int32) 42\n", int32(42), int64(42))
 
 	// With nil.
-	testCheck(c, check.DeepEquals, false, "", 42, nil)
+	testCheck(c, check.DeepEquals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,2 +1,2 @@\n"+
+		"-(interface {}) <nil>\n"+
+		"+(int) 42\n", 42, nil)
 
 	// Slices
 	testCheck(c, check.DeepEquals, true, "", []byte{1, 2}, []byte{1, 2})
-	testCheck(c, check.DeepEquals, false, "", []byte{1, 2}, []byte{1, 3})
+	testCheck(c, check.DeepEquals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,3 +1,3 @@\n"+
+		" ([]uint8) (len=2 cap=2) {\n"+
+		"- 00000000  01 03                                             |..|\n"+
+		"+ 00000000  01 02                                             |..|\n"+
+		" }\n", []byte{1, 2}, []byte{1, 3})
 
 	// Struct values
 	testCheck(c, check.DeepEquals, true, "", simpleStruct{1}, simpleStruct{1})
-	testCheck(c, check.DeepEquals, false, "", simpleStruct{1}, simpleStruct{2})
+	testCheck(c, check.DeepEquals, false, "Values are different, diff:\n"+
+		"--- Expected\n"+
+		"+++ Actual\n"+
+		"@@ -1,3 +1,3 @@\n"+
+		" (check_test.simpleStruct) {\n"+
+		"- i: (int) 2\n"+
+		"+ i: (int) 1\n"+
+		" }\n", simpleStruct{1}, simpleStruct{2})
 
 	// Struct pointers
 	testCheck(c, check.DeepEquals, true, "", &simpleStruct{1}, &simpleStruct{1})
-	testCheck(c, check.DeepEquals, false, "", &simpleStruct{1}, &simpleStruct{2})
+	s1 := &simpleStruct{1}
+	s2 := &simpleStruct{2}
+	testCheck(c, check.DeepEquals, false,
+		fmt.Sprintf("Values are different, diff:\n"+
+			"--- Expected\n"+
+			"+++ Actual\n"+
+			"@@ -1,3 +1,3 @@\n"+
+			"-(*check_test.simpleStruct)(%p)({\n"+
+			"- i: (int) 2\n"+
+			"+(*check_test.simpleStruct)(%p)({\n"+
+			"+ i: (int) 1\n"+
+			" })\n", s2, s1),
+		s1, s2)
 }
 
 func (s *CheckersS) TestHasLen(c *check.C) {

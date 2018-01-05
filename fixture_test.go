@@ -402,7 +402,13 @@ func (s *FixtureS) TestSetUpSuiteCheck(c *C) {
 			"fixture_test\\.go:[0-9]+:\n"+
 			"    c\\.Check\\(false, Equals, true\\)\n"+
 			"\\.+ obtained bool = false\n"+
-			"\\.+ expected bool = true\n\n")
+			"\\.+ expected bool = true\n"+
+			"\\.+ Values are different, diff:\n"+
+			"--- Expected\n"+
+			"\\+\\+\\+ Actual\n"+
+			"@@ -1,2 \\+1,2 @@\n"+
+			"-\\(bool\\) true\n"+
+			"\\+\\(bool\\) false\n\n\n")
 	c.Assert(helper.completed, Equals, true)
 }
 
@@ -417,7 +423,13 @@ func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
 			"fixture_test\\.go:[0-9]+:\n"+
 			"    c\\.Assert\\(false, Equals, true\\)\n"+
 			"\\.+ obtained bool = false\n"+
-			"\\.+ expected bool = true\n\n")
+			"\\.+ expected bool = true\n"+
+			"\\.+ Values are different, diff:\n"+
+			"--- Expected\n"+
+			"\\+\\+\\+ Actual\n"+
+			"@@ -1,2 \\+1,2 @@\n"+
+			"-\\(bool\\) true\n"+
+			"\\+\\(bool\\) false\n\n\n")
 	c.Assert(helper.completed, Equals, false)
 }
 
