@@ -1,6 +1,8 @@
 package check
 
 import (
+	"strings"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/pmezard/go-difflib/difflib"
 )
@@ -20,5 +22,7 @@ func formatUnequal(actual interface{}, expected interface{}) string {
 		ToDate:   "",
 		Context:  1,
 	})
-	return "Values are different, diff:\n" + diff
+	// diff output may leave a number of whitespace at the end, try to keep
+	// it under control but keep a newline
+	return "Values are different, diff:\n" + strings.TrimSpace(diff) + "\n"
 }
