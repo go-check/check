@@ -90,6 +90,10 @@ func (checker *notChecker) Info() *CheckerInfo {
 func (checker *notChecker) Check(params []interface{}, names []string) (result bool, error string) {
 	result, error = checker.sub.Check(params, names)
 	result = !result
+	if result {
+		// clear error message if the new result is true
+		error = ""
+	}
 	return
 }
 
@@ -175,7 +179,12 @@ func (checker *equalsChecker) Check(params []interface{}, names []string) (resul
 			error = fmt.Sprint(v)
 		}
 	}()
-	return params[0] == params[1], ""
+
+	result = params[0] == params[1]
+	if !result {
+		error = formatUnequal(params[0], params[1])
+	}
+	return
 }
 
 // -----------------------------------------------------------------------
@@ -200,7 +209,11 @@ var DeepEquals Checker = &deepEqualsChecker{
 }
 
 func (checker *deepEqualsChecker) Check(params []interface{}, names []string) (result bool, error string) {
-	return reflect.DeepEqual(params[0], params[1]), ""
+	result = reflect.DeepEqual(params[0], params[1])
+	if !result {
+		error = formatUnequal(params[0], params[1])
+	}
+	return
 }
 
 // -----------------------------------------------------------------------
