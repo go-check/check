@@ -296,7 +296,7 @@ func matches(value, regex interface{}) (result bool, error string) {
 	var matcher *regexp.Regexp
 	switch r := regex.(type) {
 	case string:
-		m, err := regexp.Compile("^"+r+"$")
+		m, err := regexp.Compile("^(?:"+r+")$")
 		if err != nil {
 			return false, "Can't compile regex: " + err.Error()
 		}
