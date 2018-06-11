@@ -158,11 +158,7 @@ func (s *FoundationS) TestCallerLoggingInsideTest(c *check.C) {
 		"\\.\\.\\. obtained int = 10\n"+
 		"\\.\\.\\. expected int = 20\n"+
 		"\\.\\.\\. Values are different, diff:\n"+
-		"--- Expected\n"+
-		"\\+\\+\\+ Actual\n"+
-		"@@ -1,2 \\+1,2 @@\n"+
-		"-\\(int\\) 20\n"+
-		"\\+\\(int\\) 10\n\n\n",
+		"10 \\!= 20\n\n",
 		getMyLine()+1)
 	result := c.Check(10, check.Equals, 20)
 	checkState(c, result,
@@ -185,11 +181,7 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *check.C) {
 		"\\.\\.\\. obtained int = 10\n"+
 		"\\.\\.\\. expected int = 20\n"+
 		"\\.\\.\\. Values are different, diff:\n"+
-		"--- Expected\n"+
-		"\\+\\+\\+ Actual\n"+
-		"@@ -1,2 \\+1,2 @@\n"+
-		"-\\(int\\) 20\n"+
-		"\\+\\(int\\) 10\n\n\n",
+		"10 \\!= 20\n\n",
 		testLine, line)
 	checkState(c, result,
 		&expectedState{
