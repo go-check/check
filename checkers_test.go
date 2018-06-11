@@ -187,7 +187,7 @@ func (s *CheckersS) TestMatches(c *check.C) {
 
 	// Some error conditions.
 	testCheck(c, check.Matches, false, "Obtained value is not a string and has no .String()", 1, "a.c")
-	testCheck(c, check.Matches, false, "Can't compile regex: error parsing regexp: missing closing ]: `[c$`", "abc", "a[c")
+	testCheck(c, check.Matches, false, "Can't compile regex: error parsing regexp: missing closing ]: `[c)$`", "abc", "a[c")
 	testCheck(c, check.Matches, false, "Regex must be a string or *regexp.Regexp", 10, 10)
 }
 
