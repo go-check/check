@@ -239,7 +239,7 @@ func (c *C) logValue(label string, value interface{}) {
 	}
 }
 
-func (c *C) logMultiLine(s string) {
+func formatMultiLine(s string) []byte {
 	b := make([]byte, 0, len(s)*2)
 	i := 0
 	n := len(s)
@@ -256,7 +256,11 @@ func (c *C) logMultiLine(s string) {
 		b = append(b, '\n')
 		i = j
 	}
-	c.writeLog(b)
+	return b
+}
+
+func (c *C) logMultiLine(s string) {
+	c.writeLog(formatMultiLine(s))
 }
 
 func isMultiLine(s string) bool {

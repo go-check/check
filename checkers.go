@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"reflect"
 	"regexp"
+	"strings"
+
+	"github.com/kr/pretty"
 )
 
 // -----------------------------------------------------------------------
@@ -156,6 +159,21 @@ func (checker *notNilChecker) Check(params []interface{}, names []string) (resul
 
 // -----------------------------------------------------------------------
 // Equals checker.
+
+// formatUnequal will dump the actual and expected values into a textual
+// representation and return an error message containing a diff.
+func formatUnequal(obtained interface{}, expected interface{}) string {
+	diff := pretty.Diff(obtained, expected)
+	if len(diff) == 0 {
+		// No diff, this happens when e.g. just struct
+		// pointers are different but the structs have
+		// identical values.
+		return ""
+	}
+
+	return fmt.Sprintf(`Difference:
+%s`, formatMultiLine(strings.Join(diff, "\n")))
+}
 
 type equalsChecker struct {
 	*CheckerInfo
