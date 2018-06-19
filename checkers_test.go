@@ -78,6 +78,7 @@ func (s *CheckersS) TestNot(c *check.C) {
 
 	testCheck(c, check.Not(check.IsNil), false, "", nil)
 	testCheck(c, check.Not(check.IsNil), true, "", "a")
+	testCheck(c, check.Not(check.Equals), true, "", 42, 43)
 }
 
 type simpleStruct struct {
