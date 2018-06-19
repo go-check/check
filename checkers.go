@@ -172,7 +172,7 @@ func formatUnequal(obtained interface{}, expected interface{}) string {
 	}
 
 	return fmt.Sprintf(`Difference:
-%s`, formatMultiLine(strings.Join(diff, "\n")))
+%s`, formatMultiLine(strings.Join(diff, "\n"), false))
 }
 
 type equalsChecker struct {
