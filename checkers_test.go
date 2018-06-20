@@ -90,19 +90,13 @@ func (s *CheckersS) TestEquals(c *check.C) {
 
 	// The simplest.
 	testCheck(c, check.Equals, true, "", 42, 42)
-	testCheck(c, check.Equals, false, `Difference:
-...     42 != 43
-`, 42, 43)
+	testCheck(c, check.Equals, false, "", 42, 43)
 
 	// Different native types.
-	testCheck(c, check.Equals, false, `Difference:
-...     int32 != int64
-`, int32(42), int64(42))
+	testCheck(c, check.Equals, false, "", int32(42), int64(42))
 
 	// With nil.
-	testCheck(c, check.Equals, false, `Difference:
-...     int(42) != nil
-`, 42, nil)
+	testCheck(c, check.Equals, false, "", 42, nil)
 
 	// Slices
 	testCheck(c, check.Equals, false, "runtime error: comparing uncomparable type []uint8", []byte{1, 2}, []byte{1, 2})
@@ -126,19 +120,13 @@ func (s *CheckersS) TestDeepEquals(c *check.C) {
 
 	// The simplest.
 	testCheck(c, check.DeepEquals, true, "", 42, 42)
-	testCheck(c, check.DeepEquals, false, `Difference:
-...     42 != 43
-`, 42, 43)
+	testCheck(c, check.DeepEquals, false, "", 42, 43)
 
 	// Different native types.
-	testCheck(c, check.DeepEquals, false, `Difference:
-...     int32 != int64
-`, int32(42), int64(42))
+	testCheck(c, check.DeepEquals, false, "", int32(42), int64(42))
 
 	// With nil.
-	testCheck(c, check.DeepEquals, false, `Difference:
-...     int(42) != nil
-`, 42, nil)
+	testCheck(c, check.DeepEquals, false, "", 42, nil)
 
 	// Slices
 	testCheck(c, check.DeepEquals, true, "", []byte{1, 2}, []byte{1, 2})

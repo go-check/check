@@ -160,9 +160,44 @@ func (checker *notNilChecker) Check(params []interface{}, names []string) (resul
 // -----------------------------------------------------------------------
 // Equals checker.
 
+func diffworthy(a interface{}) bool {
+	t := reflect.TypeOf(a)
+	switch t.Kind() {
+	case reflect.Array, reflect.Map, reflect.Slice, reflect.Struct, reflect.String, reflect.Ptr:
+		return true
+	}
+	return false
+}
+
 // formatUnequal will dump the actual and expected values into a textual
 // representation and return an error message containing a diff.
 func formatUnequal(obtained interface{}, expected interface{}) string {
+	// We do not do diffs for basic types because go-check already
+	// shows them very cleanly.
+	if !diffworthy(obtained) || !diffworthy(expected) {
+		return ""
+	}
+
+	// Handle strings, short strings are ignored (go-check formats
+	// them very nicely already). We do multi-line strings by
+	// generating two string slices and using kr.Diff to compare
+	// those (kr.Diff does not do string diffs by itself).
+	aStr, aOK := obtained.(string)
+	bStr, bOK := expected.(string)
+	if aOK && bOK {
+		l1 := strings.Split(aStr, "\n")
+		l2 := strings.Split(bStr, "\n")
+		// the "2" here is a bit arbitrary
+		if len(l1) > 2 && len(l2) > 2 {
+			diff := pretty.Diff(l1, l2)
+			return fmt.Sprintf(`String difference:
+%s`, formatMultiLine(strings.Join(diff, "\n"), false))
+		}
+		// string too short
+		return ""
+	}
+
+	// generic diff
 	diff := pretty.Diff(obtained, expected)
 	if len(diff) == 0 {
 		// No diff, this happens when e.g. just struct

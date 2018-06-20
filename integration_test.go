@@ -15,6 +15,10 @@ var _ = Suite(&integrationS{})
 
 type integrationTestHelper struct{}
 
+func (s *integrationTestHelper) TestMultiLineStringEqualFails(c *C) {
+	c.Check("foo\nbar\nbaz\nboom\n", Equals, "foo\nbaar\nbaz\nboom\n")
+}
+
 func (s *integrationTestHelper) TestStringEqualFails(c *C) {
 	c.Check("foo", Equals, "bar")
 }
@@ -37,33 +41,47 @@ func (s *integrationS) TestOutput(c *C) {
 	Run(&helper, &RunConf{Output: &output})
 	c.Assert(output.value, Equals, `
 ----------------------------------------------------------------------
-FAIL: integration_test.go:22: integrationTestHelper.TestIntEqualFails
+FAIL: integration_test.go:26: integrationTestHelper.TestIntEqualFails
 
-integration_test.go:23:
+integration_test.go:27:
     c.Check(42, Equals, 43)
 ... obtained int = 42
 ... expected int = 43
-... Difference:
-...     42 != 43
+
+
+----------------------------------------------------------------------
+FAIL: integration_test.go:18: integrationTestHelper.TestMultiLineStringEqualFails
+
+integration_test.go:19:
+    c.Check("foo\nbar\nbaz\nboom\n", Equals, "foo\nbaar\nbaz\nboom\n")
+... obtained string = "" +
+...     "foo\n" +
+...     "bar\n" +
+...     "baz\n" +
+...     "boom\n"
+... expected string = "" +
+...     "foo\n" +
+...     "baar\n" +
+...     "baz\n" +
+...     "boom\n"
+... String difference:
+...     [1]: "bar" != "baar"
 
 
 
 ----------------------------------------------------------------------
-FAIL: integration_test.go:18: integrationTestHelper.TestStringEqualFails
+FAIL: integration_test.go:22: integrationTestHelper.TestStringEqualFails
 
-integration_test.go:19:
+integration_test.go:23:
     c.Check("foo", Equals, "bar")
 ... obtained string = "foo"
 ... expected string = "bar"
-... Difference:
-...     "foo" != "bar"
-
 
 
 ----------------------------------------------------------------------
-FAIL: integration_test.go:30: integrationTestHelper.TestStructEqualFails
+FAIL: integration_test.go:34: integrationTestHelper.TestStructEqualFails
 
-integration_test.go:31:
+integration_test.go:35:
     c.Check(complexStruct{1, 2}, Equals, complexStruct{3, 4})
 ... obtained check_test.complexStruct = check_test.complexStruct{r:1, i:2}
 ... expected check_test.complexStruct = check_test.complexStruct{r:3, i:4}

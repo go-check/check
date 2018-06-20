@@ -156,9 +156,7 @@ func (s *FoundationS) TestCallerLoggingInsideTest(c *check.C) {
 		"foundation_test.go:%d:\n"+
 		"    result := c.Check\\(10, check.Equals, 20\\)\n"+
 		"\\.\\.\\. obtained int = 10\n"+
-		"\\.\\.\\. expected int = 20\n"+
-		"\\.\\.\\. Difference:\n"+
-		"\\.\\.\\.     10 \\!= 20\n\n\n",
+		"\\.\\.\\. expected int = 20\n\n",
 		getMyLine()+1)
 	result := c.Check(10, check.Equals, 20)
 	checkState(c, result,
@@ -179,9 +177,7 @@ func (s *FoundationS) TestCallerLoggingInDifferentFile(c *check.C) {
 		"check_test.go:%d:\n"+
 		"    return c.Check\\(obtained, check.Equals, expected\\), getMyLine\\(\\)\n"+
 		"\\.\\.\\. obtained int = 10\n"+
-		"\\.\\.\\. expected int = 20\n"+
-		"\\.\\.\\. Difference:\n"+
-		"\\.\\.\\.     10 \\!= 20\n\n\n",
+		"\\.\\.\\. expected int = 20\n\n",
 		testLine, line)
 	checkState(c, result,
 		&expectedState{
