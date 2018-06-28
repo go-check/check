@@ -87,7 +87,6 @@ integration_test.go:35:
 ... expected check_test.complexStruct = check_test.complexStruct{r:3, i:4}
 ... Difference:
 ...     r: 1 != 3
- +
 ...     i: 2 != 4
 
 

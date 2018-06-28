@@ -253,8 +253,9 @@ func formatMultiLine(s string, quote bool) []byte {
 			b = strconv.AppendQuote(b, s[i:j])
 		} else {
 			b = append(b, s[i:j]...)
+			b = bytes.TrimSpace(b)
 		}
-		if j < n {
+		if quote && j < n {
 			b = append(b, " +"...)
 		}
 		b = append(b, '\n')
