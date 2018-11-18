@@ -113,6 +113,8 @@ func (s *CheckersS) TestEquals(c *check.C) {
 	testCheck(c, check.Equals, false, `Difference:
 ...     i: 1 != 2
 `, &simpleStruct{1}, &simpleStruct{2})
+	// Test against nil (at one point this resulted in a panic).
+	testCheck(c, check.Equals, false, "", &simpleStruct{1}, nil)
 }
 
 func (s *CheckersS) TestDeepEquals(c *check.C) {
