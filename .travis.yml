@@ -1,0 +1,7 @@
+language: go
+
+go:
+  - 1.10.x
+  - 1.11.x
+
+script: env GO111MODULE=on go test -race -count=1 -cover ./v2
