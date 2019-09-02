@@ -97,6 +97,8 @@ func (s *CheckersS) TestEquals(c *check.C) {
 
 	// With nil.
 	testCheck(c, check.Equals, false, "", 42, nil)
+	testCheck(c, check.Equals, false, "", nil, 42)
+	testCheck(c, check.Equals, true, "", nil, nil)
 
 	// Slices
 	testCheck(c, check.Equals, false, "runtime error: comparing uncomparable type []uint8", []byte{1, 2}, []byte{1, 2})
