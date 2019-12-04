@@ -44,13 +44,8 @@ func teamcityOutput(status string, test *C, details ...string) string {
 	now := timeFormat(time.Now())
 	testName := escape(*formatMessageNamePrefixFlag + test.testName)
 
-	switch status {
-	case "START":
+	if status == "START" {
 		return fmt.Sprintf("##teamcity[testStarted timestamp='%s' name='%s' captureStandardOutput='true']", test.startTime.Format(TeamcityTimestampFormat), testName)
-	case "SKIP":
-		return fmt.Sprintf("##teamcity[testIgnored timestamp='%s' name='%s' message='%s']\n", now, testName, "Test is skipped")
-	case "MISS":
-		return fmt.Sprintf("##teamcity[testIgnored timestamp='%s' name='%s' message='%s']\n", now, testName, "Test is missed")
 	}
 
 	out := ""
@@ -60,6 +55,10 @@ func teamcityOutput(status string, test *C, details ...string) string {
 	}
 
 	switch status {
+	case "SKIP":
+		out += fmt.Sprintf("##teamcity[testIgnored timestamp='%s' name='%s' message='%s']\n", now, testName, "Test is skipped")
+	case "MISS":
+		out += fmt.Sprintf("##teamcity[testIgnored timestamp='%s' name='%s' message='%s']\n", now, testName, "Test is missed")
 	case "FAIL":
 		out += fmt.Sprintf("##teamcity[testFailed timestamp='%s' name='%s' details='%s']\n",
 			now, testName, escapeLines(details))
