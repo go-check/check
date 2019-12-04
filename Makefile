@@ -16,7 +16,12 @@ test:
 	@echo "======================================================================"
 	@go clean -cache
 	@go clean -testcache
-	go test --check.format=teamcity ./
+	go test -cover -coverprofile=./check_coverage.out ./
+	go test -cover -coverprofile=./check_test_coverage.out -coverpkg  check_test ./
+	go tool cover -html=check_coverage.out -o check_coverage.html
+	go tool cover -html=check_test_coverage.out -o check_test_coverage.html
+	rm -f ./check_coverage.out
+	rm -f ./check_test_coverage.out
 
 deps:
 	@echo "======================================================================"

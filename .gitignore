@@ -5,3 +5,9 @@ _*
 
 .idea/
 vendor/
+check_test.o
+check.o
+check_coverage.html
+check_test_coverage.html
+check_coverage.out
+check_test_coverage.out

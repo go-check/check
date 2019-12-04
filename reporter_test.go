@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	. "gopkg.in/check.v1"
+	. 	"github.com/iostrovok/check"
 )
 
 var _ = Suite(&reporterS{})

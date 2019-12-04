@@ -4,9 +4,10 @@ package check_test
 
 import (
 	"errors"
-	. "gopkg.in/check.v1"
 	"os"
 	"sync"
+
+	. "github.com/iostrovok/check"
 )
 
 var runnerS = Suite(&RunS{})
@@ -400,7 +401,7 @@ func (s *RunS) TestStreamModeWithMiss(c *C) {
 // -----------------------------------------------------------------------
 // Verify that that the keep work dir request indeed does so.
 
-type WorkDirSuite struct {}
+type WorkDirSuite struct{}
 
 func (s *WorkDirSuite) Test(c *C) {
 	c.MkDir()
@@ -411,7 +412,7 @@ func (s *RunS) TestKeepWorkDir(c *C) {
 	runConf := RunConf{Output: &output, Verbose: true, KeepWorkDir: true}
 	result := Run(&WorkDirSuite{}, &runConf)
 
-	c.Assert(result.String(), Matches, ".*\nWORK=" + result.WorkDir)
+	c.Assert(result.String(), Matches, ".*\nWORK="+result.WorkDir)
 
 	stat, err := os.Stat(result.WorkDir)
 	c.Assert(err, IsNil)

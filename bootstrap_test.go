@@ -14,8 +14,9 @@ package check_test
 
 import (
 	"fmt"
-	"gopkg.in/check.v1"
 	"strings"
+
+	"github.com/iostrovok/check"
 )
 
 type BootstrapS struct{}
