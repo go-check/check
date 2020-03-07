@@ -22,6 +22,7 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
+	"testing"
 	"time"
 )
 
@@ -91,6 +92,7 @@ type C struct {
 	tempDir   *tempDir
 	benchMem  bool
 	startTime time.Time
+	testingT  *testing.T
 	timer
 }
 
@@ -443,7 +445,7 @@ type resultTracker struct {
 func newResultTracker() *resultTracker {
 	return &resultTracker{_expectChan: make(chan *C), // Synchronous
 		_doneChan: make(chan *C, 32), // Asynchronous
-		_stopChan: make(chan bool)}   // Synchronous
+		_stopChan: make(chan bool)} // Synchronous
 }
 
 func (tracker *resultTracker) start() {
@@ -531,6 +533,7 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	testingT                  *testing.T
 }
 
 type RunConf struct {
@@ -542,6 +545,7 @@ type RunConf struct {
 	BenchmarkTime time.Duration // Defaults to 1 second
 	BenchmarkMem  bool
 	KeepWorkDir   bool
+	testingT      *testing.T
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -570,6 +574,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		tempDir:   &tempDir{},
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
+		testingT:  conf.testingT,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -667,6 +672,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		timer:     timer{benchTime: runner.benchTime},
 		startTime: time.Now(),
 		benchMem:  runner.benchMem,
+		testingT:  runner.testingT,
 	}
 	runner.tracker.expectCall(c)
 	go (func() {

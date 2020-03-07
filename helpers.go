@@ -3,12 +3,18 @@ package check
 import (
 	"fmt"
 	"strings"
+	"testing"
 	"time"
 )
 
 // TestName returns the current test name in the form "SuiteName.TestName"
 func (c *C) TestName() string {
 	return c.testName
+}
+
+// Returns base test object
+func (c *C) T() *testing.T {
+	return c.testingT
 }
 
 // -----------------------------------------------------------------------
