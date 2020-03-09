@@ -74,9 +74,9 @@ func (method *methodType) String() string {
 }
 
 func (method *methodType) matches(re *regexp.Regexp) bool {
-	return (re.MatchString(method.Info.Name) ||
+	return re.MatchString(method.Info.Name) ||
 		re.MatchString(method.suiteName()) ||
-		re.MatchString(method.String()))
+		re.MatchString(method.String())
 }
 
 type C struct {
