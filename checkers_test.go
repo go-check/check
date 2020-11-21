@@ -36,6 +36,10 @@ func testCheck(c *check.C, checker check.Checker, result bool, error string, par
 	return params, names
 }
 
+func (s *CheckersS) TestCountSuite(c *check.C) {
+	suitesRun += 1
+}
+
 func (s *CheckersS) TestComment(c *check.C) {
 	bug := check.Commentf("a %d bc", 42)
 	comment := bug.CheckCommentString()

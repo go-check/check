@@ -4,10 +4,9 @@
 package check_test
 
 import (
-	"flag"
 	"fmt"
 	"os"
-	"regexp"
+	//"regexp"
 	"runtime"
 	"testing"
 	"time"
@@ -18,13 +17,13 @@ import (
 // We count the number of suites run at least to get a vague hint that the
 // test suite is behaving as it should.  Otherwise a bug introduced at the
 // very core of the system could go unperceived.
-const suitesRunExpected = 8
+const suitesRunExpected = 2
 
 var suitesRun int = 0
 
 func Test(t *testing.T) {
 	check.TestingT(t)
-	if suitesRun != suitesRunExpected && flag.Lookup("check.f").Value.String() == "" {
+	if suitesRun != suitesRunExpected {
 		critical(fmt.Sprintf("Expected %d suites to run rather than %d",
 			suitesRunExpected, suitesRun))
 	}
@@ -141,31 +140,6 @@ func (s *FixtureHelper) Test2(c *check.C) {
 	s.trace("Test2", c)
 }
 
-func (s *FixtureHelper) Benchmark1(c *check.C) {
-	s.trace("Benchmark1", c)
-	for i := 0; i < c.N; i++ {
-		time.Sleep(s.sleep)
-	}
-}
-
-func (s *FixtureHelper) Benchmark2(c *check.C) {
-	s.trace("Benchmark2", c)
-	c.SetBytes(1024)
-	for i := 0; i < c.N; i++ {
-		time.Sleep(s.sleep)
-	}
-}
-
-func (s *FixtureHelper) Benchmark3(c *check.C) {
-	var x []int64
-	s.trace("Benchmark3", c)
-	for i := 0; i < c.N; i++ {
-		time.Sleep(s.sleep)
-		x = make([]int64, 5)
-		_ = x
-	}
-}
-
 // -----------------------------------------------------------------------
 // Helper which checks the state of the test and ensures that it matches
 // the given expectations.  Depends on c.Errorf() working, so shouldn't
@@ -181,6 +155,7 @@ type expectedState struct {
 // Verify the state of the test.  Note that since this also verifies if
 // the test is supposed to be in a failed state, no other checks should
 // be done in addition to what is being tested.
+/*
 func checkState(c *check.C, result interface{}, expected *expectedState) {
 	failed := c.Failed()
 	c.Succeed()
@@ -205,3 +180,4 @@ func checkState(c *check.C, result interface{}, expected *expectedState) {
 		}
 	}
 }
+*/

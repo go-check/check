@@ -1,3 +1,5 @@
+//+build nowhere
+
 // Integration tests
 
 package check_test

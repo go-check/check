@@ -1,3 +1,4 @@
+//+build nowhere
 // These tests verify the test running logic.
 
 package check_test
