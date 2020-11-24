@@ -531,6 +531,7 @@ type suiteRunner struct {
 	reportedProblemLast       bool
 	benchTime                 time.Duration
 	benchMem                  bool
+	testTimeout               time.Duration
 }
 
 type RunConf struct {
@@ -542,6 +543,7 @@ type RunConf struct {
 	BenchmarkTime time.Duration // Defaults to 1 second
 	BenchmarkMem  bool
 	KeepWorkDir   bool
+	TestTimeout   time.Duration
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -562,14 +564,15 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	suiteValue := reflect.ValueOf(suite)
 
 	runner := &suiteRunner{
-		suite:     suite,
-		output:    newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
-		tracker:   newResultTracker(),
-		benchTime: conf.BenchmarkTime,
-		benchMem:  conf.BenchmarkMem,
-		tempDir:   &tempDir{},
-		keepDir:   conf.KeepWorkDir,
-		tests:     make([]*methodType, 0, suiteNumMethods),
+		suite:       suite,
+		output:      newOutputWriter(conf.Output, conf.Stream, conf.Verbose),
+		tracker:     newResultTracker(),
+		benchTime:   conf.BenchmarkTime,
+		benchMem:    conf.BenchmarkMem,
+		tempDir:     &tempDir{},
+		keepDir:     conf.KeepWorkDir,
+		tests:       make([]*methodType, 0, suiteNumMethods),
+		testTimeout: conf.TestTimeout,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -669,11 +672,21 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		benchMem:  runner.benchMem,
 	}
 	runner.tracker.expectCall(c)
+	var timeout <-chan time.Time
+	if runner.testTimeout != 0 {
+		timeout = time.After(runner.testTimeout)
+	}
 	go (func() {
 		runner.reportCallStarted(c)
 		defer runner.callDone(c)
 		dispatcher(c)
 	})()
+	select {
+	case <-c.done:
+		c.done <- c
+	case <-timeout:
+		panic(fmt.Sprintf("test timed out after %v", runner.testTimeout))
+	}
 	return c
 }
 
