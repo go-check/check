@@ -23,3 +23,22 @@ jobs:
         run: go build .
       - name: Test
         run: go test -v ./...
+
+  gopath:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}
+      package: gopkg.in/check.v1
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.9.x'
+      - uses: actions/checkout@v2
+        with:
+          path: src/${{ env.package }}
+      - name: Dependencies
+        run: go get -t -d -v ${{ env.package }}/...
+      - name: Build
+        run: go build ${{ env.package }}
+      - name: Test
+        run: go test -v ${{ env.package }}/...
