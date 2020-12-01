@@ -1,3 +1,6 @@
 language: go
 
+go:
+  - 1.14.x
+
 go_import_path: gopkg.in/check.v1
