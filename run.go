@@ -54,7 +54,7 @@ func TestingT(testingT *testing.T) {
 	}
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
-		Verbose:       *oldVerboseFlag || *newVerboseFlag,
+		Verbose:       *oldVerboseFlag || *newVerboseFlag || testing.Verbose(),
 		Stream:        *oldStreamFlag || *newStreamFlag,
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
