@@ -42,6 +42,9 @@ var (
 	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
 	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
 	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+
+	formattedMessageFlag    = flag.String("check.format", "", "Display formatted messages. Now 'teamcity' is only supported.")
+	formatMessageNamePrefixFlag = flag.String("check.name", "", "Add name prefix to formatted messages.")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -55,7 +58,7 @@ func TestingT(testingT *testing.T) {
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
 		Verbose:       *oldVerboseFlag || *newVerboseFlag,
-		Stream:        *oldStreamFlag || *newStreamFlag,
+		Stream:        *oldStreamFlag || *newStreamFlag || *formattedMessageFlag != "",
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
 		BenchmarkMem:  *newBenchMem,
