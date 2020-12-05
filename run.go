@@ -5,6 +5,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"sync"
 	"testing"
 	"time"
 )
@@ -34,14 +35,15 @@ var (
 	oldListFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
 	oldWorkFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory")
 
-	newFilterFlag  = flag.String("check.f", "", "Regular expression selecting which tests and/or suites to run")
-	newVerboseFlag = flag.Bool("check.v", false, "Verbose mode")
-	newStreamFlag  = flag.Bool("check.vv", false, "Super verbose mode (disables output caching)")
-	newBenchFlag   = flag.Bool("check.b", false, "Run benchmarks")
-	newBenchTime   = flag.Duration("check.btime", 1*time.Second, "approximate run time for each benchmark")
-	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
-	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
-	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	newFilterFlag     = flag.String("check.f", "", "Regular expression selecting which tests and/or suites to run")
+	newVerboseFlag    = flag.Bool("check.v", false, "Verbose mode")
+	newStreamFlag     = flag.Bool("check.vv", false, "Super verbose mode (disables output caching)")
+	newBenchFlag      = flag.Bool("check.b", false, "Run benchmarks")
+	newBenchTime      = flag.Duration("check.btime", 1*time.Second, "approximate run time for each benchmark")
+	newBenchMem       = flag.Bool("check.bmem", false, "Report memory benchmarks")
+	newListFlag       = flag.Bool("check.list", false, "List the names of all tests that will be run")
+	newWorkFlag       = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	parallelSuiteFlag = flag.Bool("check.psuite", false, "Run different test suites in parallel")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -80,8 +82,20 @@ func TestingT(testingT *testing.T) {
 // provided run configuration.
 func RunAll(runConf *RunConf) *Result {
 	result := Result{}
-	for _, suite := range allSuites {
-		result.Add(Run(suite, runConf))
+	if *parallelSuiteFlag {
+		wg := new(sync.WaitGroup)
+		for _, suite := range allSuites {
+			wg.Add(1)
+			go func(w *sync.WaitGroup) {
+				defer w.Done()
+				result.Add(Run(suite, runConf))
+			}(wg)
+		}
+		wg.Wait()
+	} else {
+		for _, suite := range allSuites {
+			result.Add(Run(suite, runConf))
+		}
 	}
 	return &result
 }
