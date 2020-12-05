@@ -34,14 +34,15 @@ var (
 	oldListFlag    = flag.Bool("gocheck.list", false, "List the names of all tests that will be run")
 	oldWorkFlag    = flag.Bool("gocheck.work", false, "Display and do not remove the test working directory")
 
-	newFilterFlag  = flag.String("check.f", "", "Regular expression selecting which tests and/or suites to run")
-	newVerboseFlag = flag.Bool("check.v", false, "Verbose mode")
-	newStreamFlag  = flag.Bool("check.vv", false, "Super verbose mode (disables output caching)")
-	newBenchFlag   = flag.Bool("check.b", false, "Run benchmarks")
-	newBenchTime   = flag.Duration("check.btime", 1*time.Second, "approximate run time for each benchmark")
-	newBenchMem    = flag.Bool("check.bmem", false, "Report memory benchmarks")
-	newListFlag    = flag.Bool("check.list", false, "List the names of all tests that will be run")
-	newWorkFlag    = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	newFilterFlag        = flag.String("check.f", "", "Regular expression selecting which tests and/or suites to run")
+	newVerboseFlag       = flag.Bool("check.v", false, "Verbose mode")
+	newStreamFlag        = flag.Bool("check.vv", false, "Super verbose mode (disables output caching)")
+	newBenchFlag         = flag.Bool("check.b", false, "Run benchmarks")
+	newBenchTime         = flag.Duration("check.btime", 1*time.Second, "approximate run time for each benchmark")
+	newBenchMem          = flag.Bool("check.bmem", false, "Report memory benchmarks")
+	newListFlag          = flag.Bool("check.list", false, "List the names of all tests that will be run")
+	newWorkFlag          = flag.Bool("check.work", false, "Display and do not remove the test working directory")
+	suiteParallelismFlag = flag.Int("check.suitep", 1, "Run different test suites in parallel")
 )
 
 // TestingT runs all test suites registered with the Suite function,
@@ -55,7 +56,7 @@ func TestingT(testingT *testing.T) {
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
 		Verbose:       *oldVerboseFlag || *newVerboseFlag,
-		Stream:        *oldStreamFlag || *newStreamFlag,
+		Stream:        (*oldStreamFlag || *newStreamFlag) && (*suiteParallelismFlag <= 1),
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
 		BenchmarkMem:  *newBenchMem,
@@ -80,8 +81,27 @@ func TestingT(testingT *testing.T) {
 // provided run configuration.
 func RunAll(runConf *RunConf) *Result {
 	result := Result{}
-	for _, suite := range allSuites {
-		result.Add(Run(suite, runConf))
+	queueCh := make(chan interface{})
+	go func() {
+		for _, s := range allSuites {
+			queueCh <- s
+		}
+		close(queueCh)
+	}()
+	p := *suiteParallelismFlag
+	if p <= 0 {
+		p = 1
+	}
+	resCh := make(chan *Result)
+	for i := 0; i < p; i++ {
+		go func() {
+			for s := range queueCh {
+				resCh <- Run(s, runConf)
+			}
+		}()
+	}
+	for i := 0; i < len(allSuites); i++ {
+		result.Add(<-resCh)
 	}
 	return &result
 }
