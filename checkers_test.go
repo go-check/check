@@ -156,7 +156,7 @@ func (s *CheckersS) TestHasLen(c *check.C) {
 
 	testCheck(c, check.HasLen, true, "", "abcd", 4)
 	testCheck(c, check.HasLen, true, "", []int{1, 2}, 2)
-	testCheck(c, check.HasLen, false, "", []int{1, 2}, 3)
+	testCheck(c, check.HasLen, false, "obtained length = 2", []int{1, 2}, 3)
 
 	testCheck(c, check.HasLen, false, "n must be an int", []int{1, 2}, "2")
 	testCheck(c, check.HasLen, false, "obtained value type has no length", nil, 2)
