@@ -3,6 +3,7 @@ package check_test
 import (
 	"errors"
 	"reflect"
+	"regexp"
 	"runtime"
 
 	"gopkg.in/check.v1"
@@ -170,6 +171,11 @@ func (s *CheckersS) TestErrorMatches(c *check.C) {
 	testCheck(c, check.ErrorMatches, true, "", errors.New("some error"), "some error")
 	testCheck(c, check.ErrorMatches, true, "", errors.New("some error"), "so.*or")
 
+	// Supports Regex instances
+	compiledRegex := regexp.MustCompile(`(?i:error)`)
+	testCheck(c, check.ErrorMatches, true, "", errors.New("An Error"), compiledRegex)
+	testCheck(c, check.ErrorMatches, false, "", errors.New("something went wrong"), compiledRegex)
+
 	// Verify params mutation
 	params, names := testCheck(c, check.ErrorMatches, false, "", errors.New("some error"), "other error")
 	c.Assert(params[0], check.Equals, "some error")
@@ -191,9 +197,15 @@ func (s *CheckersS) TestMatches(c *check.C) {
 	testCheck(c, check.Matches, true, "", reflect.ValueOf("abc"), "a.c")
 	testCheck(c, check.Matches, false, "", reflect.ValueOf("abc"), "a.d")
 
+	// Supports Regex instances
+	compiledRegex := regexp.MustCompile(`(?i:bcd)`)
+	testCheck(c, check.Matches, true, "", "abCDe", compiledRegex)
+	testCheck(c, check.Matches, false, "", "xyz", compiledRegex)
+
 	// Some error conditions.
 	testCheck(c, check.Matches, false, "Obtained value is not a string and has no .String()", 1, "a.c")
-	testCheck(c, check.Matches, false, "Can't compile regex: error parsing regexp: missing closing ]: `[c$`", "abc", "a[c")
+	testCheck(c, check.Matches, false, "Can't compile regex: error parsing regexp: missing closing ]: `[c)$`", "abc", "a[c")
+	testCheck(c, check.Matches, false, "Regex must be a string or *regexp.Regexp", 10, 10)
 }
 
 func (s *CheckersS) TestPanics(c *check.C) {
@@ -241,6 +253,11 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	testCheck(c, check.PanicMatches, true, "", func() { panic("BOOM") }, "BO.M")
 	testCheck(c, check.PanicMatches, false, "", func() { panic("KABOOM") }, "BOOM")
 	testCheck(c, check.PanicMatches, true, "", func() bool { panic("BOOM") }, "BO.M")
+
+	// Supports Regex instances
+	compiledRegex := regexp.MustCompile(`(?i:panic)`)
+	testCheck(c, check.PanicMatches, true, "", func() { panic("WE PANICKED") }, compiledRegex)
+	testCheck(c, check.PanicMatches, false, "", func() { panic("BOOM") }, compiledRegex)
 
 	// Verify params/names mutation
 	params, names := testCheck(c, check.PanicMatches, false, "", func() { panic(errors.New("KABOOM")) }, "BOOM")

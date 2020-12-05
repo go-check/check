@@ -363,24 +363,32 @@ func (checker *matchesChecker) Check(params []interface{}, names []string) (resu
 }
 
 func matches(value, regex interface{}) (result bool, error string) {
-	reStr, ok := regex.(string)
-	if !ok {
-		return false, "Regex must be a string"
-	}
-	valueStr, valueIsStr := value.(string)
-	if !valueIsStr {
-		if valueWithStr, valueHasStr := value.(fmt.Stringer); valueHasStr {
-			valueStr, valueIsStr = valueWithStr.String(), true
-		}
-	}
-	if valueIsStr {
-		matches, err := regexp.MatchString("^"+reStr+"$", valueStr)
+	var matcher *regexp.Regexp
+	switch r := regex.(type) {
+	case string:
+		m, err := regexp.Compile("^(?:"+r+")$")
 		if err != nil {
 			return false, "Can't compile regex: " + err.Error()
 		}
-		return matches, ""
+		matcher = m
+	case *regexp.Regexp:
+		matcher = r
+	default:
+		return false, "Regex must be a string or *regexp.Regexp"
 	}
-	return false, "Obtained value is not a string and has no .String()"
+
+	var valueStr string
+	switch v := value.(type) {
+	case string:
+		valueStr = v
+	case fmt.Stringer:
+		valueStr = v.String()
+	default:
+		return false, "Obtained value is not a string and has no .String()"
+	}
+
+	matches := matcher.MatchString(valueStr)
+	return matches, ""
 }
 
 // -----------------------------------------------------------------------
