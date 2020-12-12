@@ -1,8 +1,12 @@
 package check
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
+	"runtime"
 	"strings"
+	"strconv"
 	"time"
 )
 
@@ -10,9 +14,6 @@ import (
 func (c *C) TestName() string {
 	return c.Name()
 }
-
-// -----------------------------------------------------------------------
-// Basic succeeding/failing logic.
 
 // -----------------------------------------------------------------------
 // Basic logging.
@@ -65,10 +66,13 @@ func (c *C) Assert(obtained interface{}, checker Checker, args ...interface{}) {
 func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
 	c.Helper()
 	if checker == nil {
-		c.logCaller(2)
-		c.logString(fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
-		c.logString("Oops.. you've provided a nil checker!")
-		c.logNewLine()
+		lines := []string{
+			"",
+			formatCaller(2),
+			fmt.Sprintf("... %s(obtained, nil!?, ...):", funcName),
+			"... Oops.. you've provided a nil checker!",
+		}
+		c.Log(strings.Join(lines, "\n"))
 		c.Fail()
 		return false
 	}
@@ -87,10 +91,13 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 
 	if len(params) != len(info.Params) {
 		names := append([]string{info.Params[0], info.Name}, info.Params[1:]...)
-		c.logCaller(2)
-		c.logString(fmt.Sprintf("%s(%s):", funcName, strings.Join(names, ", ")))
-		c.logString(fmt.Sprintf("Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1))
-		c.logNewLine()
+		lines := []string{
+			"",
+			formatCaller(2),
+			fmt.Sprintf("... %s(%s):", funcName, strings.Join(names, ", ")),
+			fmt.Sprintf("... Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1),
+		}
+		c.Log(strings.Join(lines, "\n"))
 		c.Fail()
 		return false
 	}
@@ -101,19 +108,108 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 	// Do the actual check.
 	result, error := checker.Check(params, names)
 	if !result || error != "" {
-		c.logCaller(2)
+		lines := []string{
+			"",
+			formatCaller(2),
+		}
 		for i := 0; i != len(params); i++ {
-			c.logValue(names[i], params[i])
+			lines = append(lines, formatValue(names[i], params[i]))
 		}
 		if comment != nil {
-			c.logString(comment.CheckCommentString())
+			lines = append(lines, "... " + comment.CheckCommentString())
 		}
 		if error != "" {
-			c.logString(error)
+			lines = append(lines, "... " + error)
 		}
-		c.logNewLine()
+		c.Log(strings.Join(lines, "\n"))
 		c.Fail()
 		return false
 	}
 	return true
+}
+
+func formatCaller(skip int) string {
+	// This is a bit heavier than it ought to be.
+	skip++ // Our own frame.
+	_, path, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "    ..."
+	}
+
+	code, err := printLine(path, line)
+	if code == "" {
+		code = "..." // XXX Open the file and take the raw line.
+		if err != nil {
+			code += err.Error()
+		}
+	}
+	return indent(code, "    ")
+}
+
+func formatValue(label string, value interface{}) string {
+	if label == "" {
+		if hasStringOrError(value) {
+			return fmt.Sprintf("... %#v (%q)", value, value)
+		} else {
+			return fmt.Sprintf("... %#v", value)
+		}
+	} else if value == nil {
+		return fmt.Sprintf("... %s = nil", label)
+	} else {
+		if hasStringOrError(value) {
+			fv := fmt.Sprintf("%#v", value)
+			qv := fmt.Sprintf("%q", value)
+			if fv != qv {
+				return fmt.Sprintf("... %s %s = %s (%s)", label, reflect.TypeOf(value), fv, qv)
+			}
+		}
+		if s, ok := value.(string); ok && isMultiLine(s) {
+			return fmt.Sprintf("... %s %s = \"\" +\n%s", label, reflect.TypeOf(value), formatMultiLine(s, true))
+		} else {
+			return fmt.Sprintf("... %s %s = %#v", label, reflect.TypeOf(value), value)
+		}
+	}
+}
+
+func hasStringOrError(x interface{}) (ok bool) {
+	_, ok = x.(fmt.Stringer)
+	if ok {
+		return
+	}
+	_, ok = x.(error)
+	return
+}
+
+func formatMultiLine(s string, quote bool) []byte {
+	b := make([]byte, 0, len(s)*2)
+	i := 0
+	n := len(s)
+	for i < n {
+		j := i + 1
+		for j < n && s[j-1] != '\n' {
+			j++
+		}
+		b = append(b, "...     "...)
+		if quote {
+			b = strconv.AppendQuote(b, s[i:j])
+		} else {
+			b = append(b, s[i:j]...)
+			b = bytes.TrimSpace(b)
+		}
+		if quote && j < n {
+			b = append(b, " +"...)
+		}
+		b = append(b, '\n')
+		i = j
+	}
+	return b
+}
+
+func isMultiLine(s string) bool {
+	for i := 0; i+1 < len(s); i++ {
+		if s[i] == '\n' {
+			return true
+		}
+	}
+	return false
 }
