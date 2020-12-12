@@ -85,8 +85,7 @@ func internalCheck(c testing.TB, funcName string, obtained interface{}, checker 
 			fmt.Sprintf("... %s(obtained, nil!?, ...):", funcName),
 			"... Oops.. you've provided a nil checker!",
 		}
-		c.Log(strings.Join(lines, "\n"))
-		c.Fail()
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 
@@ -110,8 +109,7 @@ func internalCheck(c testing.TB, funcName string, obtained interface{}, checker 
 			fmt.Sprintf("... %s(%s):", funcName, strings.Join(names, ", ")),
 			fmt.Sprintf("... Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1),
 		}
-		c.Log(strings.Join(lines, "\n"))
-		c.Fail()
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 
@@ -134,8 +132,7 @@ func internalCheck(c testing.TB, funcName string, obtained interface{}, checker 
 		if error != "" {
 			lines = append(lines, "... " + error)
 		}
-		c.Log(strings.Join(lines, "\n"))
-		c.Fail()
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 	return true
