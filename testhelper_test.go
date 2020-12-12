@@ -38,7 +38,10 @@ func TestHelperSuite(t *testing.T) {
 
 type helperResult []string
 
-var testStatusLine = regexp.MustCompile(`^\s*--- ([A-Z]+): ([0-9A-Za-z/]+) \(\d+\.\d+s\)$`)
+var (
+	testRunLine = regexp.MustCompile(`^=== (?:RUN|CONT)\s+([0-9A-Za-z/]+)$`)
+	testStatusLine = regexp.MustCompile(`^\s*--- ([A-Z]+): ([0-9A-Za-z/]+) \(\d+\.\d+s\)$`)
+)
 
 func (result helperResult) Status(test string) string {
 	for _, line := range result {
@@ -51,6 +54,26 @@ func (result helperResult) Status(test string) string {
 		}
 	}
 	return ""
+}
+
+func (result helperResult) Logs(test string) string {
+	var lines []string
+	var inTest bool
+	for _, line := range result {
+		if inTest {
+			// Log messages are all indented
+			if strings.HasPrefix(line, " ") {
+				lines = append(lines, line)
+				continue
+			}
+			inTest = false
+		}
+		match := testRunLine.FindStringSubmatch(line)
+		if match != nil && match[1] == "TestHelperSuite/" + test {
+			inTest = true
+		}
+	}
+	return strings.Join(lines, "\n")
 }
 
 func runHelperSuite(name string, args ...string) (code int, output helperResult) {
