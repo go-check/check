@@ -212,7 +212,7 @@ func formatMultiLine(s string, quote bool) []byte {
 		b = append(b, '\n')
 		i = j
 	}
-	return b
+	return b[:len(b)-1]
 }
 
 func isMultiLine(s string) bool {
