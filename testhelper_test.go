@@ -22,17 +22,17 @@ func TestHelperSuite(t *testing.T) {
 	}
 	switch *helperRunFlag {
 	case "FailHelper":
-		check.Run(t, &FailHelper{}, nil)
+		check.Run(t, &FailHelper{})
 	case "SuccessHelper":
-		check.Run(t, &SuccessHelper{}, nil)
+		check.Run(t, &SuccessHelper{})
 	case "FixtureHelper":
 		suite := &FixtureHelper{}
 		if helperPanicFlag != nil {
 			suite.panicOn = *helperPanicFlag
 		}
-		check.Run(t, suite, nil)
+		check.Run(t, suite)
 	case "integrationTestHelper":
-		check.Run(t, &integrationTestHelper{}, nil)
+		check.Run(t, &integrationTestHelper{})
 	default:
 		t.Skip()
 	}

@@ -8,16 +8,12 @@ package check
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"path"
-	"path/filepath"
 	"reflect"
 	"regexp"
 	"runtime"
-	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 )
@@ -109,46 +105,11 @@ type C struct {
 // -----------------------------------------------------------------------
 // Handling of temporary files and directories.
 
-type tempDir struct {
-	sync.Mutex
-	path    string
-	counter int
-}
-
-func (td *tempDir) newPath() string {
-	td.Lock()
-	defer td.Unlock()
-	if td.path == "" {
-		path, err := ioutil.TempDir("", "check-")
-		if err != nil {
-			panic("Couldn't create temporary directory: " + err.Error())
-		}
-		td.path = path
-	}
-	result := filepath.Join(td.path, strconv.Itoa(td.counter))
-	td.counter++
-	return result
-}
-
-func (td *tempDir) removeAll() {
-	td.Lock()
-	defer td.Unlock()
-	if td.path != "" {
-		err := os.RemoveAll(td.path)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "WARNING: Error cleaning up temporaries: "+err.Error())
-		}
-	}
-}
-
 // Create a new temporary directory which is automatically removed after
 // the suite finishes running.
 func (c *C) MkDir() string {
-	path := c.tempDir.newPath()
-	if err := os.Mkdir(path, 0700); err != nil {
-		panic(fmt.Sprintf("Couldn't create temporary directory %s: %s", path, err.Error()))
-	}
-	return path
+	c.Helper()
+	return c.TempDir()
 }
 
 // -----------------------------------------------------------------------
@@ -223,17 +184,8 @@ type suiteRunner struct {
 	keepDir                   bool
 }
 
-type RunConf struct {
-	KeepWorkDir bool
-}
-
 // Create a new suiteRunner able to run all methods in the given suite.
-func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
-	var conf RunConf
-	if runConf != nil {
-		conf = *runConf
-	}
-
+func newSuiteRunner(suite interface{}) *suiteRunner {
 	suiteType := reflect.TypeOf(suite)
 	suiteNumMethods := suiteType.NumMethod()
 	suiteValue := reflect.ValueOf(suite)
@@ -241,7 +193,6 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 	runner := &suiteRunner{
 		suite:   suite,
 		tempDir: &tempDir{},
-		keepDir: conf.KeepWorkDir,
 		tests:   make([]*methodType, 0, suiteNumMethods),
 	}
 
@@ -269,11 +220,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 // Run all methods in the given suite.
 func (runner *suiteRunner) run(t *testing.T) {
 	t.Cleanup(func() {
-		if runner.keepDir {
-			t.Log("WORK =", runner.tempDir.path)
-		} else {
-			runner.tempDir.removeAll()
-		}
+		runner.tempDir.removeAll()
 	})
 
 	c := C{T: t, startTime: time.Now()}
