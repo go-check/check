@@ -7,6 +7,7 @@ import (
 	"runtime"
 	"strings"
 	"strconv"
+	"testing"
 	"time"
 )
 
@@ -44,7 +45,7 @@ func (c *C) Output(calldepth int, s string) error {
 // for an example).
 func (c *C) Check(obtained interface{}, checker Checker, args ...interface{}) bool {
 	c.Helper()
-	return c.internalCheck("Check", obtained, checker, args...)
+	return internalCheck(c, "Check", obtained, checker, args...)
 }
 
 // Assert ensures that the first value matches the expected value according
@@ -58,12 +59,24 @@ func (c *C) Check(obtained interface{}, checker Checker, args ...interface{}) bo
 // for an example).
 func (c *C) Assert(obtained interface{}, checker Checker, args ...interface{}) {
 	c.Helper()
-	if !c.internalCheck("Assert", obtained, checker, args...) {
+	if !internalCheck(c, "Assert", obtained, checker, args...) {
 		c.FailNow()
 	}
 }
 
-func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
+func Check(c testing.TB, obtained interface{}, checker Checker, args ...interface{}) bool {
+	c.Helper()
+	return internalCheck(c, "Check", obtained, checker, args...)
+}
+
+func Assert(c testing.TB, obtained interface{}, checker Checker, args ...interface{}) {
+	c.Helper()
+	if !internalCheck(c, "Assert", obtained, checker, args...) {
+		c.FailNow()
+	}
+}
+
+func internalCheck(c testing.TB, funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
 	c.Helper()
 	if checker == nil {
 		lines := []string{
