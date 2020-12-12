@@ -31,6 +31,8 @@ func TestHelperSuite(t *testing.T) {
 			suite.panicOn = *helperPanicFlag
 		}
 		check.Run(t, suite, nil)
+	case "integrationTestHelper":
+		check.Run(t, &integrationTestHelper{}, nil)
 	default:
 		t.Skip()
 	}
