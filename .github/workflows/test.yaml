@@ -1,0 +1,44 @@
+name: test
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os:
+          - ubuntu-latest
+          - macos-latest
+          - windows-latest
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '^1.13.0' # Latest 1.x release >= 1.13
+      - uses: actions/checkout@v2
+      - name: Build
+        run: go build .
+      - name: Test
+        run: go test -v ./...
+
+  gopath:
+    runs-on: ubuntu-latest
+    env:
+      GOPATH: ${{ github.workspace }}
+      package: gopkg.in/check.v1
+    steps:
+      - uses: actions/setup-go@v2
+        with:
+          go-version: '1.9.x'
+      - uses: actions/checkout@v2
+        with:
+          path: src/${{ env.package }}
+      - name: Dependencies
+        run: go get -t -d -v ${{ env.package }}/...
+      - name: Build
+        run: go build ${{ env.package }}
+      - name: Test
+        run: go test -v ${{ env.package }}/...

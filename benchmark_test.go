@@ -70,7 +70,7 @@ func (s *BenchmarkS) TestBenchmarkBytes(c *C) {
 	}
 	Run(&helper, &runConf)
 
-	expected := "PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Benchmark2\t\\s+[0-9]+\t\\s+[0-9]+ ns/op\t\\s+ *[1-9]\\.[0-9]{2} MB/s\n"
+	expected := "PASS: check_test\\.go:[0-9]+: FixtureHelper\\.Benchmark2\t\\s+[0-9]+\t\\s+[0-9]+ ns/op\t\\s+ *[0-9]\\.[0-9]{2} MB/s\n"
 	c.Assert(output.value, Matches, expected)
 }
 
