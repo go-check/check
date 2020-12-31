@@ -82,8 +82,8 @@ func TestingT(testingT *testing.T) {
 
 // RunAll runs all test suites registered with the Suite function, using the
 // provided run configuration.
-func RunAll(runConf *RunConf) *Result {
-	result := Result{}
+func RunAll(runConf *RunConf) *CheckTestResult {
+	result := CheckTestResult{}
 	for _, suite := range allSuites {
 		result.Add(Run(suite, runConf))
 	}
@@ -91,7 +91,7 @@ func RunAll(runConf *RunConf) *Result {
 }
 
 // Run runs the provided test suite using the provided run configuration.
-func Run(suite interface{}, runConf *RunConf) *Result {
+func Run(suite interface{}, runConf *RunConf) *CheckTestResult {
 	runner := newSuiteRunner(suite, runConf)
 	return runner.run()
 }
@@ -118,9 +118,9 @@ func List(suite interface{}, runConf *RunConf) []string {
 }
 
 // -----------------------------------------------------------------------
-// Result methods.
+// CheckTestResult methods.
 
-func (r *Result) Add(other *Result) {
+func (r *CheckTestResult) Add(other *CheckTestResult) {
 	r.Succeeded += other.Succeeded
 	r.Skipped += other.Skipped
 	r.Failed += other.Failed
@@ -135,13 +135,13 @@ func (r *Result) Add(other *Result) {
 	}
 }
 
-func (r *Result) Passed() bool {
+func (r *CheckTestResult) Passed() bool {
 	return (r.Failed == 0 && r.Panicked == 0 &&
 		r.FixturePanicked == 0 && r.Missed == 0 &&
 		r.RunError == nil)
 }
 
-func (r *Result) String() string {
+func (r *CheckTestResult) String() string {
 	if r.RunError != nil {
 		return "ERROR: " + r.RunError.Error()
 	}

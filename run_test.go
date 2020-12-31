@@ -100,7 +100,7 @@ func (s *RunS) TestPanicOnSetUpSuite(c *C) {
 // Check result aggregation.
 
 func (s *RunS) TestAdd(c *C) {
-	result := &Result{
+	result := &CheckTestResult{
 		Succeeded:        1,
 		Skipped:          2,
 		Failed:           3,
@@ -109,7 +109,7 @@ func (s *RunS) TestAdd(c *C) {
 		Missed:           6,
 		ExpectedFailures: 7,
 	}
-	result.Add(&Result{
+	result.Add(&CheckTestResult{
 		Succeeded:        10,
 		Skipped:          20,
 		Failed:           30,
@@ -132,56 +132,56 @@ func (s *RunS) TestAdd(c *C) {
 // Check the Passed() method.
 
 func (s *RunS) TestPassed(c *C) {
-	c.Assert((&Result{}).Passed(), Equals, true)
-	c.Assert((&Result{Succeeded: 1}).Passed(), Equals, true)
-	c.Assert((&Result{Skipped: 1}).Passed(), Equals, true)
-	c.Assert((&Result{Failed: 1}).Passed(), Equals, false)
-	c.Assert((&Result{Panicked: 1}).Passed(), Equals, false)
-	c.Assert((&Result{FixturePanicked: 1}).Passed(), Equals, false)
-	c.Assert((&Result{Missed: 1}).Passed(), Equals, false)
-	c.Assert((&Result{RunError: errors.New("!")}).Passed(), Equals, false)
+	c.Assert((&CheckTestResult{}).Passed(), Equals, true)
+	c.Assert((&CheckTestResult{Succeeded: 1}).Passed(), Equals, true)
+	c.Assert((&CheckTestResult{Skipped: 1}).Passed(), Equals, true)
+	c.Assert((&CheckTestResult{Failed: 1}).Passed(), Equals, false)
+	c.Assert((&CheckTestResult{Panicked: 1}).Passed(), Equals, false)
+	c.Assert((&CheckTestResult{FixturePanicked: 1}).Passed(), Equals, false)
+	c.Assert((&CheckTestResult{Missed: 1}).Passed(), Equals, false)
+	c.Assert((&CheckTestResult{RunError: errors.New("!")}).Passed(), Equals, false)
 }
 
 // -----------------------------------------------------------------------
 // Check that result printing is working correctly.
 
 func (s *RunS) TestPrintSuccess(c *C) {
-	result := &Result{Succeeded: 5}
+	result := &CheckTestResult{Succeeded: 5}
 	c.Check(result.String(), Equals, "OK: 5 passed")
 }
 
 func (s *RunS) TestPrintFailure(c *C) {
-	result := &Result{Failed: 5}
+	result := &CheckTestResult{Failed: 5}
 	c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FAILED")
 }
 
 func (s *RunS) TestPrintSkipped(c *C) {
-	result := &Result{Skipped: 5}
+	result := &CheckTestResult{Skipped: 5}
 	c.Check(result.String(), Equals, "OK: 0 passed, 5 skipped")
 }
 
 func (s *RunS) TestPrintExpectedFailures(c *C) {
-	result := &Result{ExpectedFailures: 5}
+	result := &CheckTestResult{ExpectedFailures: 5}
 	c.Check(result.String(), Equals, "OK: 0 passed, 5 expected failures")
 }
 
 func (s *RunS) TestPrintPanicked(c *C) {
-	result := &Result{Panicked: 5}
+	result := &CheckTestResult{Panicked: 5}
 	c.Check(result.String(), Equals, "OOPS: 0 passed, 5 PANICKED")
 }
 
 func (s *RunS) TestPrintFixturePanicked(c *C) {
-	result := &Result{FixturePanicked: 5}
+	result := &CheckTestResult{FixturePanicked: 5}
 	c.Check(result.String(), Equals, "OOPS: 0 passed, 5 FIXTURE-PANICKED")
 }
 
 func (s *RunS) TestPrintMissed(c *C) {
-	result := &Result{Missed: 5}
+	result := &CheckTestResult{Missed: 5}
 	c.Check(result.String(), Equals, "OOPS: 0 passed, 5 MISSED")
 }
 
 func (s *RunS) TestPrintAll(c *C) {
-	result := &Result{Succeeded: 1, Skipped: 2, ExpectedFailures: 3,
+	result := &CheckTestResult{Succeeded: 1, Skipped: 2, ExpectedFailures: 3,
 		Panicked: 4, FixturePanicked: 5, Missed: 6}
 	c.Check(result.String(), Equals,
 		"OOPS: 1 passed, 2 skipped, 3 expected failures, 4 PANICKED, "+
@@ -189,7 +189,7 @@ func (s *RunS) TestPrintAll(c *C) {
 }
 
 func (s *RunS) TestPrintRunError(c *C) {
-	result := &Result{Succeeded: 1, Failed: 1,
+	result := &CheckTestResult{Succeeded: 1, Failed: 1,
 		RunError: errors.New("Kaboom!")}
 	c.Check(result.String(), Equals, "ERROR: Kaboom!")
 }

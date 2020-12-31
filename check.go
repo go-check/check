@@ -418,9 +418,9 @@ func niceFuncName(pc uintptr) string {
 }
 
 // -----------------------------------------------------------------------
-// Result tracker to aggregate call results.
+// CheckTestResult tracker to aggregate call results.
 
-type Result struct {
+type CheckTestResult struct {
 	Succeeded        int
 	Failed           int
 	Skipped          int
@@ -433,7 +433,7 @@ type Result struct {
 }
 
 type resultTracker struct {
-	result          Result
+	result          CheckTestResult
 	_lastWasProblem bool
 	_waiting        int
 	_missed         int
@@ -619,7 +619,7 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 }
 
 // Run all methods in the given suite.
-func (runner *suiteRunner) run() *Result {
+func (runner *suiteRunner) run() *CheckTestResult {
 	if runner.tracker.result.RunError == nil && len(runner.tests) > 0 {
 		runner.tracker.start()
 		if runner.checkFixtureArgs() {
