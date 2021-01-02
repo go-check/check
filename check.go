@@ -103,16 +103,6 @@ type C struct {
 }
 
 // -----------------------------------------------------------------------
-// Handling of temporary files and directories.
-
-// Create a new temporary directory which is automatically removed after
-// the suite finishes running.
-func (c *C) MkDir() string {
-	c.Helper()
-	return c.TempDir()
-}
-
-// -----------------------------------------------------------------------
 // Some simple formatting helpers.
 
 var initWD, initWDErr = os.Getwd()
