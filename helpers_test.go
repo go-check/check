@@ -1,3 +1,4 @@
+//+build nowhere
 // These tests verify the inner workings of the helper methods associated
 // with check.T.
 

@@ -1,3 +1,5 @@
+//+build nowhere
+
 // These initial tests are for bootstrapping.  They verify that we can
 // basically use the testing infrastructure itself to check if the test
 // system is working.

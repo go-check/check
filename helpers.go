@@ -1,100 +1,23 @@
 package check
 
 import (
+	"bytes"
 	"fmt"
+	"reflect"
+	"runtime"
 	"strings"
+	"strconv"
+	"testing"
 	"time"
 )
 
 // TestName returns the current test name in the form "SuiteName.TestName"
 func (c *C) TestName() string {
-	return c.testName
-}
-
-// -----------------------------------------------------------------------
-// Basic succeeding/failing logic.
-
-// Failed returns whether the currently running test has already failed.
-func (c *C) Failed() bool {
-	return c.status() == failedSt
-}
-
-// Fail marks the currently running test as failed.
-//
-// Something ought to have been previously logged so the developer can tell
-// what went wrong. The higher level helper functions will fail the test
-// and do the logging properly.
-func (c *C) Fail() {
-	c.setStatus(failedSt)
-}
-
-// FailNow marks the currently running test as failed and stops running it.
-// Something ought to have been previously logged so the developer can tell
-// what went wrong. The higher level helper functions will fail the test
-// and do the logging properly.
-func (c *C) FailNow() {
-	c.Fail()
-	c.stopNow()
-}
-
-// Succeed marks the currently running test as succeeded, undoing any
-// previous failures.
-func (c *C) Succeed() {
-	c.setStatus(succeededSt)
-}
-
-// SucceedNow marks the currently running test as succeeded, undoing any
-// previous failures, and stops running the test.
-func (c *C) SucceedNow() {
-	c.Succeed()
-	c.stopNow()
-}
-
-// ExpectFailure informs that the running test is knowingly broken for
-// the provided reason. If the test does not fail, an error will be reported
-// to raise attention to this fact. This method is useful to temporarily
-// disable tests which cover well known problems until a better time to
-// fix the problem is found, without forgetting about the fact that a
-// failure still exists.
-func (c *C) ExpectFailure(reason string) {
-	if reason == "" {
-		panic("Missing reason why the test is expected to fail")
-	}
-	c.mustFail = true
-	c.reason = reason
-}
-
-// Skip skips the running test for the provided reason. If run from within
-// SetUpTest, the individual test being set up will be skipped, and if run
-// from within SetUpSuite, the whole suite is skipped.
-func (c *C) Skip(reason string) {
-	if reason == "" {
-		panic("Missing reason why the test is being skipped")
-	}
-	c.reason = reason
-	c.setStatus(skippedSt)
-	c.stopNow()
+	return c.Name()
 }
 
 // -----------------------------------------------------------------------
 // Basic logging.
-
-// GetTestLog returns the current test error output.
-func (c *C) GetTestLog() string {
-	return c.logb.String()
-}
-
-// Log logs some information into the test error output.
-// The provided arguments are assembled together into a string with fmt.Sprint.
-func (c *C) Log(args ...interface{}) {
-	c.log(args...)
-}
-
-// Log logs some information into the test error output.
-// The provided arguments are assembled together into a string with fmt.Sprintf.
-func (c *C) Logf(format string, args ...interface{}) {
-	c.logf(format, args...)
-}
 
 // Output enables *C to be used as a logger in functions that require only
 // the minimum interface of *log.Logger.
@@ -106,44 +29,6 @@ func (c *C) Output(calldepth int, s string) error {
 
 	c.Logf("[LOG] %d:%02d.%03d %s", min, sec%60, msec%1000, s)
 	return nil
-}
-
-// Error logs an error into the test error output and marks the test as failed.
-// The provided arguments are assembled together into a string with fmt.Sprint.
-func (c *C) Error(args ...interface{}) {
-	c.logCaller(1)
-	c.logString(fmt.Sprint("Error: ", fmt.Sprint(args...)))
-	c.logNewLine()
-	c.Fail()
-}
-
-// Errorf logs an error into the test error output and marks the test as failed.
-// The provided arguments are assembled together into a string with fmt.Sprintf.
-func (c *C) Errorf(format string, args ...interface{}) {
-	c.logCaller(1)
-	c.logString(fmt.Sprintf("Error: "+format, args...))
-	c.logNewLine()
-	c.Fail()
-}
-
-// Fatal logs an error into the test error output, marks the test as failed, and
-// stops the test execution. The provided arguments are assembled together into
-// a string with fmt.Sprint.
-func (c *C) Fatal(args ...interface{}) {
-	c.logCaller(1)
-	c.logString(fmt.Sprint("Error: ", fmt.Sprint(args...)))
-	c.logNewLine()
-	c.FailNow()
-}
-
-// Fatlaf logs an error into the test error output, marks the test as failed, and
-// stops the test execution. The provided arguments are assembled together into
-// a string with fmt.Sprintf.
-func (c *C) Fatalf(format string, args ...interface{}) {
-	c.logCaller(1)
-	c.logString(fmt.Sprint("Error: ", fmt.Sprintf(format, args...)))
-	c.logNewLine()
-	c.FailNow()
 }
 
 // -----------------------------------------------------------------------
@@ -159,7 +44,8 @@ func (c *C) Fatalf(format string, args ...interface{}) {
 // additional information instead of being passed to the checker (see Commentf
 // for an example).
 func (c *C) Check(obtained interface{}, checker Checker, args ...interface{}) bool {
-	return c.internalCheck("Check", obtained, checker, args...)
+	c.Helper()
+	return internalCheck(c, "Check", obtained, checker, args...)
 }
 
 // Assert ensures that the first value matches the expected value according
@@ -172,18 +58,34 @@ func (c *C) Check(obtained interface{}, checker Checker, args ...interface{}) bo
 // additional information instead of being passed to the checker (see Commentf
 // for an example).
 func (c *C) Assert(obtained interface{}, checker Checker, args ...interface{}) {
-	if !c.internalCheck("Assert", obtained, checker, args...) {
-		c.stopNow()
+	c.Helper()
+	if !internalCheck(c, "Assert", obtained, checker, args...) {
+		c.FailNow()
 	}
 }
 
-func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
+func Check(c testing.TB, obtained interface{}, checker Checker, args ...interface{}) bool {
+	c.Helper()
+	return internalCheck(c, "Check", obtained, checker, args...)
+}
+
+func Assert(c testing.TB, obtained interface{}, checker Checker, args ...interface{}) {
+	c.Helper()
+	if !internalCheck(c, "Assert", obtained, checker, args...) {
+		c.FailNow()
+	}
+}
+
+func internalCheck(c testing.TB, funcName string, obtained interface{}, checker Checker, args ...interface{}) bool {
+	c.Helper()
 	if checker == nil {
-		c.logCaller(2)
-		c.logString(fmt.Sprintf("%s(obtained, nil!?, ...):", funcName))
-		c.logString("Oops.. you've provided a nil checker!")
-		c.logNewLine()
-		c.Fail()
+		lines := []string{
+			"",
+			formatCaller(2),
+			fmt.Sprintf("... %s(obtained, nil!?, ...):", funcName),
+			"... Oops.. you've provided a nil checker!",
+		}
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 
@@ -201,11 +103,13 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 
 	if len(params) != len(info.Params) {
 		names := append([]string{info.Params[0], info.Name}, info.Params[1:]...)
-		c.logCaller(2)
-		c.logString(fmt.Sprintf("%s(%s):", funcName, strings.Join(names, ", ")))
-		c.logString(fmt.Sprintf("Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1))
-		c.logNewLine()
-		c.Fail()
+		lines := []string{
+			"",
+			formatCaller(2),
+			fmt.Sprintf("... %s(%s):", funcName, strings.Join(names, ", ")),
+			fmt.Sprintf("... Wrong number of parameters for %s: want %d, got %d", info.Name, len(names), len(params)+1),
+		}
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 
@@ -215,19 +119,107 @@ func (c *C) internalCheck(funcName string, obtained interface{}, checker Checker
 	// Do the actual check.
 	result, error := checker.Check(params, names)
 	if !result || error != "" {
-		c.logCaller(2)
+		lines := []string{
+			"",
+			formatCaller(2),
+		}
 		for i := 0; i != len(params); i++ {
-			c.logValue(names[i], params[i])
+			lines = append(lines, formatValue(names[i], params[i]))
 		}
 		if comment != nil {
-			c.logString(comment.CheckCommentString())
+			lines = append(lines, "... " + comment.CheckCommentString())
 		}
 		if error != "" {
-			c.logString(error)
+			lines = append(lines, "... " + error)
 		}
-		c.logNewLine()
-		c.Fail()
+		c.Error(strings.Join(lines, "\n"))
 		return false
 	}
 	return true
+}
+
+func formatCaller(skip int) string {
+	// This is a bit heavier than it ought to be.
+	skip++ // Our own frame.
+	_, path, line, ok := runtime.Caller(skip)
+	if !ok {
+		return "    ..."
+	}
+
+	code, err := printLine(path, line)
+	if code == "" {
+		code = "..." // XXX Open the file and take the raw line.
+		if err != nil {
+			code += err.Error()
+		}
+	}
+	return indent(code, "    ")
+}
+
+func formatValue(label string, value interface{}) string {
+	if label == "" {
+		if hasStringOrError(value) {
+			return fmt.Sprintf("... %#v (%q)", value, value)
+		} else {
+			return fmt.Sprintf("... %#v", value)
+		}
+	} else if value == nil {
+		return fmt.Sprintf("... %s = nil", label)
+	} else {
+		if hasStringOrError(value) {
+			fv := fmt.Sprintf("%#v", value)
+			qv := fmt.Sprintf("%q", value)
+			if fv != qv {
+				return fmt.Sprintf("... %s %s = %s (%s)", label, reflect.TypeOf(value), fv, qv)
+			}
+		}
+		if s, ok := value.(string); ok && isMultiLine(s) {
+			return fmt.Sprintf("... %s %s = \"\" +\n%s", label, reflect.TypeOf(value), formatMultiLine(s, true))
+		} else {
+			return fmt.Sprintf("... %s %s = %#v", label, reflect.TypeOf(value), value)
+		}
+	}
+}
+
+func hasStringOrError(x interface{}) (ok bool) {
+	_, ok = x.(fmt.Stringer)
+	if ok {
+		return
+	}
+	_, ok = x.(error)
+	return
+}
+
+func formatMultiLine(s string, quote bool) []byte {
+	b := make([]byte, 0, len(s)*2)
+	i := 0
+	n := len(s)
+	for i < n {
+		j := i + 1
+		for j < n && s[j-1] != '\n' {
+			j++
+		}
+		b = append(b, "...     "...)
+		if quote {
+			b = strconv.AppendQuote(b, s[i:j])
+		} else {
+			b = append(b, s[i:j]...)
+			b = bytes.TrimSpace(b)
+		}
+		if quote && j < n {
+			b = append(b, " +"...)
+		}
+		b = append(b, '\n')
+		i = j
+	}
+	return b[:len(b)-1]
+}
+
+func isMultiLine(s string) bool {
+	for i := 0; i+1 < len(s); i++ {
+		if s[i] == '\n' {
+			return true
+		}
+	}
+	return false
 }

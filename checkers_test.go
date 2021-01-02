@@ -13,6 +13,7 @@ type CheckersS struct{}
 var _ = check.Suite(&CheckersS{})
 
 func testInfo(c *check.C, checker check.Checker, name string, paramNames []string) {
+	c.Helper()
 	info := checker.Info()
 	if info.Name != name {
 		c.Fatalf("Got name %s, expected %s", info.Name, name)
@@ -23,6 +24,7 @@ func testInfo(c *check.C, checker check.Checker, name string, paramNames []strin
 }
 
 func testCheck(c *check.C, checker check.Checker, result bool, error string, params ...interface{}) ([]interface{}, []string) {
+	c.Helper()
 	info := checker.Info()
 	if len(params) != len(info.Params) {
 		c.Fatalf("unexpected param count in test; expected %d got %d", len(info.Params), len(params))
@@ -34,6 +36,10 @@ func testCheck(c *check.C, checker check.Checker, result bool, error string, par
 			info.Name, params, result_, error_, result, error)
 	}
 	return params, names
+}
+
+func (s *CheckersS) TestCountSuite(c *check.C) {
+	suitesRun += 1
 }
 
 func (s *CheckersS) TestComment(c *check.C) {
@@ -106,15 +112,13 @@ func (s *CheckersS) TestEquals(c *check.C) {
 	// Struct values
 	testCheck(c, check.Equals, true, "", simpleStruct{1}, simpleStruct{1})
 	testCheck(c, check.Equals, false, `Difference:
-...     i: 1 != 2
-`, simpleStruct{1}, simpleStruct{2})
+...     i: 1 != 2`, simpleStruct{1}, simpleStruct{2})
 
 	// Struct pointers, no difference in values, just pointer
 	testCheck(c, check.Equals, false, "", &simpleStruct{1}, &simpleStruct{1})
 	// Struct pointers, different pointers and different values
 	testCheck(c, check.Equals, false, `Difference:
-...     i: 1 != 2
-`, &simpleStruct{1}, &simpleStruct{2})
+...     i: 1 != 2`, &simpleStruct{1}, &simpleStruct{2})
 }
 
 func (s *CheckersS) TestDeepEquals(c *check.C) {
@@ -133,22 +137,19 @@ func (s *CheckersS) TestDeepEquals(c *check.C) {
 	// Slices
 	testCheck(c, check.DeepEquals, true, "", []byte{1, 2}, []byte{1, 2})
 	testCheck(c, check.DeepEquals, false, `Difference:
-...     [1]: 2 != 3
-`, []byte{1, 2}, []byte{1, 3})
+...     [1]: 2 != 3`, []byte{1, 2}, []byte{1, 3})
 
 	// Struct values
 	testCheck(c, check.DeepEquals, true, "", simpleStruct{1}, simpleStruct{1})
 	testCheck(c, check.DeepEquals, false, `Difference:
-...     i: 1 != 2
-`, simpleStruct{1}, simpleStruct{2})
+...     i: 1 != 2`, simpleStruct{1}, simpleStruct{2})
 
 	// Struct pointers
 	testCheck(c, check.DeepEquals, true, "", &simpleStruct{1}, &simpleStruct{1})
 	s1 := &simpleStruct{1}
 	s2 := &simpleStruct{2}
 	testCheck(c, check.DeepEquals, false, `Difference:
-...     i: 1 != 2
-`, s1, s2)
+...     i: 1 != 2`, s1, s2)
 }
 
 func (s *CheckersS) TestHasLen(c *check.C) {

@@ -1,3 +1,4 @@
+//+build nowhere
 // These tests check that the foundations of gocheck are working properly.
 // They already assume that fundamental failing is working already, though,
 // since this was tested in bootstrap_test.go. Even then, some care may
