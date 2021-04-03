@@ -82,7 +82,7 @@ type C struct {
 	method    *methodType
 	kind      funcKind
 	testName  string
-	_status   funcStatus
+	_status   *funcStatus
 	logb      *logger
 	logw      io.Writer
 	done      chan *C
@@ -95,11 +95,11 @@ type C struct {
 }
 
 func (c *C) status() funcStatus {
-	return funcStatus(atomic.LoadUint32((*uint32)(&c._status)))
+	return funcStatus(atomic.LoadUint32((*uint32)(c._status)))
 }
 
 func (c *C) setStatus(s funcStatus) {
-	atomic.StoreUint32((*uint32)(&c._status), uint32(s))
+	atomic.StoreUint32((*uint32)(c._status), uint32(s))
 }
 
 func (c *C) stopNow() {
@@ -661,6 +661,7 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		timer:     timer{benchTime: runner.benchTime},
 		startTime: time.Now(),
 		benchMem:  runner.benchMem,
+		_status:   new(funcStatus),
 	}
 	runner.tracker.expectCall(c)
 	go (func() {
@@ -760,7 +761,11 @@ func (runner *suiteRunner) forkTest(method *methodType) *C {
 		defer c.StopTimer()
 		benchN := 1
 		for {
-			runner.runFixtureWithPanic(runner.setUpTest, testName, c.logb, &skipped)
+			cSetup := runner.runFixtureWithPanic(runner.setUpTest, testName, c.logb, &skipped)
+			if cSetup != nil {
+				// Assign the _status of the setup method to the Test method so that _status value changes flow through
+				c._status = cSetup._status
+			}
 			mt := c.method.Type()
 			if mt.NumIn() != 1 || mt.In(0) != reflect.TypeOf(c) {
 				// Rather than a plain panic, provide a more helpful message when
