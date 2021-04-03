@@ -484,8 +484,13 @@ func (s *FixtureS) TestFixtureStatusFlowsFromSetupTestToTest(c *C) {
 
 	output := String{}
 	for _, t := range scenarios {
-		Run(&t, &RunConf{Output: &output})
+		result := Run(&t, &RunConf{Output: &output})
 		c.Assert(t.cSetup.Failed(), Equals, t.cTest.Failed())
+		expectedFailed := 0
+		if t.failTest {
+			expectedFailed = 1
+		}
+		c.Assert(result.Failed, Equals, expectedFailed)
 	}
 }
 

@@ -477,7 +477,9 @@ func (tracker *resultTracker) _loopRoutine() {
 						}
 					}
 				case failedSt:
-					tracker.result.Failed++
+					if c.kind != succeededSt {
+						tracker.result.Failed++
+					}
 				case panickedSt:
 					if c.kind == fixtureKd {
 						tracker.result.FixturePanicked++
