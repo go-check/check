@@ -470,7 +470,9 @@ func (s *FixtureStatusHelper) SetUpTest(c *C) {
 
 func (s *FixtureStatusHelper) Test(c *C) {
 	// Setting Fail status here should be reflected in the C captured in SetupTest
-	s.cSetup.Fail()
+	if s.failTest {
+		s.cSetup.Fail()
+	}
 	s.cTest = c
 }
 
