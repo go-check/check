@@ -456,6 +456,45 @@ func (s *FixtureS) TestFixtureLogging(c *C) {
 }
 
 // -----------------------------------------------------------------------
+// Verify that test failure status within SetUpTest() persists within the test itself.
+
+type FixtureStatusHelper struct {
+	cSetup   *C
+	cTest    *C
+	failTest bool
+}
+
+func (s *FixtureStatusHelper) SetUpTest(c *C) {
+	s.cSetup = c
+}
+
+func (s *FixtureStatusHelper) Test(c *C) {
+	// Setting Fail status here should be reflected in the C captured in SetupTest
+	if s.failTest {
+		s.cSetup.Fail()
+	}
+	s.cTest = c
+}
+
+func (s *FixtureS) TestFixtureStatusFlowsFromSetupTestToTest(c *C) {
+	var scenarios []FixtureStatusHelper = []FixtureStatusHelper{
+		{failTest: true},
+		{failTest: false},
+	}
+
+	output := String{}
+	for _, t := range scenarios {
+		result := Run(&t, &RunConf{Output: &output})
+		c.Assert(t.cSetup.Failed(), Equals, t.cTest.Failed())
+		expectedFailed := 0
+		if t.failTest {
+			expectedFailed = 1
+		}
+		c.Assert(result.Failed, Equals, expectedFailed)
+	}
+}
+
+// -----------------------------------------------------------------------
 // Skip() within fixture methods.
 
 func (s *FixtureS) TestSkipSuite(c *C) {
