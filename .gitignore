@@ -3,6 +3,8 @@ _*
 *.[568]
 [568].out
 
+go.sum
+
 .idea/
 vendor/
 check_test.o

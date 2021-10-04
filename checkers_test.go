@@ -2,6 +2,7 @@ package check_test
 
 import (
 	"errors"
+	"math"
 	"reflect"
 	"runtime"
 
@@ -30,6 +31,20 @@ func testCheck(c *check.C, checker check.Checker, result bool, error string, par
 	names := append([]string{}, info.Params...)
 	result_, error_ := checker.Check(params, names)
 	if result_ != result || error_ != error {
+		c.Fatalf("%s.Check(%#v) returned (%#v, %#v) rather than (%#v, %#v)",
+			info.Name, params, result_, error_, result, error)
+	}
+	return params, names
+}
+
+func testCheckNoLine(c *check.C, checker check.Checker, result bool, error string, params ...interface{}) ([]interface{}, []string) {
+	info := checker.Info()
+	if len(params) != len(info.Params) {
+		c.Fatalf("unexpected param count in test; expected %d got %d", len(info.Params), len(params))
+	}
+	names := append([]string{}, info.Params...)
+	result_, error_ := checker.Check(params, names)
+	if result_ != result {
 		c.Fatalf("%s.Check(%#v) returned (%#v, %#v) rather than (%#v, %#v)",
 			info.Name, params, result_, error_, result, error)
 	}
@@ -286,4 +301,117 @@ func (s *CheckersS) TestImplements(c *check.C) {
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, errors.New(""))
 	testCheck(c, check.Implements, false, "ifaceptr should be a pointer to an interface variable", 0, interface{}(nil))
 	testCheck(c, check.Implements, false, "", interface{}(nil), &e)
+}
+
+func (s *CheckersS) TestMoreThan(c *check.C) {
+	testCheck(c, check.MoreThan, true, "", 43, 42)
+	testCheck(c, check.MoreThan, true, "", float32(43.11), float32(43.1))
+	testCheck(c, check.MoreThan, true, "", 43.1201, 43.12)
+	testCheck(c, check.MoreThan, true, "", uint64(4554), uint64(4455))
+	testCheck(c, check.MoreThan, true, "", uint64(333444), uint64(111244))
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type int and float64", 43342, math.MaxFloat32+1000)
+
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type float32 and uint64", float32(43.12), uint64(43))
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32+1000, float32(math.MaxFloat32-1000))
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32, float32(math.MaxFloat32+1))
+	testCheckNoLine(c, check.MoreThan, false, "Difference: 3.4028234663852886e+38 >= 3.4028234663852886e+38", math.MaxFloat32, math.MaxFloat32)
+	testCheckNoLine(c, check.MoreThan, false, "Difference: -3.4028234663852886e+38 >= -3.4028234663852886e+38", -1*math.MaxFloat32, -1*math.MaxFloat32)
+
+	// strings
+	testCheck(c, check.MoreThan, true, "", "43", "42")
+	testCheck(c, check.MoreThan, false, "First (string) parameter equals (string) second, expect more", []byte("42"), "42")
+	testCheck(c, check.MoreThan, true, "", "423", []byte("421"))
+	testCheck(c, check.MoreThan, false, check.NoLessThanStringError, []byte("42"), "421")
+
+	testCheck(c, check.MoreThan, false, check.NoLessThanStringError, "Abc", []byte("abc"))
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type int and string", 41, "42")
+	testCheck(c, check.MoreThan, false, check.NoLessThanStringError, "ABC", "abc")
+	testCheck(c, check.MoreThan, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
+}
+
+func (s *CheckersS) TestLessThan(c *check.C) {
+	testCheck(c, check.LessThan, true, "", 42, 43)
+	testCheck(c, check.LessThan, true, "", float32(43.1), float32(43.12))
+	testCheck(c, check.LessThan, true, "", 43.12, 43.1201)
+	testCheck(c, check.LessThan, true, "", uint64(4454), uint64(4555))
+	testCheck(c, check.LessThan, true, "", uint64(111244), uint64(333444))
+	testCheck(c, check.LessThan, false, "Comparing incomparable type int and float64", 43342, math.MaxFloat32+1000)
+
+	testCheck(c, check.LessThan, false, "Comparing incomparable type float32 and uint64", float32(43.12), uint64(43))
+	testCheck(c, check.LessThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32+1000, float32(math.MaxFloat32-1000))
+	testCheck(c, check.LessThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32, float32(math.MaxFloat32+1))
+	testCheckNoLine(c, check.LessThan, false, "Difference: 3.4028234663852886e+38 >= 3.4028234663852886e+38", math.MaxFloat32, math.MaxFloat32)
+	testCheckNoLine(c, check.LessThan, false, "Difference: -3.4028234663852886e+38 >= -3.4028234663852886e+38", -1*math.MaxFloat32, -1*math.MaxFloat32)
+
+	// strings
+	testCheck(c, check.LessThan, true, "", "42", "43")
+	testCheck(c, check.LessThan, false, "First (string) parameter equals (string) second, expect less", []byte("43"), "43")
+	testCheck(c, check.LessThan, true, "", []byte("42"), "43")
+	testCheck(c, check.LessThan, true, "", "421", []byte("423"))
+	testCheck(c, check.LessThan, false, check.NoLessThanStringError, []byte("421"), "42")
+
+	testCheck(c, check.LessThan, false, check.NoLessThanStringError, "abc", []byte("Abc"))
+	testCheck(c, check.LessThan, false, "Comparing incomparable type int and string", 41, "42")
+	testCheck(c, check.LessThan, false, check.NoLessThanStringError, "abc", "ABC")
+	testCheck(c, check.LessThan, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
+}
+
+func (s *CheckersS) TestMoreOrEqualThan(c *check.C) {
+	testCheck(c, check.MoreOrEqualThan, true, "", 43, 42)
+	testCheck(c, check.MoreOrEqualThan, true, "", float32(43.12), float32(43.12))
+	testCheck(c, check.MoreOrEqualThan, true, "", 43.1201, 43.12)
+	testCheck(c, check.MoreOrEqualThan, true, "", uint64(44), uint64(44))
+	testCheck(c, check.MoreOrEqualThan, true, "", uint64(333444), uint64(111244))
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type int and float64", 43342, math.MaxFloat32+1000)
+
+	//
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type float32 and uint64", float32(43.12), uint64(43))
+	testCheck(c, check.MoreOrEqualThan, false, "Difference: 42 < 43", 42, 43)
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32+1000, float32(math.MaxFloat32-1000))
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32, float32(math.MaxFloat32-1))
+	testCheck(c, check.MoreOrEqualThan, true, "", math.MaxFloat32, math.MaxFloat32)
+	testCheck(c, check.MoreOrEqualThan, true, "", -1*math.MaxFloat32, -1*math.MaxFloat32)
+
+	// strings
+	testCheck(c, check.MoreOrEqualThan, true, "", "42", "42")
+	testCheck(c, check.MoreOrEqualThan, true, "", []byte("42"), "42")
+	testCheck(c, check.MoreOrEqualThan, true, "", []byte("421"), "42")
+	testCheck(c, check.MoreOrEqualThan, false, check.NoMoreOrEqualThanStringError, []byte("42"), "421")
+	//
+	testCheck(c, check.MoreOrEqualThan, false, check.NoMoreOrEqualThanStringError, []byte("42"), "421")
+	testCheck(c, check.MoreOrEqualThan, false, check.NoMoreOrEqualThanStringError, "Abc", []byte("abc"))
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type int and string", 41, "42")
+	testCheck(c, check.MoreOrEqualThan, false, check.NoMoreOrEqualThanStringError, "ABC", "abc")
+	testCheck(c, check.MoreOrEqualThan, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
+	testCheck(c, check.MoreOrEqualThan, false, check.NoMoreOrEqualThanStringError, "42", []byte("421"))
+}
+
+func (s *CheckersS) TestLessOrEqualThan(c *check.C) {
+	testCheck(c, check.LessOrEqualThan, true, "", 42, 43)
+	testCheck(c, check.LessOrEqualThan, true, "", float32(43.12), float32(43.12))
+	testCheck(c, check.LessOrEqualThan, true, "", float64(43.12), float64(43.1201))
+	testCheck(c, check.LessOrEqualThan, true, "", uint64(44), uint64(44))
+	testCheck(c, check.LessOrEqualThan, true, "", uint64(111244), uint64(333444))
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type int and float64", 43342, math.MaxFloat32+1000)
+
+	//
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type float32 and uint64", float32(43.12), uint64(43))
+	testCheck(c, check.LessOrEqualThan, false, "Difference: 43 > 42", 43, 42)
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32+1000, float32(math.MaxFloat32-1000))
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type float64 and float32", math.MaxFloat32, float32(math.MaxFloat32-1))
+	testCheck(c, check.LessOrEqualThan, true, "", math.MaxFloat32, math.MaxFloat32)
+	testCheck(c, check.LessOrEqualThan, true, "", -1*math.MaxFloat32, -1*math.MaxFloat32)
+
+	// strings
+	testCheck(c, check.LessOrEqualThan, true, "", "42", "42")
+	testCheck(c, check.LessOrEqualThan, true, "", []byte("42"), "42")
+	testCheck(c, check.LessOrEqualThan, true, "", []byte("42"), "421")
+	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, []byte("421"), "42")
+	//
+	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, []byte("421"), "42")
+	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, "abc", []byte("Abc"))
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type int and string", 41, "42")
+	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, "abc", "ABC")
+	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
+	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, "421", []byte("42"))
 }
