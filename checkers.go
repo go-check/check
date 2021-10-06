@@ -305,17 +305,101 @@ var HasLen Checker = &hasLenChecker{
 }
 
 func (checker *hasLenChecker) Check(params []interface{}, names []string) (result bool, error string) {
-	n, ok := params[1].(int)
-	if !ok {
-		return false, "n must be an int"
+	n := 0
+	switch reflect.ValueOf(params[1]).Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		n = cf.Int(params[1])
+	default:
+		return false, fmt.Sprintf("n must be an int*, not %T", params[1])
 	}
+
 	value := reflect.ValueOf(params[0])
 	switch value.Kind() {
 	case reflect.Map, reflect.Array, reflect.Slice, reflect.Chan, reflect.String:
 	default:
-		return false, "obtained value type has no length"
+		return false, "obtained value type has no length property"
 	}
 	return value.Len() == n, ""
+}
+
+// -----------------------------------------------------------------------
+// HasLenMoreThan checker.
+
+type hasLenMoreThan struct {
+	*CheckerInfo
+}
+
+// The HasLenMoreThan checker verifies that the obtained value has
+// the length more than provided one. In many cases this is superior
+// to using Equals in conjunction with the len() function because
+// in case the check fails the value itself will be printed, instead of its length,
+// providing more details for figuring the problem.
+// Also it converts last parameter from any int* to int, that may be useful for use configured/calculated values.
+//
+// For example:
+//
+//     c.Assert(list, HasLenMoreThan, 5)
+//
+var HasLenMoreThan Checker = &hasLenMoreThan{
+	&CheckerInfo{Name: "HasLenMoreThan", Params: []string{"obtained", "n"}},
+}
+
+func (checker *hasLenMoreThan) Check(params []interface{}, names []string) (result bool, error string) {
+	n := 0
+	switch reflect.ValueOf(params[1]).Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		n = cf.Int(params[1])
+	default:
+		return false, fmt.Sprintf("n must be an int*, not %T", params[1])
+	}
+
+	value := reflect.ValueOf(params[0])
+	switch value.Kind() {
+	case reflect.Map, reflect.Array, reflect.Slice, reflect.Chan, reflect.String:
+	default:
+		return false, "obtained value type has no length property"
+	}
+	return value.Len() > n, ""
+}
+
+// -----------------------------------------------------------------------
+// HasLenLessThan checker.l
+
+type hasLenLessThan struct {
+	*CheckerInfo
+}
+
+// The hasLenLessThan checker verifies that the obtained value has
+// the length less than provided one. In many cases this is superior
+// to using Equals in conjunction with the len() function because
+// in case the check fails the value itself will be printed, instead of its length,
+// providing more details for figuring the problem.
+// Also it converts last parameter from any int* to int, that may be useful for use configured/calculated values.
+//
+// For example:
+//
+//     c.Assert(list, HasLenLessThan, 5)
+//
+var HasLenLessThan Checker = &hasLenLessThan{
+	&CheckerInfo{Name: "HasLenLessThan", Params: []string{"obtained", "n"}},
+}
+
+func (checker *hasLenLessThan) Check(params []interface{}, names []string) (result bool, error string) {
+	n := 0
+	switch reflect.ValueOf(params[1]).Kind() {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		n = cf.Int(params[1])
+	default:
+		return false, fmt.Sprintf("n must be an int*, not %T", params[1])
+	}
+
+	value := reflect.ValueOf(params[0])
+	switch value.Kind() {
+	case reflect.Map, reflect.Array, reflect.Slice, reflect.Chan, reflect.String:
+	default:
+		return false, "obtained value type has no length property"
+	}
+	return value.Len() < n, ""
 }
 
 // -----------------------------------------------------------------------

@@ -173,8 +173,38 @@ func (s *CheckersS) TestHasLen(c *check.C) {
 	testCheck(c, check.HasLen, true, "", []int{1, 2}, 2)
 	testCheck(c, check.HasLen, false, "", []int{1, 2}, 3)
 
-	testCheck(c, check.HasLen, false, "n must be an int", []int{1, 2}, "2")
-	testCheck(c, check.HasLen, false, "obtained value type has no length", nil, 2)
+	testCheck(c, check.HasLen, false, "n must be an int*, not string", []int{1, 2}, "2")
+	testCheck(c, check.HasLen, false, "obtained value type has no length property", nil, 2)
+}
+
+func (s *CheckersS) TestHasLenLessThan(c *check.C) {
+	testInfo(c, check.HasLen, "HasLen", []string{"obtained", "n"})
+
+	testCheck(c, check.HasLenLessThan, true, "", "abcd", int8(32))
+	testCheck(c, check.HasLenLessThan, true, "", "abcd", 5)
+	testCheck(c, check.HasLenLessThan, true, "", []int{1, 2, 3}, 5)
+	testCheck(c, check.HasLenLessThan, true, "", []string{"1", "2", "3", "4"}, 7)
+	testCheck(c, check.HasLenLessThan, true, "", []string{}, int64(2))
+
+	testCheck(c, check.HasLenLessThan, false, "", []int{1, 2}, 2)
+	testCheck(c, check.HasLenLessThan, false, "", []int{1, 2}, 1)
+	testCheck(c, check.HasLenLessThan, false, "n must be an int*, not string", []int{1, 2}, "2")
+	testCheck(c, check.HasLenLessThan, false, "obtained value type has no length property", nil, 2)
+}
+
+func (s *CheckersS) TestHasLenMoreThan(c *check.C) {
+	testInfo(c, check.HasLen, "HasLen", []string{"obtained", "n"})
+
+	testCheck(c, check.HasLenMoreThan, true, "", "abcd", 3)
+	testCheck(c, check.HasLenMoreThan, true, "", "abcd", 0)
+	testCheck(c, check.HasLenMoreThan, true, "", []int{1, 2, 3}, 2)
+	testCheck(c, check.HasLenMoreThan, true, "", []string{"1", "2", "3", "4"}, 2)
+	testCheck(c, check.HasLenMoreThan, true, "", []string{}, int64(-2))
+
+	testCheck(c, check.HasLenMoreThan, false, "", []int{1, 2}, 2)
+	testCheck(c, check.HasLenMoreThan, false, "", []int{1, 2}, 3)
+	testCheck(c, check.HasLenMoreThan, false, "n must be an int*, not string", []int{1, 2}, "2")
+	testCheck(c, check.HasLenMoreThan, false, "obtained value type has no length property", nil, 2)
 }
 
 func (s *CheckersS) TestErrorMatches(c *check.C) {
