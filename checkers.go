@@ -2,6 +2,7 @@ package check
 
 import (
 	"fmt"
+	"math"
 	"reflect"
 	"regexp"
 	"strings"
@@ -982,7 +983,7 @@ type equalsMore struct {
 }
 
 // The EqualsMore checker verifies that the obtained value is equal to
-// the expected value, as Equals checker, but converts types if it is possible.
+// the expected value, as Equals checker, but converts parameters if it is possible.
 //
 // For example:
 //
@@ -999,7 +1000,7 @@ type equalsMore struct {
 //
 
 var EqualsMore Checker = &equalsMore{
-	&CheckerInfo{Name: "MoreOrEqualThan", Params: []string{"get", "should be more or equal than"}},
+	&CheckerInfo{Name: "EqualsMore", Params: []string{"get", "should be equal"}},
 }
 
 func (checker *equalsMore) Check(params []interface{}, names []string) (result bool, error string) {
@@ -1052,6 +1053,86 @@ func (checker *equalsMore) Check(params []interface{}, names []string) (result b
 		result = cf.Float64(params[0]) == cf.Float64(params[1])
 	default:
 		error = formatUnsupportedType(params)
+	}
+
+	return
+}
+
+// -----------------------------------------------------------------------
+// EqualsFloat32 checker.
+
+var NoEqualsFloat32MoreThanMaxFloat32Error = "Comparing incomparable values as float32: one of parameters is more than math.MaxFloat32 / 2"
+var NoEqualsFloat32LessThanMaxFloat32Error = "Comparing incomparable values as float32: one of parameters is less than -1 * math.MaxFloat32 / 2"
+
+type equalsFloat32 struct {
+	*CheckerInfo
+}
+
+// The EqualsFloat32 checker verifies that the obtained value is equal to
+// the expected value as Equals checker, but ALWAYS converts parameters to float32 if it is possible.
+//
+// For example:
+//
+//     c.Assert(value, Equals, 42)
+//     c.Assert(42.0, Equals, int64(42)) // true
+//     c.Assert(int32(42), Equals, int64(42)) // true
+// //
+//    UnsupportedTypes:
+//    []byte, string
+//
+
+var EqualsFloat32 Checker = &equalsFloat32{
+	&CheckerInfo{Name: "EqualsFloat32", Params: []string{"get", "should be equal"}},
+}
+
+func (checker *equalsFloat32) Check(params []interface{}, names []string) (result bool, error string) {
+	defer func() {
+		if v := recover(); v != nil {
+			result = false
+			error = fmt.Sprint(v)
+		} else if !result && error == "" {
+			error = fmt.Sprintf("Difference: %v != %v", params[0], params[1])
+		}
+	}()
+
+	// unsupported types
+	error = "Comparing incomparable type as float32: " +
+		reflect.ValueOf(params[0]).Type().String() +
+		" and " +
+		reflect.ValueOf(params[1]).Type().String()
+
+	if isStringType(params[0]) || isStringType(params[1]) {
+		return
+	}
+
+	rt := reflect.ValueOf(params[0]).Kind()
+	if rt == reflect.Ptr {
+		rt = reflect.ValueOf(params[0]).Type().Kind()
+	}
+
+	rt2 := reflect.ValueOf(params[1]).Kind()
+	if rt2 == reflect.Ptr {
+		rt2 = reflect.ValueOf(params[1]).Type().Kind()
+	}
+
+	switch rt {
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+		reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+		reflect.Float32, reflect.Float64:
+		switch rt2 {
+		case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64,
+			reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64,
+			reflect.Float32, reflect.Float64:
+
+			if cf.Float32(params[0]) > math.MaxFloat32/2 || cf.Float32(params[1]) > math.MaxFloat32/2 {
+				error = NoEqualsFloat32MoreThanMaxFloat32Error
+			} else if cf.Float32(params[0]) < -1*math.MaxFloat32/2 || cf.Float32(params[1]) < -1*math.MaxFloat32/2 {
+				error = NoEqualsFloat32LessThanMaxFloat32Error
+			} else {
+				result = cf.Float32(params[0]) == cf.Float32(params[1])
+				error = ""
+			}
+		}
 	}
 
 	return
