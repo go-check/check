@@ -445,3 +445,35 @@ func (s *CheckersS) TestLessOrEqualThan(c *check.C) {
 	testCheck(c, check.LessOrEqualThan, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
 	testCheck(c, check.LessOrEqualThan, false, check.NoLessOrEqualThanStringError, "421", []byte("42"))
 }
+
+func (s *CheckersS) TestEqualsMore(c *check.C) {
+	testCheck(c, check.EqualsMore, true, "", 42, 42)
+	testCheck(c, check.EqualsMore, true, "", float32(43.12), float32(43.12))
+	testCheck(c, check.EqualsMore, true, "", float64(43.12), float64(43.12))
+	testCheck(c, check.EqualsMore, true, "", uint64(44), uint64(44))
+	testCheck(c, check.EqualsMore, true, "", uint64(111244), uint64(111244))
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type int and float64", 43342, math.MaxFloat32+1000)
+
+	//
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type float32 and uint64", float32(43), uint64(43))
+	testCheck(c, check.EqualsMore, false, "Difference: 43 != 42", 43, 42)
+	testCheck(c, check.EqualsMore, false, "Difference: 43 != 64", 43, int32(64))
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type float64 and float32", math.MaxFloat32+1000, float32(math.MaxFloat32-1000))
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type float64 and float32", math.MaxFloat32, float32(math.MaxFloat32-1))
+	testCheck(c, check.EqualsMore, true, "", math.MaxFloat32, math.MaxFloat32)
+	testCheck(c, check.EqualsMore, true, "", -1*math.MaxFloat32, -1*math.MaxFloat32)
+
+	// strings
+	testCheck(c, check.EqualsMore, true, "", "42", "42")
+	testCheck(c, check.EqualsMore, true, "", "42", []byte("42"))
+	testCheck(c, check.EqualsMore, true, "", []byte("421"), "421")
+	//
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, []byte("421"), "42")
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, "421", "42")
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, []byte("421"), "42")
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, "abc", []byte("Abc"))
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type int and string", 41, "42")
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, "abc", "ABC")
+	testCheck(c, check.EqualsMore, false, "Comparing incomparable type []uint8 and float64", []byte("42"), float64(123.543))
+	testCheck(c, check.EqualsMore, false, check.NoEqualsMoreStringError, "421", []byte("42"))
+}
