@@ -24,6 +24,8 @@ import (
 	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/iostrovok/check/formatters"
 )
 
 // -----------------------------------------------------------------------
@@ -94,6 +96,9 @@ type C struct {
 	startTime time.Time
 	testingT  *testing.T
 	timer
+
+	formatter    formatters.Formatter
+	formatPrefix string
 }
 
 func (c *C) status() funcStatus {
@@ -534,6 +539,8 @@ type suiteRunner struct {
 	benchTime                 time.Duration
 	benchMem                  bool
 	testingT                  *testing.T
+	formatter                 formatters.Formatter
+	formatPrefix              string
 }
 
 type RunConf struct {
@@ -546,6 +553,8 @@ type RunConf struct {
 	BenchmarkMem  bool
 	KeepWorkDir   bool
 	testingT      *testing.T
+	formatter     formatters.Formatter
+	formatPrefix  string
 }
 
 // Create a new suiteRunner able to run all methods in the given suite.
@@ -575,6 +584,9 @@ func newSuiteRunner(suite interface{}, runConf *RunConf) *suiteRunner {
 		keepDir:   conf.KeepWorkDir,
 		tests:     make([]*methodType, 0, suiteNumMethods),
 		testingT:  conf.testingT,
+
+		formatter:    conf.formatter,
+		formatPrefix: conf.formatPrefix,
 	}
 	if runner.benchTime == 0 {
 		runner.benchTime = 1 * time.Second
@@ -673,6 +685,9 @@ func (runner *suiteRunner) forkCall(method *methodType, kind funcKind, testName 
 		startTime: time.Now(),
 		benchMem:  runner.benchMem,
 		testingT:  runner.testingT,
+
+		formatter:    runner.formatter,
+		formatPrefix: runner.formatPrefix,
 	}
 	runner.tracker.expectCall(c)
 	go (func() {

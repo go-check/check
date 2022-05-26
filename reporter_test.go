@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	. 	"github.com/iostrovok/check"
+	. "github.com/iostrovok/check"
 )
 
 var _ = Suite(&reporterS{})
@@ -156,4 +156,17 @@ func (s *reporterS) TestWriteCallSuccessWithoutStreamFlagWithoutVerboseFlag(c *C
 
 	o.WriteCallSuccess(testLabel, c)
 	c.Assert(output.value, Equals, "")
+}
+
+func (s *reporterS) TestWriteCallProblemWithStreamFlag_333(c *C) {
+	testLabel := "test problem label"
+	stream := true
+	output := String{}
+
+	dummyVerbose := true
+	o := NewOutputWriter(&output, stream, dummyVerbose)
+
+	o.WriteCallProblem(testLabel, c)
+	expected := fmt.Sprintf("%s: %s:\\d+: %s\n\n", testLabel, s.testFile, c.TestName())
+	c.Assert(output.value, Matches, expected)
 }
