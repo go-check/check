@@ -1,10 +1,10 @@
 package check
 
 import (
-	"fmt"
 	"io"
-	"strings"
 	"sync"
+
+	"github.com/iostrovok/check/formatters"
 )
 
 // -----------------------------------------------------------------------
@@ -85,13 +85,19 @@ func (ow *outputWriter) WriteCallSuccess(label string, c *C) {
 func renderCallHeader(label string, c *C, prefix, suffix string) string {
 	pc := c.method.PC()
 
-	out := fmt.Sprintf("%s%s: %s: %s%s", prefix, label, niceFuncPath(pc),
-		niceFuncName(pc), suffix)
-
-	switch strings.ToLower(*formattedMessageFlag) {
-	case "teamcity":
-		out += teamcityOutput(label, c, niceFuncPath(pc), niceFuncName(pc), suffix) + "\n"
+	d := formatters.Data{
+		StartTime:    c.startTime,
+		Duration:     c.duration,
+		TestName:     c.testName,
+		StdOut:       c.GetTestLog(),
+		FuncPath:     niceFuncPath(pc),
+		FuncName:     niceFuncName(pc),
+		Prefix:       prefix,
+		Label:        label,
+		Suffix:       suffix,
+		Formatter:    c.formatter,
+		FormatPrefix: c.formatPrefix,
 	}
 
-	return out
+	return formatters.Render(d)
 }
