@@ -15,7 +15,7 @@ jobs:
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: '^1.13.0' # Latest 1.x release >= 1.13
       - uses: actions/checkout@v2
@@ -30,7 +30,7 @@ jobs:
       GOPATH: ${{ github.workspace }}
       package: gopkg.in/check.v1
     steps:
-      - uses: actions/setup-go@v2
+      - uses: actions/setup-go@v3
         with:
           go-version: '1.9.x'
       - uses: actions/checkout@v2
