@@ -412,9 +412,9 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		if error != "" {
 			return
 		}
-		params[0] = recover()
+		params[0] = nilIfPanicNilError(recover())
 		names[0] = "panic"
-		result = reflect.DeepEqual(params[0], params[1])
+		result = reflect.DeepEqual(params[0], nilIfPanicNilError(params[1]))
 	}()
 	f.Call(nil)
 	return false, "Function has not panicked"
@@ -447,7 +447,7 @@ func (checker *panicMatchesChecker) Check(params []interface{}, names []string) 
 		if errmsg != "" {
 			return
 		}
-		obtained := recover()
+		obtained := nilIfPanicNilError(recover())
 		names[0] = "panic"
 		if e, ok := obtained.(error); ok {
 			params[0] = e.Error()
