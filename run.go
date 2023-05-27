@@ -52,9 +52,15 @@ func TestingT(testingT *testing.T) {
 	if benchTime == 1*time.Second {
 		benchTime = *oldBenchTime
 	}
+	stdVerbose := false
+	if f := flag.Lookup("test.v"); f != nil {
+		if getter, ok := f.Value.(flag.Getter); ok {
+			stdVerbose, _ = getter.Get().(bool)
+		}
+	}
 	conf := &RunConf{
 		Filter:        *oldFilterFlag + *newFilterFlag,
-		Verbose:       *oldVerboseFlag || *newVerboseFlag,
+		Verbose:       *oldVerboseFlag || *newVerboseFlag || stdVerbose,
 		Stream:        *oldStreamFlag || *newStreamFlag,
 		Benchmark:     *oldBenchFlag || *newBenchFlag,
 		BenchmarkTime: benchTime,
