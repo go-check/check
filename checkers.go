@@ -5,10 +5,12 @@ import (
 	"math"
 	"reflect"
 	"regexp"
+	"runtime"
 	"strings"
 
 	cf "github.com/iostrovok/go-convert"
-	"github.com/niemeyer/pretty"
+
+	"github.com/iostrovok/check/pretty"
 )
 
 // -----------------------------------------------------------------------
@@ -25,14 +27,13 @@ type comment struct {
 //
 // For example:
 //
-//     c.Assert(v, Equals, 42, Commentf("Iteration #%d failed.", i))
+//	c.Assert(v, Equals, 42, Commentf("Iteration #%d failed.", i))
 //
 // Note that if the comment is constant, a better option is to
 // simply use a normal comment right above or next to the line, as
 // it will also get printed with any errors:
 //
-//     c.Assert(l, Equals, 8192) // Ensure buffer size is correct (bug #123)
-//
+//	c.Assert(l, Equals, 8192) // Ensure buffer size is correct (bug #123)
 func Commentf(format string, args ...interface{}) CommentInterface {
 	return &comment{format, args}
 }
@@ -76,8 +77,7 @@ func (info *CheckerInfo) Info() *CheckerInfo {
 //
 // For example:
 //
-//     c.Assert(a, Not(Equals), b)
-//
+//	c.Assert(a, Not(Equals), b)
 func Not(checker Checker) Checker {
 	return &notChecker{checker}
 }
@@ -113,8 +113,7 @@ type isNilChecker struct {
 //
 // For example:
 //
-//    c.Assert(err, IsNil)
-//
+//	c.Assert(err, IsNil)
 var IsNil Checker = &isNilChecker{
 	&CheckerInfo{Name: "IsNil", Params: []string{"value"}},
 }
@@ -146,11 +145,10 @@ type notNilChecker struct {
 //
 // For example:
 //
-//     c.Assert(iface, NotNil)
+//	c.Assert(iface, NotNil)
 //
 // This is an alias for Not(IsNil), made available since it's a
 // fairly common check.
-//
 var NotNil Checker = &notNilChecker{
 	&CheckerInfo{Name: "NotNil", Params: []string{"value"}},
 }
@@ -234,8 +232,7 @@ type equalsChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, Equals, 42)
-//
+//	c.Assert(value, Equals, 42)
 var Equals Checker = &equalsChecker{
 	&CheckerInfo{Name: "Equals", Params: []string{"obtained", "expected"}},
 }
@@ -269,9 +266,8 @@ type deepEqualsChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, DeepEquals, 42)
-//     c.Assert(array, DeepEquals, []string{"hi", "there"})
-//
+//	c.Assert(value, DeepEquals, 42)
+//	c.Assert(array, DeepEquals, []string{"hi", "there"})
 var DeepEquals Checker = &deepEqualsChecker{
 	&CheckerInfo{Name: "DeepEquals", Params: []string{"obtained", "expected"}},
 }
@@ -299,8 +295,7 @@ type hasLenChecker struct {
 //
 // For example:
 //
-//     c.Assert(list, HasLen, 5)
-//
+//	c.Assert(list, HasLen, 5)
 var HasLen Checker = &hasLenChecker{
 	&CheckerInfo{Name: "HasLen", Params: []string{"obtained", "n"}},
 }
@@ -339,8 +334,7 @@ type hasLenMoreThan struct {
 //
 // For example:
 //
-//     c.Assert(list, HasLenMoreThan, 5)
-//
+//	c.Assert(list, HasLenMoreThan, 5)
 var HasLenMoreThan Checker = &hasLenMoreThan{
 	&CheckerInfo{Name: "HasLenMoreThan", Params: []string{"obtained", "n"}},
 }
@@ -379,8 +373,7 @@ type hasLenLessThan struct {
 //
 // For example:
 //
-//     c.Assert(list, HasLenLessThan, 5)
-//
+//	c.Assert(list, HasLenLessThan, 5)
 var HasLenLessThan Checker = &hasLenLessThan{
 	&CheckerInfo{Name: "HasLenLessThan", Params: []string{"obtained", "n"}},
 }
@@ -415,8 +408,7 @@ type errorMatchesChecker struct {
 //
 // For example:
 //
-//     c.Assert(err, ErrorMatches, "perm.*denied")
-//
+//	c.Assert(err, ErrorMatches, "perm.*denied")
 var ErrorMatches Checker = errorMatchesChecker{
 	&CheckerInfo{Name: "ErrorMatches", Params: []string{"value", "regex"}},
 }
@@ -447,8 +439,7 @@ type matchesChecker struct {
 //
 // For example:
 //
-//     c.Assert(err, Matches, "perm.*denied")
-//
+//	c.Assert(err, Matches, "perm.*denied")
 var Matches Checker = &matchesChecker{
 	&CheckerInfo{Name: "Matches", Params: []string{"value", "regex"}},
 }
@@ -490,9 +481,7 @@ type panicsChecker struct {
 //
 // For example:
 //
-//     c.Assert(func() { f(1, 2) }, Panics, &SomeErrorType{"BOOM"}).
-//
-//
+//	c.Assert(func() { f(1, 2) }, Panics, &SomeErrorType{"BOOM"}).
 var Panics Checker = &panicsChecker{
 	&CheckerInfo{Name: "Panics", Params: []string{"function", "expected"}},
 }
@@ -509,6 +498,10 @@ func (checker *panicsChecker) Check(params []interface{}, names []string) (resul
 		}
 		params[0] = recover()
 		names[0] = "panic"
+		if _, ok := params[0].(*runtime.PanicNilError); ok {
+			params[0] = nil
+		}
+
 		result = reflect.DeepEqual(params[0], params[1])
 	}()
 	f.Call(nil)
@@ -525,9 +518,7 @@ type panicMatchesChecker struct {
 //
 // For example:
 //
-//     c.Assert(func() { f(1, 2) }, PanicMatches, `open.*: no such file or directory`).
-//
-//
+//	c.Assert(func() { f(1, 2) }, PanicMatches, `open.*: no such file or directory`).
 var PanicMatches Checker = &panicMatchesChecker{
 	&CheckerInfo{Name: "PanicMatches", Params: []string{"function", "expected"}},
 }
@@ -544,7 +535,13 @@ func (checker *panicMatchesChecker) Check(params []interface{}, names []string) 
 		}
 		obtained := recover()
 		names[0] = "panic"
-		if e, ok := obtained.(error); ok {
+		if e, ok := obtained.(*runtime.PanicNilError); ok {
+			fmt.Printf("	e: ''%T'', %+v\n", e, e)
+			if e != nil {
+				errmsg = e.Error()
+			}
+			return
+		} else if e, ok := obtained.(error); ok {
 			params[0] = e.Error()
 		} else if _, ok := obtained.(string); ok {
 			params[0] = obtained
@@ -571,9 +568,8 @@ type fitsTypeChecker struct {
 //
 // For example:
 //
-//     c.Assert(value, FitsTypeOf, int64(0))
-//     c.Assert(value, FitsTypeOf, os.Error(nil))
-//
+//	c.Assert(value, FitsTypeOf, int64(0))
+//	c.Assert(value, FitsTypeOf, os.Error(nil))
 var FitsTypeOf Checker = &fitsTypeChecker{
 	&CheckerInfo{Name: "FitsTypeOf", Params: []string{"obtained", "sample"}},
 }
@@ -603,9 +599,8 @@ type implementsChecker struct {
 //
 // For example:
 //
-//     var e os.Error
-//     c.Assert(err, Implements, &e)
-//
+//	var e os.Error
+//	c.Assert(err, Implements, &e)
 var Implements Checker = &implementsChecker{
 	&CheckerInfo{Name: "Implements", Params: []string{"obtained", "ifaceptr"}},
 }
@@ -905,16 +900,15 @@ type lessOrEqualThan struct {
 //
 // For example:
 //
-//    c.Assert(v1, LessOrEqualThan, 23) -> v1 <= v2
-//    c.Assert(v1, LessOrEqualThan, "my string") -> v1 <= v2
+//	   c.Assert(v1, LessOrEqualThan, 23) -> v1 <= v2
+//	   c.Assert(v1, LessOrEqualThan, "my string") -> v1 <= v2
 //
-//	  defaults conversion for checking:
-//    Int, Int8, Int16, Int32, Int64 => Int64
-//	  Uint, Uint8, Uint16, Uint32, Uint64 => Uint64
-//	  float32 => float32
-//    []byte, string => string
-//    float64 => float64
-//
+//		  defaults conversion for checking:
+//	   Int, Int8, Int16, Int32, Int64 => Int64
+//		  Uint, Uint8, Uint16, Uint32, Uint64 => Uint64
+//		  float32 => float32
+//	   []byte, string => string
+//	   float64 => float64
 var LessOrEqualThan Checker = &lessOrEqualThan{
 	&CheckerInfo{Name: "MoreOrEqualThan", Params: []string{"get", "should be more or equal than"}},
 }

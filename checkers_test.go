@@ -293,7 +293,7 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	c.Assert(names[0], check.Equals, "panic")
 
 	// Verify a nil panic
-	testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
+	testCheck(c, check.PanicMatches, false, "panic called with nil argument", func() { panic(nil) }, "")
 }
 
 func (s *CheckersS) TestFitsTypeOf(c *check.C) {
