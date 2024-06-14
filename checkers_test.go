@@ -2,6 +2,7 @@ package check_test
 
 import (
 	"errors"
+	"fmt"
 	"reflect"
 	"runtime"
 
@@ -222,7 +223,7 @@ func (s *CheckersS) TestPanics(c *check.C) {
 	c.Assert(names[0], check.Equals, "panic")
 
 	// Verify a nil panic
-	testCheck(c, check.Panics, true, "", func() { panic(nil) }, nil)
+	testCheck(c, check.Panics, true, "", func() { panic(nil) }, propagatedNilPanicValue())
 	testCheck(c, check.Panics, false, "", func() { panic(nil) }, "NOPE")
 }
 
@@ -247,8 +248,21 @@ func (s *CheckersS) TestPanicMatches(c *check.C) {
 	c.Assert(params[0], check.Equals, "KABOOM")
 	c.Assert(names[0], check.Equals, "panic")
 
-	// Verify a nil panic
-	testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
+	if v := propagatedNilPanicValue(); v == nil {
+		// Verify a propagated nil panic
+		testCheck(c, check.PanicMatches, false, "Panic value is not a string or an error", func() { panic(nil) }, "")
+	} else {
+		// Verify a non-nil propagation from a nil panic
+		testCheck(c, check.PanicMatches, true, "", func() { panic(nil) }, fmt.Sprintf("%s", v))
+	}
+}
+
+// propagatedNilPanicValue returns the value propagated when a nil panic occurs.
+// Prior to go1.21, this is always nil.
+// In go1.21+, this is *runtime.PanicNilError unless GODEBUG=panicnil=1 is set.
+func propagatedNilPanicValue() (v interface{}) {
+	defer func() { v = recover() }()
+	panic(nil)
 }
 
 func (s *CheckersS) TestFitsTypeOf(c *check.C) {

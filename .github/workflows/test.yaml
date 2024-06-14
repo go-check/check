@@ -23,6 +23,12 @@ jobs:
         run: go build .
       - name: Test
         run: go test -v ./...
+        env:
+          GODEBUG: panicnil=0
+      - name: Test
+        run: go test -v ./...
+        env:
+          GODEBUG: panicnil=1
 
   gopath:
     runs-on: ubuntu-latest
