@@ -21,275 +21,162 @@ func (s *FixtureS) TestCountSuite(c *C) {
 // Basic fixture ordering verification.
 
 func (s *FixtureS) TestOrder(c *C) {
-	helper := FixtureHelper{}
-	Run(&helper, nil)
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "Test1")
-	c.Check(helper.calls[3], Equals, "TearDownTest")
-	c.Check(helper.calls[4], Equals, "SetUpTest")
-	c.Check(helper.calls[5], Equals, "Test2")
-	c.Check(helper.calls[6], Equals, "TearDownTest")
-	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 8)
+	exitCode, output := runHelperSuite(c, "FixtureHelper")
+	c.Assert(exitCode, Equals, 0)
+	c.Check(output.Status("FixtureHelper"), Equals, "pass")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test1\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test2\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
 // -----------------------------------------------------------------------
-// Check the behavior when panics occur within tests and fixtures.
+// Check the behavior when fatal errors occur within tests and fixtures.
 
-func (s *FixtureS) TestPanicOnTest(c *C) {
-	helper := FixtureHelper{panicOn: "Test1"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "Test1")
-	c.Check(helper.calls[3], Equals, "TearDownTest")
-	c.Check(helper.calls[4], Equals, "SetUpTest")
-	c.Check(helper.calls[5], Equals, "Test2")
-	c.Check(helper.calls[6], Equals, "TearDownTest")
-	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 8)
-
-	expected := "^\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: FixtureHelper.Test1\n\n" +
-		"\\.\\.\\. Panic: Test1 \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.trace\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.Test1\n" +
-		"(.|\n)*$"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnTest(c *C) {
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.fail", "Test1")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "pass")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test1\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test2\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
-func (s *FixtureS) TestPanicOnSetUpTest(c *C) {
-	helper := FixtureHelper{panicOn: "SetUpTest"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "TearDownTest")
-	c.Check(helper.calls[3], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 4)
-
-	expected := "^\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper\\.SetUpTest\n\n" +
-		"\\.\\.\\. Panic: SetUpTest \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.trace\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.SetUpTest\n" +
-		"(.|\n)*" +
-		"\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper\\.Test1\n\n" +
-		"\\.\\.\\. Panic: Fixture has panicked " +
-		"\\(see related PANIC\\)\n$"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnSetUpTest(c *C) {
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.fail", "SetUpTest")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "fail")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
-func (s *FixtureS) TestPanicOnTearDownTest(c *C) {
-	helper := FixtureHelper{panicOn: "TearDownTest"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "Test1")
-	c.Check(helper.calls[3], Equals, "TearDownTest")
-	c.Check(helper.calls[4], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 5)
-
-	expected := "^\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper.TearDownTest\n\n" +
-		"\\.\\.\\. Panic: TearDownTest \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.trace\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.TearDownTest\n" +
-		"(.|\n)*" +
-		"\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper\\.Test1\n\n" +
-		"\\.\\.\\. Panic: Fixture has panicked " +
-		"\\(see related PANIC\\)\n$"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnTearDownTest(c *C) {
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.fail", "TearDownTest")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "fail")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test1\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test2\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
-func (s *FixtureS) TestPanicOnSetUpSuite(c *C) {
-	helper := FixtureHelper{panicOn: "SetUpSuite"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 2)
-
-	expected := "^\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper.SetUpSuite\n\n" +
-		"\\.\\.\\. Panic: SetUpSuite \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.trace\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.SetUpSuite\n" +
-		"(.|\n)*$"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnSetUpSuite(c *C) {
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.fail", "SetUpSuite")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
-func (s *FixtureS) TestPanicOnTearDownSuite(c *C) {
-	helper := FixtureHelper{panicOn: "TearDownSuite"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "Test1")
-	c.Check(helper.calls[3], Equals, "TearDownTest")
-	c.Check(helper.calls[4], Equals, "SetUpTest")
-	c.Check(helper.calls[5], Equals, "Test2")
-	c.Check(helper.calls[6], Equals, "TearDownTest")
-	c.Check(helper.calls[7], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 8)
-
-	expected := "^\n-+\n" +
-		"PANIC: check_test\\.go:[0-9]+: " +
-		"FixtureHelper.TearDownSuite\n\n" +
-		"\\.\\.\\. Panic: TearDownSuite \\(PC=[xA-F0-9]+\\)\n\n" +
-		".+:[0-9]+\n" +
-		"  in (go)?panic\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.trace\n" +
-		".*check_test.go:[0-9]+\n" +
-		"  in FixtureHelper.TearDownSuite\n" +
-		"(.|\n)*$"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnTearDownSuite(c *C) {
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.fail", "TearDownSuite")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "pass")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "pass")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test1\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test2\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
 // -----------------------------------------------------------------------
 // A wrong argument on a test or fixture will produce a nice error.
 
-func (s *FixtureS) TestPanicOnWrongTestArg(c *C) {
-	helper := WrongTestArgHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "TearDownTest")
-	c.Check(helper.calls[3], Equals, "SetUpTest")
-	c.Check(helper.calls[4], Equals, "Test2")
-	c.Check(helper.calls[5], Equals, "TearDownTest")
-	c.Check(helper.calls[6], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 7)
-
-	expected := "^\n-+\n" +
-		"PANIC: fixture_test\\.go:[0-9]+: " +
-		"WrongTestArgHelper\\.Test1\n\n" +
-		"\\.\\.\\. Panic: WrongTestArgHelper\\.Test1 argument " +
-		"should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnWrongTestArg(c *C) {
+	exitCode, output := runHelperSuite(c, "WrongTestArgHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongTestArgHelper/Test1"), Equals, "fail")
+	c.Check(output.Logs("WrongTestArgHelper/Test1"), Matches, ""+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check.go:\\d+: bad signature for method Test1: func\\(int\\)\n"+
+		"    check_test.go:\\d+: TearDownTest\n")
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpTestArg(c *C) {
-	helper := WrongSetUpTestArgHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(len(helper.calls), Equals, 0)
-
-	expected :=
-		"^\n-+\n" +
-			"PANIC: fixture_test\\.go:[0-9]+: " +
-			"WrongSetUpTestArgHelper\\.SetUpTest\n\n" +
-			"\\.\\.\\. Panic: WrongSetUpTestArgHelper\\.SetUpTest argument " +
-			"should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnWrongSetUpTestArg(c *C) {
+	exitCode, output := runHelperSuite(c, "WrongSetUpTestArgHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongSetUpTestArgHelper/Test1"), Equals, "fail")
+	c.Check(output.Logs("WrongSetUpTestArgHelper/Test1"), Matches, ""+
+		"    check.go:\\d+: bad signature for method SetUpTest: func\\(int\\)\n"+
+		"    check_test.go:\\d+: TearDownTest\n")
 }
 
-func (s *FixtureS) TestPanicOnWrongSetUpSuiteArg(c *C) {
-	helper := WrongSetUpSuiteArgHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(len(helper.calls), Equals, 0)
-
-	expected :=
-		"^\n-+\n" +
-			"PANIC: fixture_test\\.go:[0-9]+: " +
-			"WrongSetUpSuiteArgHelper\\.SetUpSuite\n\n" +
-			"\\.\\.\\. Panic: WrongSetUpSuiteArgHelper\\.SetUpSuite argument " +
-			"should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+func (s *FixtureS) TestFailOnWrongSetUpSuiteArg(c *C) {
+	exitCode, output := runHelperSuite(c, "WrongSetUpSuiteArgHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongSetUpSuiteArgHelper"), Equals, "fail")
+	c.Check(output.Logs("WrongSetUpSuiteArgHelper"), Matches, ""+
+		"    check.go:\\d+: bad signature for method SetUpSuite: func\\(int\\)\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
+	c.Check(output.Status("WrongSetUpSuiteArgHelper/Test1"), Equals, "")
 }
 
 // -----------------------------------------------------------------------
 // Nice errors also when tests or fixture have wrong arg count.
 
 func (s *FixtureS) TestPanicOnWrongTestArgCount(c *C) {
-	helper := WrongTestArgCountHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.calls[0], Equals, "SetUpSuite")
-	c.Check(helper.calls[1], Equals, "SetUpTest")
-	c.Check(helper.calls[2], Equals, "TearDownTest")
-	c.Check(helper.calls[3], Equals, "SetUpTest")
-	c.Check(helper.calls[4], Equals, "Test2")
-	c.Check(helper.calls[5], Equals, "TearDownTest")
-	c.Check(helper.calls[6], Equals, "TearDownSuite")
-	c.Check(len(helper.calls), Equals, 7)
-
-	expected := "^\n-+\n" +
-		"PANIC: fixture_test\\.go:[0-9]+: " +
-		"WrongTestArgCountHelper\\.Test1\n\n" +
-		"\\.\\.\\. Panic: WrongTestArgCountHelper\\.Test1 argument " +
-		"should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+	exitCode, output := runHelperSuite(c, "WrongTestArgCountHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongTestArgCountHelper/Test1"), Equals, "fail")
+	c.Check(output.Logs("WrongTestArgCountHelper/Test1"), Matches, ""+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check.go:\\d+: bad signature for method Test1: func\\(\\*check.C, int\\)\n"+
+		"    check_test.go:\\d+: TearDownTest\n")
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpTestArgCount(c *C) {
-	helper := WrongSetUpTestArgCountHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(len(helper.calls), Equals, 0)
-
-	expected :=
-		"^\n-+\n" +
-			"PANIC: fixture_test\\.go:[0-9]+: " +
-			"WrongSetUpTestArgCountHelper\\.SetUpTest\n\n" +
-			"\\.\\.\\. Panic: WrongSetUpTestArgCountHelper\\.SetUpTest argument " +
-			"should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+	exitCode, output := runHelperSuite(c, "WrongSetUpTestArgCountHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongSetUpTestArgCountHelper/Test1"), Equals, "fail")
+	c.Check(output.Logs("WrongSetUpTestArgCountHelper/Test1"), Matches, ""+
+		"    check.go:\\d+: bad signature for method SetUpTest: func\\(\\*check.C, int\\)\n"+
+		"    check_test.go:\\d+: TearDownTest\n")
 }
 
 func (s *FixtureS) TestPanicOnWrongSetUpSuiteArgCount(c *C) {
-	helper := WrongSetUpSuiteArgCountHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(len(helper.calls), Equals, 0)
-
-	expected :=
-		"^\n-+\n" +
-			"PANIC: fixture_test\\.go:[0-9]+: " +
-			"WrongSetUpSuiteArgCountHelper\\.SetUpSuite\n\n" +
-			"\\.\\.\\. Panic: WrongSetUpSuiteArgCountHelper" +
-			"\\.SetUpSuite argument should be \\*check\\.C\n"
-
-	c.Check(output.value, Matches, expected)
+	exitCode, output := runHelperSuite(c, "WrongSetUpSuiteArgCountHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("WrongSetUpSuiteArgCountHelper"), Equals, "fail")
+	c.Check(output.Logs("WrongSetUpSuiteArgCountHelper"), Matches, ""+
+		"    check.go:\\d+: bad signature for method SetUpSuite: func\\(\\*check.C, int\\)\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
+	c.Check(output.Status("WrongSetUpSuiteArgCountHelper/Test1"), Equals, "")
 }
 
 // -----------------------------------------------------------------------
@@ -340,23 +227,20 @@ func (s *WrongSetUpSuiteArgCountHelper) SetUpSuite(c *C, i int) {
 // -----------------------------------------------------------------------
 // Ensure fixture doesn't run without tests.
 
-type NoTestsHelper struct {
-	hasRun bool
-}
+type NoTestsHelper struct{}
 
 func (s *NoTestsHelper) SetUpSuite(c *C) {
-	s.hasRun = true
+	c.Fatal("SetUpSuite called")
 }
 
 func (s *NoTestsHelper) TearDownSuite(c *C) {
-	s.hasRun = true
+	c.Fatal("TearDownSuite called")
 }
 
 func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *C) {
-	helper := NoTestsHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Check(helper.hasRun, Equals, false)
+	exitCode, output := runHelperSuite(c, "NoTestsHelper")
+	c.Assert(exitCode, Equals, 0)
+	c.Check(output.Status("NoTestsHelper"), Equals, "pass")
 }
 
 // -----------------------------------------------------------------------
@@ -364,7 +248,6 @@ func (s *FixtureS) TestFixtureDoesntRunWithoutTests(c *C) {
 
 type FixtureCheckHelper struct {
 	fail      string
-	completed bool
 }
 
 func (s *FixtureCheckHelper) SetUpSuite(c *C) {
@@ -374,7 +257,6 @@ func (s *FixtureCheckHelper) SetUpSuite(c *C) {
 	case "SetUpSuiteCheck":
 		c.Check(false, Equals, true)
 	}
-	s.completed = true
 }
 
 func (s *FixtureCheckHelper) SetUpTest(c *C) {
@@ -384,7 +266,6 @@ func (s *FixtureCheckHelper) SetUpTest(c *C) {
 	case "SetUpTestCheck":
 		c.Check(false, Equals, true)
 	}
-	s.completed = true
 }
 
 func (s *FixtureCheckHelper) Test(c *C) {
@@ -392,33 +273,27 @@ func (s *FixtureCheckHelper) Test(c *C) {
 }
 
 func (s *FixtureS) TestSetUpSuiteCheck(c *C) {
-	helper := FixtureCheckHelper{fail: "SetUpSuiteCheck"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Assert(output.value, Matches,
-		"\n---+\n"+
-			"FAIL: fixture_test\\.go:[0-9]+: "+
-			"FixtureCheckHelper\\.SetUpSuite\n\n"+
-			"fixture_test\\.go:[0-9]+:\n"+
-			"    c\\.Check\\(false, Equals, true\\)\n"+
-			"\\.+ obtained bool = false\n"+
-			"\\.+ expected bool = true\n\n")
-	c.Assert(helper.completed, Equals, true)
+	exitCode, output := runHelperSuite(c, "FixtureCheckHelper", "-helper.fail", "SetUpSuiteCheck")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureCheckHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureCheckHelper/Test"), Equals, "pass")
+	c.Check(output.Logs("FixtureCheckHelper"), Matches, ""+
+		"    fixture_test.go:\\d+: \n"+
+		"            c.Check\\(false, Equals, true\\)\n"+
+		"        ... obtained bool = false\n"+
+		"        ... expected bool = true\n")
 }
 
 func (s *FixtureS) TestSetUpSuiteAssert(c *C) {
-	helper := FixtureCheckHelper{fail: "SetUpSuiteAssert"}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Assert(output.value, Matches,
-		"\n---+\n"+
-			"FAIL: fixture_test\\.go:[0-9]+: "+
-			"FixtureCheckHelper\\.SetUpSuite\n\n"+
-			"fixture_test\\.go:[0-9]+:\n"+
-			"    c\\.Assert\\(false, Equals, true\\)\n"+
-			"\\.+ obtained bool = false\n"+
-			"\\.+ expected bool = true\n\n")
-	c.Assert(helper.completed, Equals, false)
+	exitCode, output := runHelperSuite(c, "FixtureCheckHelper", "-helper.fail", "SetUpSuiteAssert")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureCheckHelper"), Equals, "fail")
+	c.Check(output.Status("FixtureCheckHelper/Test"), Equals, "")
+	c.Check(output.Logs("FixtureCheckHelper"), Matches, ""+
+		"    fixture_test.go:\\d+: \n"+
+		"            c.Assert\\(false, Equals, true\\)\n"+
+		"        ... obtained bool = false\n"+
+		"        ... expected bool = true\n")
 }
 
 // -----------------------------------------------------------------------
@@ -445,40 +320,45 @@ func (s *FixtureLogHelper) TearDownTest(c *C) {
 }
 
 func (s *FixtureS) TestFixtureLogging(c *C) {
-	helper := FixtureLogHelper{}
-	output := String{}
-	Run(&helper, &RunConf{Output: &output})
-	c.Assert(output.value, Matches,
-		"\n---+\n"+
-			"FAIL: fixture_test\\.go:[0-9]+: "+
-			"FixtureLogHelper\\.Test\n\n"+
-			"1\n2\n3\n4\n5\n")
+	exitCode, output := runHelperSuite(c, "FixtureLogHelper")
+	c.Assert(exitCode, Equals, 1)
+	c.Check(output.Status("FixtureLogHelper/Test"), Equals, "fail")
+	c.Check(output.Logs("FixtureLogHelper/Test"), Matches, ""+
+		"    fixture_test.go:\\d+: 1\n"+
+		"    fixture_test.go:\\d+: 2\n"+
+		"    fixture_test.go:\\d+: 3\n"+
+		"    fixture_test.go:\\d+: 4\n"+
+		"    fixture_test.go:\\d+: 5\n")
 }
 
 // -----------------------------------------------------------------------
 // Skip() within fixture methods.
 
 func (s *FixtureS) TestSkipSuite(c *C) {
-	helper := FixtureHelper{skip: true, skipOnN: 0}
-	output := String{}
-	result := Run(&helper, &RunConf{Output: &output})
-	c.Assert(output.value, Equals, "")
-	c.Assert(helper.calls[0], Equals, "SetUpSuite")
-	c.Assert(helper.calls[1], Equals, "TearDownSuite")
-	c.Assert(len(helper.calls), Equals, 2)
-	c.Assert(result.Skipped, Equals, 2)
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.skip", "0")
+	c.Assert(exitCode, Equals, 0)
+	c.Check(output.Status("FixtureHelper"), Equals, "skip")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: skipOnN == n\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
 
 func (s *FixtureS) TestSkipTest(c *C) {
-	helper := FixtureHelper{skip: true, skipOnN: 1}
-	output := String{}
-	result := Run(&helper, &RunConf{Output: &output})
-	c.Assert(helper.calls[0], Equals, "SetUpSuite")
-	c.Assert(helper.calls[1], Equals, "SetUpTest")
-	c.Assert(helper.calls[2], Equals, "SetUpTest")
-	c.Assert(helper.calls[3], Equals, "Test2")
-	c.Assert(helper.calls[4], Equals, "TearDownTest")
-	c.Assert(helper.calls[5], Equals, "TearDownSuite")
-	c.Assert(len(helper.calls), Equals, 6)
-	c.Assert(result.Skipped, Equals, 1)
+	exitCode, output := runHelperSuite(c, "FixtureHelper", "-helper.skip", "1")
+	c.Assert(exitCode, Equals, 0)
+	c.Check(output.Status("FixtureHelper"), Equals, "pass")
+	c.Check(output.Status("FixtureHelper/Test1"), Equals, "skip")
+	c.Check(output.Status("FixtureHelper/Test2"), Equals, "pass")
+	c.Check(output.AllLogs(), Matches, ""+
+		"    check_test.go:\\d+: SetUpSuite\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: skipOnN == n\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: SetUpTest\n"+
+		"    check_test.go:\\d+: Test2\n"+
+		"    check_test.go:\\d+: TearDownTest\n"+
+		"    check_test.go:\\d+: TearDownSuite\n")
 }
