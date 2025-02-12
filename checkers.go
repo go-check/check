@@ -1323,3 +1323,84 @@ func (checker *errorIs) Check(params []any, _ []string) (bool, string) {
 
 	return false, "expected error doesn't contains obtained error"
 }
+
+// -----------------------------------------------------------------------
+// IsEmpty checker.
+
+type isEmpty struct {
+	*CheckerInfo
+}
+
+// IsEmpty asserts that the specified object is empty.  I.e. nil, "", false, 0 or either
+// a slice or a channel with len == 0.
+//
+//	assert.Empty(t, obj)
+//
+// see github.com/stretchr/testify for details
+var IsEmpty Checker = &isEmpty{
+	&CheckerInfo{Name: "IsEmpty", Params: []string{"value"}},
+}
+
+func (checker *isEmpty) Check(params []any, _ []string) (bool, string) {
+	if runIsEmpty(params[0]) {
+		return true, ""
+	}
+
+	return false, fmt.Sprintf("should be empty, but was '%v'", params[0])
+}
+
+// -----------------------------------------------------------------------
+// NotEmpty checker.
+
+type notEmpty struct {
+	*CheckerInfo
+}
+
+// NotEmpty asserts that the specified object is NOT empty.  I.e. not nil, "", false, 0 or either
+// a slice or a channel with len == 0.
+//
+//	if NotEmpty(t, obj) {
+//	  Equal(t, "two", obj[1])
+//	}
+//
+// see github.com/stretchr/testify for details
+var NotEmpty Checker = &notEmpty{
+	&CheckerInfo{Name: "NotEmpty", Params: []string{"value"}},
+}
+
+func (checker *notEmpty) Check(params []any, _ []string) (bool, string) {
+	if !runIsEmpty(params[0]) {
+		return true, ""
+	}
+
+	return false, fmt.Sprintf("should NOT be empty, but was '%v'", params[0])
+}
+
+// runIsEmpty gets whether the specified object is considered empty or not.
+// see github.com/stretchr/testify for details
+func runIsEmpty(object interface{}) bool {
+	// get nil case out of the way
+	if object == nil {
+		return true
+	}
+
+	objValue := reflect.ValueOf(object)
+
+	switch objValue.Kind() {
+	// collection types are empty when they have no element
+	case reflect.Chan, reflect.Map, reflect.Slice:
+		return objValue.Len() == 0
+	// pointers are empty if nil or if the value they point to is empty
+	case reflect.Ptr:
+		if objValue.IsNil() {
+			return true
+		}
+		deref := objValue.Elem().Interface()
+		return runIsEmpty(deref)
+	// for all other types, compare against the zero value
+	// array types are empty when they match their zero-initialized state
+	default:
+		zero := reflect.Zero(objValue.Type())
+		return reflect.DeepEqual(object, zero.Interface())
+	}
+}

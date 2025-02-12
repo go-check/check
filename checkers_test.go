@@ -92,6 +92,72 @@ func (s *CheckersS) TestIsFalse(c *check.C) {
 	testCheck(c, check.IsFalse, true, "", 0)
 }
 
+func (s *CheckersS) TestNotEmpty(c *check.C) {
+	testInfo(c, check.NotEmpty, "NotEmpty", []string{"value"})
+
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '0'", 0)
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '0'", 0.0)
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '<nil>'", nil)
+
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '<nil>'", (error)(nil))
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was ''", errors.New(""))
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '[]'", ([]int)(nil))
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '[]'", make([]int, 0))
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '[]'", []int{})
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was 'map[]'", map[int]map[string]bool{})
+
+	testCheck(c, check.NotEmpty, true, "", map[int]bool{1: true})
+	testCheck(c, check.NotEmpty, true, "", make([]int, 1))
+
+	testCheck(c, check.NotEmpty, true, "", "a")
+	testCheck(c, check.NotEmpty, true, "", 100)
+	testCheck(c, check.NotEmpty, true, "", -1)
+
+	// Channels!
+	testCheck(c, check.NotEmpty, false, "should NOT be empty, but was '<nil>'", (chan int)(nil))
+
+	ch := make(chan int)
+	testCheck(c, check.NotEmpty, false, fmt.Sprintf("should NOT be empty, but was '%+v'", ch), ch)
+
+	ch = make(chan int, 1)
+	testCheck(c, check.NotEmpty, false, fmt.Sprintf("should NOT be empty, but was '%+v'", ch), ch)
+	ch <- 1
+	testCheck(c, check.NotEmpty, true, "", ch)
+}
+
+func (s *CheckersS) TestIsEmpty(c *check.C) {
+	testInfo(c, check.IsEmpty, "IsEmpty", []string{"value"})
+
+	testCheck(c, check.IsEmpty, true, "", 0)
+	testCheck(c, check.IsEmpty, true, "", 0.0)
+	testCheck(c, check.IsEmpty, true, "", nil)
+
+	testCheck(c, check.IsEmpty, true, "", (error)(nil))
+	testCheck(c, check.IsEmpty, true, "", errors.New(""))
+	testCheck(c, check.IsEmpty, true, "", ([]int)(nil))
+	testCheck(c, check.IsEmpty, true, "", make([]int, 0))
+	testCheck(c, check.IsEmpty, true, "", []int{})
+	testCheck(c, check.IsEmpty, true, "", map[int]map[string]bool{})
+
+	testCheck(c, check.IsEmpty, false, "should be empty, but was 'map[1:true]'", map[int]bool{1: true})
+	testCheck(c, check.IsEmpty, false, "should be empty, but was '[0]'", make([]int, 1))
+	testCheck(c, check.IsEmpty, false, "should be empty, but was 'a'", "a")
+	testCheck(c, check.IsEmpty, false, "should be empty, but was '100'", 100)
+	testCheck(c, check.IsEmpty, false, "should be empty, but was '-1'", -1)
+
+	// Channels!
+	testCheck(c, check.IsEmpty, true, "", (chan int)(nil))
+	testCheck(c, check.IsEmpty, true, "", make(chan int))
+
+	ch := make(chan int)
+	testCheck(c, check.IsEmpty, true, "", ch)
+
+	ch = make(chan int, 1)
+	testCheck(c, check.IsEmpty, true, "", ch)
+	ch <- 1
+	testCheck(c, check.IsEmpty, false, fmt.Sprintf("should be empty, but was '%+v'", ch), ch)
+}
+
 func (s *CheckersS) TestIsTrue(c *check.C) {
 	testInfo(c, check.IsTrue, "IsTrue", []string{"value"})
 

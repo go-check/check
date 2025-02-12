@@ -17,7 +17,7 @@ func (s *AliasSuite) TestCountSuite(c *check.C) {
 	suitesRun += 1
 }
 
-func TestService(t *testing.T) { check.TestingT(t) }
+func TestAlias(t *testing.T) { check.TestingT(t) }
 
 func (s *AliasSuite) TestContainsAlias(c *check.C) {
 	c.Contains(42, []int{42})
@@ -42,11 +42,17 @@ func (s *AliasSuite) TestNotDeepEqualsAlias(c *check.C) {
 func (s *AliasSuite) TestEqualsAlias(c *check.C) {
 	c.Equals(42, 42)
 	c.Equals(42, 42, "test syntax")
+
+	c.Equal(42, 42)
+	c.Equal(42, 42, "test syntax")
 }
 
 func (s *AliasSuite) TestNotEqualsAlias(c *check.C) {
 	c.NotEquals(41, 43)
 	c.NotEquals(41, 43, "test syntax")
+
+	c.NotEqual(41, 43)
+	c.NotEqual(41, 43, "test syntax")
 }
 
 func (s *AliasSuite) TestEqualsFloat32Alias(c *check.C) {
@@ -85,6 +91,9 @@ func (s *AliasSuite) TestFitsTypeOfAlias(c *check.C) {
 func (s *AliasSuite) TestHasLenAlias(c *check.C) {
 	c.HasLen([]int{42}, 1)
 	c.HasLen([]int{42, 3, 2, 3}, 4, "test syntax")
+
+	c.Len([]int{42}, 1)
+	c.Len([]int{42, 3, 2, 3}, 4, "test syntax")
 }
 
 func (s *AliasSuite) TestNotHasLenAlias(c *check.C) {
@@ -121,6 +130,9 @@ func (s *AliasSuite) TestErrorIsAlias(c *check.C) {
 func (s *AliasSuite) TestIsFalseAlias(c *check.C) {
 	c.IsFalse(false)
 	c.IsFalse(false, "test syntax")
+
+	c.False(false)
+	c.False(false, "test syntax")
 }
 
 func (s *AliasSuite) TestPanicsAlias(c *check.C) {
@@ -142,31 +154,49 @@ func (s *AliasSuite) TestNotNilAlias(c *check.C) {
 func (s *AliasSuite) TestIsNilAlias(c *check.C) {
 	c.IsNil(nil)
 	c.IsNil(nil, "test syntax")
+
+	c.Nil(nil)
+	c.Nil(nil, "test syntax")
 }
 
 func (s *AliasSuite) TestIsTrueAlias(c *check.C) {
 	c.IsTrue(true)
 	c.IsTrue(true, "test syntax")
+
+	c.True(true)
+	c.True(true, "test syntax")
 }
 
 func (s *AliasSuite) TestMoreOrEqualThanAlias(c *check.C) {
 	c.MoreOrEqualThan(0.1, 0.1)
 	c.MoreOrEqualThan(0.1, 0.1, "test syntax")
+
+	c.GreaterOrEqual(0.1, 0.1)
+	c.GreaterOrEqual(0.1, 0.1, "test syntax")
 }
 
 func (s *AliasSuite) TestMoreThanAlias(c *check.C) {
 	c.MoreThan(0.4, 0.1)
 	c.MoreThan(10, 8, "test syntax")
+
+	c.Greater(0.4, 0.1)
+	c.Greater(10, 8, "test syntax")
 }
 
 func (s *AliasSuite) TestLessThanAlias(c *check.C) {
 	c.LessThan(0.1, 0.4)
 	c.LessThan(-10, 1024, "test syntax")
+
+	c.Less(0.1, 0.4)
+	c.Less(-10, 1024, "test syntax")
 }
 
 func (s *AliasSuite) TestLessOrEqualThanAlias(c *check.C) {
 	c.LessOrEqualThan(0.1, 0.1)
 	c.LessOrEqualThan(0.1, 0.1, "test syntax")
+
+	c.LessOrEqual(0.1, 0.1)
+	c.LessOrEqual(0.1, 0.1, "test syntax")
 }
 
 func (s *AliasSuite) TestNotMatchesAlias(c *check.C) {
@@ -177,4 +207,12 @@ func (s *AliasSuite) TestNotMatchesAlias(c *check.C) {
 func (s *AliasSuite) TestMatchesAlias(c *check.C) {
 	c.Matches(reflect.ValueOf("abc"), "a.c")
 	c.Matches(reflect.ValueOf("abc"), "a.c", "test syntax")
+}
+
+func (s *AliasSuite) TestIsEmptyAlias(c *check.C) {
+	c.IsEmpty(map[int]map[string]bool{})
+	c.IsEmpty("", "test syntax")
+
+	c.Empty(map[int]map[string]bool{})
+	c.Empty("", "test syntax")
 }

@@ -85,6 +85,10 @@ func (c *C) FitsTypeOf(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("FitsTypeOf", obtained, expected, FitsTypeOf, args)
 }
 
+func (c *C) Len(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("Len", obtained, expected, HasLen, args)
+}
+
 func (c *C) HasLen(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("HasLen", obtained, expected, HasLen, args)
 }
@@ -109,24 +113,64 @@ func (c *C) ErrorIs(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("ErrorIs", obtained, expected, ErrorIs, args)
 }
 
+func (c *C) False(obtained any, args ...any) bool {
+	return c.runObtainedAlias("False", obtained, IsFalse, args)
+}
+
 func (c *C) IsFalse(obtained any, args ...any) bool {
 	return c.runObtainedAlias("IsFalse", obtained, IsFalse, args)
 }
 
-func (c *C) NotNil(obtained any, args ...any) bool {
-	return c.runObtainedAlias("NotNil", obtained, NotNil, args)
-}
-
-func (c *C) IsNil(obtained any, args ...any) bool {
-	return c.runObtainedAlias("IsNil", obtained, IsNil, args)
+func (c *C) True(obtained any, args ...any) bool {
+	return c.runObtainedAlias("True", obtained, IsTrue, args)
 }
 
 func (c *C) IsTrue(obtained any, args ...any) bool {
 	return c.runObtainedAlias("IsTrue", obtained, IsTrue, args)
 }
 
+func (c *C) NotNil(obtained any, args ...any) bool {
+	return c.runObtainedAlias("NotNil", obtained, NotNil, args)
+}
+
+func (c *C) Equal(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("Equal", obtained, expected, Equals, args)
+}
+
+func (c *C) NotEqual(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("NotEqual", obtained, expected, NotEquals, args)
+}
+
+func (c *C) Nil(obtained any, args ...any) bool {
+	return c.runObtainedAlias("Nil", obtained, IsNil, args)
+}
+
+func (c *C) IsNil(obtained any, args ...any) bool {
+	return c.runObtainedAlias("IsNil", obtained, IsNil, args)
+}
+
+func (c *C) Empty(obtained any, args ...any) bool {
+	return c.runObtainedAlias("Empty", obtained, IsEmpty, args)
+}
+
+func (c *C) IsEmpty(obtained any, args ...any) bool {
+	return c.runObtainedAlias("IsEmpty", obtained, IsEmpty, args)
+}
+
+func (c *C) NotEmpty(obtained any, args ...any) bool {
+	return c.runObtainedAlias("NotEmpty", obtained, NotEmpty, args)
+}
+
+func (c *C) LessOrEqual(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("LessOrEqual", obtained, expected, LessOrEqualThan, args)
+}
+
 func (c *C) LessOrEqualThan(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("LessOrEqualThan", obtained, expected, LessOrEqualThan, args)
+}
+
+func (c *C) Less(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("Less", obtained, expected, LessThan, args)
 }
 
 func (c *C) LessThan(obtained, expected any, args ...any) bool {
@@ -141,8 +185,16 @@ func (c *C) NotMatches(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("NotMatches", obtained, expected, Not(Matches), args)
 }
 
+func (c *C) GreaterOrEqual(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("GreaterOrEqual", obtained, expected, MoreOrEqualThan, args)
+}
+
 func (c *C) MoreOrEqualThan(obtained, expected any, args ...any) bool {
 	return c.runObtainedExpectedAlias("MoreOrEqualThan", obtained, expected, MoreOrEqualThan, args)
+}
+
+func (c *C) Greater(obtained, expected any, args ...any) bool {
+	return c.runObtainedExpectedAlias("Greater", obtained, expected, MoreThan, args)
 }
 
 func (c *C) MoreThan(obtained, expected any, args ...any) bool {

@@ -30,15 +30,35 @@ func (c *C) Failed() bool {
 // Something ought to have been previously logged so the developer can tell
 // what went wrong. The higher level helper functions will fail the test
 // and do the logging properly.
-func (c *C) Fail() {
+func (c *C) Fail(mess ...any) {
+	c.printMessagesF(mess...)
 	c.setStatus(failedSt)
+}
+
+func (c *C) printMessagesF(mess ...any) {
+	switch len(mess) {
+	case 0:
+		// nothing to do
+	case 1:
+		c.Logf("%+v", mess[0])
+	default:
+		switch mess[0].(type) {
+		case string:
+			c.Logf(mess[0].(string), mess[1:]...)
+		default:
+			for _, m := range mess {
+				c.Logf("%+v", m)
+			}
+		}
+	}
 }
 
 // FailNow marks the currently running test as failed and stops running it.
 // Something ought to have been previously logged so the developer can tell
 // what went wrong. The higher level helper functions will fail the test
 // and do the logging properly.
-func (c *C) FailNow() {
+func (c *C) FailNow(mess ...any) {
+	c.printMessagesF(mess...)
 	c.Fail()
 	c.stopNow()
 }
